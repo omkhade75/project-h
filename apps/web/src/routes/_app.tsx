@@ -99,6 +99,13 @@ const NAV: NavSection[] = [
     ],
   },
   {
+    section: "Portals",
+    items: [
+      { to: "/customer-portal", label: "Customer Portal", icon: ShoppingBagIcon },
+      { to: "/supplier-portal", label: "Supplier Portal", icon: Truck },
+    ],
+  },
+  {
     section: "Intelligence",
     items: [
       { to: "/analytics", label: "Analytics", icon: BarChart3 },

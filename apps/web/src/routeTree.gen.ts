@@ -21,6 +21,7 @@ import { Route as AppTimeMachineRouteImport } from './routes/_app.time-machine'
 import { Route as AppTaxRouteImport } from './routes/_app.tax'
 import { Route as AppSystemAdminRouteImport } from './routes/_app.system-admin'
 import { Route as AppSuppliersRouteImport } from './routes/_app.suppliers'
+import { Route as AppSupplierPortalRouteImport } from './routes/_app.supplier-portal'
 import { Route as AppStaffRouteImport } from './routes/_app.staff'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSalesRouteImport } from './routes/_app.sales'
@@ -39,6 +40,7 @@ import { Route as AppExpensesRouteImport } from './routes/_app.expenses'
 import { Route as AppDepartmentsRouteImport } from './routes/_app.departments'
 import { Route as AppDataImportRouteImport } from './routes/_app.data-import'
 import { Route as AppCustomersRouteImport } from './routes/_app.customers'
+import { Route as AppCustomerPortalRouteImport } from './routes/_app.customer-portal'
 import { Route as AppCommand_centerRouteImport } from './routes/_app.command_center'
 import { Route as AppCommandCenterRouteImport } from './routes/_app.command-center'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
@@ -105,6 +107,11 @@ const AppSystemAdminRoute = AppSystemAdminRouteImport.update({
 const AppSuppliersRoute = AppSuppliersRouteImport.update({
   id: '/suppliers',
   path: '/suppliers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupplierPortalRoute = AppSupplierPortalRouteImport.update({
+  id: '/supplier-portal',
+  path: '/supplier-portal',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStaffRoute = AppStaffRouteImport.update({
@@ -197,6 +204,11 @@ const AppCustomersRoute = AppCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCustomerPortalRoute = AppCustomerPortalRouteImport.update({
+  id: '/customer-portal',
+  path: '/customer-portal',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCommand_centerRoute = AppCommand_centerRouteImport.update({
   id: '/command_center',
   path: '/command_center',
@@ -251,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/billing': typeof AppBillingRoute
   '/command-center': typeof AppCommandCenterRoute
   '/command_center': typeof AppCommand_centerRoute
+  '/customer-portal': typeof AppCustomerPortalRoute
   '/customers': typeof AppCustomersRoute
   '/data-import': typeof AppDataImportRoute
   '/departments': typeof AppDepartmentsRoute
@@ -269,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/sales': typeof AppSalesRoute
   '/settings': typeof AppSettingsRoute
   '/staff': typeof AppStaffRoute
+  '/supplier-portal': typeof AppSupplierPortalRoute
   '/suppliers': typeof AppSuppliersRoute
   '/system-admin': typeof AppSystemAdminRoute
   '/tax': typeof AppTaxRoute
@@ -290,6 +304,7 @@ export interface FileRoutesByTo {
   '/billing': typeof AppBillingRoute
   '/command-center': typeof AppCommandCenterRoute
   '/command_center': typeof AppCommand_centerRoute
+  '/customer-portal': typeof AppCustomerPortalRoute
   '/customers': typeof AppCustomersRoute
   '/data-import': typeof AppDataImportRoute
   '/departments': typeof AppDepartmentsRoute
@@ -308,6 +323,7 @@ export interface FileRoutesByTo {
   '/sales': typeof AppSalesRoute
   '/settings': typeof AppSettingsRoute
   '/staff': typeof AppStaffRoute
+  '/supplier-portal': typeof AppSupplierPortalRoute
   '/suppliers': typeof AppSuppliersRoute
   '/system-admin': typeof AppSystemAdminRoute
   '/tax': typeof AppTaxRoute
@@ -331,6 +347,7 @@ export interface FileRoutesById {
   '/_app/billing': typeof AppBillingRoute
   '/_app/command-center': typeof AppCommandCenterRoute
   '/_app/command_center': typeof AppCommand_centerRoute
+  '/_app/customer-portal': typeof AppCustomerPortalRoute
   '/_app/customers': typeof AppCustomersRoute
   '/_app/data-import': typeof AppDataImportRoute
   '/_app/departments': typeof AppDepartmentsRoute
@@ -349,6 +366,7 @@ export interface FileRoutesById {
   '/_app/sales': typeof AppSalesRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/staff': typeof AppStaffRoute
+  '/_app/supplier-portal': typeof AppSupplierPortalRoute
   '/_app/suppliers': typeof AppSuppliersRoute
   '/_app/system-admin': typeof AppSystemAdminRoute
   '/_app/tax': typeof AppTaxRoute
@@ -372,6 +390,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/command-center'
     | '/command_center'
+    | '/customer-portal'
     | '/customers'
     | '/data-import'
     | '/departments'
@@ -390,6 +409,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/staff'
+    | '/supplier-portal'
     | '/suppliers'
     | '/system-admin'
     | '/tax'
@@ -411,6 +431,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/command-center'
     | '/command_center'
+    | '/customer-portal'
     | '/customers'
     | '/data-import'
     | '/departments'
@@ -429,6 +450,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/staff'
+    | '/supplier-portal'
     | '/suppliers'
     | '/system-admin'
     | '/tax'
@@ -451,6 +473,7 @@ export interface FileRouteTypes {
     | '/_app/billing'
     | '/_app/command-center'
     | '/_app/command_center'
+    | '/_app/customer-portal'
     | '/_app/customers'
     | '/_app/data-import'
     | '/_app/departments'
@@ -469,6 +492,7 @@ export interface FileRouteTypes {
     | '/_app/sales'
     | '/_app/settings'
     | '/_app/staff'
+    | '/_app/supplier-portal'
     | '/_app/suppliers'
     | '/_app/system-admin'
     | '/_app/tax'
@@ -570,6 +594,13 @@ declare module '@tanstack/react-router' {
       path: '/suppliers'
       fullPath: '/suppliers'
       preLoaderRoute: typeof AppSuppliersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/supplier-portal': {
+      id: '/_app/supplier-portal'
+      path: '/supplier-portal'
+      fullPath: '/supplier-portal'
+      preLoaderRoute: typeof AppSupplierPortalRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/staff': {
@@ -698,6 +729,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCustomersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/customer-portal': {
+      id: '/_app/customer-portal'
+      path: '/customer-portal'
+      fullPath: '/customer-portal'
+      preLoaderRoute: typeof AppCustomerPortalRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/command_center': {
       id: '/_app/command_center'
       path: '/command_center'
@@ -766,6 +804,7 @@ interface AppRouteChildren {
   AppBillingRoute: typeof AppBillingRoute
   AppCommandCenterRoute: typeof AppCommandCenterRoute
   AppCommand_centerRoute: typeof AppCommand_centerRoute
+  AppCustomerPortalRoute: typeof AppCustomerPortalRoute
   AppCustomersRoute: typeof AppCustomersRoute
   AppDataImportRoute: typeof AppDataImportRoute
   AppDepartmentsRoute: typeof AppDepartmentsRoute
@@ -784,6 +823,7 @@ interface AppRouteChildren {
   AppSalesRoute: typeof AppSalesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStaffRoute: typeof AppStaffRoute
+  AppSupplierPortalRoute: typeof AppSupplierPortalRoute
   AppSuppliersRoute: typeof AppSuppliersRoute
   AppSystemAdminRoute: typeof AppSystemAdminRoute
   AppTaxRoute: typeof AppTaxRoute
@@ -802,6 +842,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBillingRoute: AppBillingRoute,
   AppCommandCenterRoute: AppCommandCenterRoute,
   AppCommand_centerRoute: AppCommand_centerRoute,
+  AppCustomerPortalRoute: AppCustomerPortalRoute,
   AppCustomersRoute: AppCustomersRoute,
   AppDataImportRoute: AppDataImportRoute,
   AppDepartmentsRoute: AppDepartmentsRoute,
@@ -820,6 +861,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSalesRoute: AppSalesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStaffRoute: AppStaffRoute,
+  AppSupplierPortalRoute: AppSupplierPortalRoute,
   AppSuppliersRoute: AppSuppliersRoute,
   AppSystemAdminRoute: AppSystemAdminRoute,
   AppTaxRoute: AppTaxRoute,
