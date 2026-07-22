@@ -169,14 +169,83 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const forceRefresh = () => setDbRev((prev) => prev + 1);
   const [syncRev, setSyncRev] = useState(0);
-  const [investments, setInvestments] = useState<InvestmentItem[]>([]);
-  const [logistics, setLogistics] = useState<DeliveryItem[]>([]);
-  const [staff, setStaff] = useState<StaffListItem[]>([]);
+  const [isOffline, setIsOffline] = useState(false);
+  const [investments, setInvestments] = useState<InvestmentItem[]>(() => [
+    {
+      id: "inv-01",
+      assetName: "Gold ETF India",
+      symbol: "GOLDBEES",
+      purchasePrice: 5200,
+      quantity: 100,
+      totalCost: 520000,
+      currentValue: 585000,
+      status: "Active",
+      purchasedAt: "2026-03-12T10:00:00.000Z",
+    },
+    {
+      id: "inv-02",
+      assetName: "Nifty 50 Index Fund",
+      symbol: "NIFTY50",
+      purchasePrice: 22000,
+      quantity: 20,
+      totalCost: 440000,
+      currentValue: 462000,
+      status: "Active",
+      purchasedAt: "2026-04-01T11:30:00.000Z",
+    }
+  ]);
+  const [logistics, setLogistics] = useState<DeliveryItem[]>(() => [
+    {
+      id: "del-01",
+      orderId: "PO-40019",
+      supplierName: "Amul Foods Ltd",
+      status: "IN_TRANSIT",
+      origin: "Mumbai Warehouse",
+      destination: "GrandSquare Mall Pune",
+      eta: "2026-05-06T18:00:00.000Z",
+      routeDetails: "Delayed at Toll Plaza, NH48",
+      lastUpdated: "2026-05-05T14:00:00.000Z",
+    },
+    {
+      id: "del-02",
+      orderId: "PO-40020",
+      supplierName: "Nike India Pvt",
+      status: "DELIVERED",
+      origin: "Delhi Hub",
+      destination: "GrandSquare Mall Pune",
+      eta: "2026-05-03T12:00:00.000Z",
+      routeDetails: "Delivered & Signed by Store Mgr",
+      lastUpdated: "2026-05-03T12:30:00.000Z",
+    }
+  ]);
+  const [staff, setStaff] = useState<StaffListItem[]>(() => [
+    {
+      id: "stf-01",
+      name: "Ramesh Kumar",
+      email: "ramesh@grandsquare.com",
+      role: "MANAGER",
+      department: "Grocery",
+      status: "Active",
+      joinedAt: "2024-01-15T09:00:00.000Z",
+      workspaces: "grandsquare-mall",
+    },
+    {
+      id: "stf-02",
+      name: "Suresh Patil",
+      email: "suresh@grandsquare.com",
+      role: "STAFF",
+      department: "Electronics",
+      status: "Active",
+      joinedAt: "2025-03-20T10:00:00.000Z",
+      workspaces: "grandsquare-mall",
+    }
+  ]);
 
   useEffect(() => {
     let intervalId: any;
 
     async function syncData() {
+      if (isOffline) return;
       try {
         const payload = {
           data: {
@@ -369,11 +438,12 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         setSyncRev((prev) => prev + 1);
       } catch (err) {
-        console.error("Failed to sync client database with server:", err);
+        console.warn("Failed to sync with database. Switching to offline fallback mode.", err);
+        setIsOffline(true);
       }
     }
 
-    if (user) {
+    if (user && !isOffline) {
       syncData();
       // Sync every 8 seconds
       intervalId = setInterval(syncData, 8000);

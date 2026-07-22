@@ -3,10 +3,33 @@ import { PrismaClient } from "@prisma/client";
 declare global {
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
+  // eslint-disable-next-line no-var
+  var isDbAvailable: boolean | undefined;
 }
 
 export const prisma = globalThis.prisma || new PrismaClient();
 globalThis.prisma = prisma;
+
+export async function checkDbConnection(): Promise<boolean> {
+  if (!process.env.DATABASE_URL) {
+    globalThis.isDbAvailable = false;
+    return false;
+  }
+  if (globalThis.isDbAvailable !== undefined) {
+    return globalThis.isDbAvailable;
+  }
+  try {
+    // Quick test query to ensure database is responsive
+    await prisma.$queryRaw`SELECT 1`;
+    globalThis.isDbAvailable = true;
+    return true;
+  } catch (e) {
+    console.warn("Database connection failed. Running in offline/mock mode.", e);
+    globalThis.isDbAvailable = false;
+    return false;
+  }
+}
+
 
 /**
  * Returns a Prisma client extension that automatically filters by workspaceId.

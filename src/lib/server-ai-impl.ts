@@ -1688,6 +1688,20 @@ Return a structured JSON output matching the requested schema.`;
       };
       logShadowMode(shadowLog);
 
+      // Log AI Interaction to MongoDB
+      try {
+        const { logAiInteraction } = await import("./server/mongodb");
+        logAiInteraction({
+          workspaceId: "grandsquare-mall",
+          userId: data.email || "system-admin",
+          query: data.query,
+          intent: data.intent,
+          response: formatted,
+        }).catch((err) => console.error("MongoDB AI logging error:", err));
+      } catch (mongoErr) {
+        console.warn("MongoDB module import/execution skipped:", mongoErr);
+      }
+
       return formatted;
     } catch (err: any) {
       clearTimeout(timeoutId);
