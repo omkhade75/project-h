@@ -17,8 +17,11 @@ async function bootstrap() {
   app.useGlobalFilters(new CentralExceptionFilter());
 
   const port = process.env.PORT || process.env.BACKEND_PORT || 3000;
-  await app.listen(port);
-  console.log(`[Bizora OS] Enterprise Backend running on port ${port}`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`[Bizora OS] Enterprise Backend running on 0.0.0.0:${port}`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('[Bizora OS] Fatal error during backend bootstrap:', err);
+  process.exit(1);
+});

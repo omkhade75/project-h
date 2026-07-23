@@ -9,8 +9,8 @@ export class DatabaseConfig {
     }
 
     const uri = process.env.MONGODB_URI;
-    if (!uri || uri.includes('placeholder') || uri.includes('YOUR-')) {
-      console.warn('[MongoDB] MONGODB_URI is absent or unconfigured. Running Mongoose in offline mock mode.');
+    if (!uri || uri.includes('placeholder') || uri.includes('YOUR-') || (process.env.NODE_ENV === 'production' && uri.includes('localhost'))) {
+      console.warn('[MongoDB] MONGODB_URI is absent, unconfigured, or set to localhost in production. Running in offline mock mode.');
       return null;
     }
 
