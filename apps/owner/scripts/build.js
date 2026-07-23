@@ -66,7 +66,9 @@ const main = () => {
         router: {
           matches: [],
           lastMatchId: '',
-          manifest: {},
+          manifest: {
+            routes: {}
+          },
           dehydratedData: {}
         }
       };
@@ -82,7 +84,7 @@ const main = () => {
 
     writeFileSync(join(publicDir, "index.html"), htmlContent);
     writeFileSync(join(publicDir, "200.html"), htmlContent);
-    console.log("Successfully generated static index.html and 200.html in .output/public with complete $_TSR stub");
+    console.log("Successfully generated static index.html and 200.html in .output/public with manifest.routes stub");
   }
 };
 
