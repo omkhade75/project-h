@@ -48,8 +48,13 @@ const main = () => {
 
   if (existsSync(assetsDir)) {
     const files = readdirSync(assetsDir);
-    const mainJs = files.find(f => f.startsWith("index-") && f.endsWith(".js"));
     const mainCss = files.find(f => f.startsWith("styles-") && f.endsWith(".css"));
+
+    const jsFiles = files.filter(f => f.endsWith(".js"));
+    const scriptTags = jsFiles
+      .filter(f => f.startsWith("_app") || f.startsWith("routes") || f.startsWith("setup") || f.startsWith("index"))
+      .map(f => `<script type="module" src="/assets/${f}"></script>`)
+      .join("\n    ");
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -62,7 +67,7 @@ const main = () => {
   </head>
   <body>
     <div id="root"></div>
-    ${mainJs ? `<script type="module" src="/assets/${mainJs}"></script>` : ''}
+    ${scriptTags}
   </body>
 </html>`;
 
