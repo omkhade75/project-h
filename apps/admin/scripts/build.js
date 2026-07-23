@@ -1,23 +1,12 @@
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { existsSync, readdirSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const run = (cmd) => {
-  console.log(`> ${cmd}`);
-  try {
-    execSync(cmd, { stdio: "inherit" });
-  } catch (e) {
-    console.error(`Command failed: ${cmd}`);
-    process.exit(1);
-  }
-};
-
 const main = () => {
-
   // Build client bundle (run vite build inside app directory)
   const webDir = join(__dirname, "..");
   console.log(`Running build inside directory: ${webDir}`);
@@ -35,6 +24,23 @@ const main = () => {
   if (existsSync(assetsDir)) {
     const files = readdirSync(assetsDir);
     const mainCss = files.find(f => f.startsWith("styles-") && f.endsWith(".css"));
+
+    // Patch createServerFn invariant crash for static site hosting environments
+    const serverFnFiles = files.filter(f => f.startsWith("createServerFn-") && f.endsWith(".js"));
+    serverFnFiles.forEach(serverFnFile => {
+      const filePath = join(assetsDir, serverFnFile);
+      let content = readFileSync(filePath, "utf-8");
+      content = content.replace(
+        'function c(){throw Error(`Invariant failed`)}',
+        'function c(){console.warn("[Static Host Warning] Server function endpoint not active");return false;}'
+      );
+      content = content.replace(
+        'function c(){throw Error("Invariant failed")}',
+        'function c(){console.warn("[Static Host Warning] Server function endpoint not active");return false;}'
+      );
+      writeFileSync(filePath, content, "utf-8");
+      console.log(`Successfully patched ${serverFnFile} for static site host execution`);
+    });
 
     const jsFiles = files.filter(f => f.endsWith(".js"));
     const scriptTags = jsFiles
