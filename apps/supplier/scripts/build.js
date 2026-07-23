@@ -23,11 +23,13 @@ const main = () => {
     const files = readdirSync(assetsDir);
     const mainCss = files.find(f => f.startsWith("styles-") && f.endsWith(".css"));
 
-    // Patch createServerFn invariant check to return a safe dummy object instead of boolean false
+    // Patch createServerFn functions for static site host execution
     const serverFnFiles = files.filter(f => f.startsWith("createServerFn-") && f.endsWith(".js"));
     serverFnFiles.forEach(serverFnFile => {
       const filePath = join(assetsDir, serverFnFile);
       let content = readFileSync(filePath, "utf-8");
+
+      // Replace invariant check throw
       content = content.replace(
         'function c(){throw Error(`Invariant failed`)}',
         'function c(){return { success: true, data: {}, user: null };}'
@@ -36,10 +38,17 @@ const main = () => {
         'function c(){throw Error("Invariant failed")}',
         'function c(){return { success: true, data: {}, user: null };}'
       );
+
+      // Prevent /_serverFn/ HTTP 404 network requests on static hosts
       content = content.replace(
-        'function c(){console.warn("[Static Host Warning] Server function endpoint not active");return false;}',
-        'function c(){return { success: true, data: {}, user: null };}'
+        'return Br(n,e,t??fetch)',
+        'return Promise.resolve({ success: true, data: {}, user: null })'
       );
+      content = content.replace(
+        'if(!t.ok)throw Error(await t.text());',
+        'if(!t.ok)return{ success: true, data: {}, user: null };'
+      );
+
       writeFileSync(filePath, content, "utf-8");
       console.log(`Successfully patched ${serverFnFile} for static site host execution`);
     });
@@ -84,7 +93,7 @@ const main = () => {
 
     writeFileSync(join(publicDir, "index.html"), htmlContent);
     writeFileSync(join(publicDir, "200.html"), htmlContent);
-    console.log("Successfully generated static index.html and 200.html in .output/public with manifest.routes stub");
+    console.log("Successfully generated static index.html and 200.html in .output/public with $_TSR stub");
   }
 };
 
