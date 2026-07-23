@@ -9,8 +9,8 @@ export class MongodbService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     const uri = process.env.MONGODB_URI;
-    if (!uri || uri.includes("placeholder") || uri.includes("YOUR-")) {
-      this.logger.warn('MONGODB_URI is not set or placeholder. AI/Audit logs will run in mock mode.');
+    if (!uri || uri.includes("placeholder") || uri.includes("YOUR-") || (process.env.NODE_ENV === 'production' && uri.includes('localhost'))) {
+      this.logger.warn('MONGODB_URI is not set, placeholder, or localhost in production. AI/Audit logs will run in mock mode.');
       return;
     }
 
