@@ -56,6 +56,14 @@ const main = () => {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bizora OS — System Admin Portal</title>
+    <script>
+      window.$_TSR = window.$_TSR || {
+        buffer: [],
+        t: new Map(),
+        initialized: false,
+        router: null
+      };
+    </script>
     ${mainCss ? `<link rel="stylesheet" href="/assets/${mainCss}">` : ''}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
   </head>
@@ -67,7 +75,7 @@ const main = () => {
 
     writeFileSync(join(publicDir, "index.html"), htmlContent);
     writeFileSync(join(publicDir, "200.html"), htmlContent);
-    console.log("Successfully generated static index.html and 200.html in .output/public");
+    console.log("Successfully generated static index.html and 200.html in .output/public with $_TSR stub");
   }
 };
 
