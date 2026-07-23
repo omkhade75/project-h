@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { existsSync, readdirSync, writeFileSync } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,7 +32,7 @@ const main = () => {
     console.log("No DATABASE_URL found or DATABASE_URL is placeholder. Skipping database schema sync. Running in offline/mock fallback mode.");
   }
 
-  // Build client bundle (run vite build inside apps/web directory)
+  // Build client bundle (run vite build inside app directory)
   const webDir = join(__dirname, "..");
   console.log(`Running build inside directory: ${webDir}`);
   try {
@@ -39,6 +40,35 @@ const main = () => {
   } catch (e) {
     console.error("Vite build failed.");
     process.exit(1);
+  }
+
+  // Generate static index.html and 200.html in .output/public for static site hosts (Render/Vercel/Netlify)
+  const publicDir = join(webDir, ".output/public");
+  const assetsDir = join(publicDir, "assets");
+
+  if (existsSync(assetsDir)) {
+    const files = readdirSync(assetsDir);
+    const mainJs = files.find(f => f.startsWith("index-") && f.endsWith(".js"));
+    const mainCss = files.find(f => f.startsWith("styles-") && f.endsWith(".css"));
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bizora OS — Supplier Portal</title>
+    ${mainCss ? `<link rel="stylesheet" href="/assets/${mainCss}">` : ''}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  </head>
+  <body>
+    <div id="root"></div>
+    ${mainJs ? `<script type="module" src="/assets/${mainJs}"></script>` : ''}
+  </body>
+</html>`;
+
+    writeFileSync(join(publicDir, "index.html"), htmlContent);
+    writeFileSync(join(publicDir, "200.html"), htmlContent);
+    console.log("Successfully generated static index.html and 200.html in .output/public");
   }
 };
 
