@@ -1,7 +1,7 @@
-import helmet from 'helmet';
-import cors from 'cors';
-import rateLimit from 'express-rate-limit';
 import { INestApplication } from '@nestjs/common';
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 export function setupSecurityMiddleware(app: INestApplication) {
   // Helmet HTTP Header security
