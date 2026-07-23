@@ -61,6 +61,8 @@ const main = () => {
         buffer: [],
         t: new Map(),
         initialized: false,
+        h: function() {},
+        clean: function() {},
         router: {
           matches: [],
           lastMatchId: '',
@@ -80,7 +82,7 @@ const main = () => {
 
     writeFileSync(join(publicDir, "index.html"), htmlContent);
     writeFileSync(join(publicDir, "200.html"), htmlContent);
-    console.log("Successfully generated static index.html and 200.html in .output/public with $_TSR router object stub");
+    console.log("Successfully generated static index.html and 200.html in .output/public with complete $_TSR stub");
   }
 };
 
