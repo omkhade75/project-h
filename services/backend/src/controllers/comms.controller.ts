@@ -1,0 +1,33 @@
+import { Controller, Get, Post, Body, Req } from '@nestjs/common';
+import { CommsService } from '../services/comms.service';
+
+@Controller('api/comms')
+export class CommsController {
+  constructor(private readonly commsService: CommsService) {}
+
+  @Get('whatsapp/config')
+  async getWhatsAppConfig() {
+    return await this.commsService.getWhatsAppConfig();
+  }
+
+  @Post('whatsapp/config')
+  async updateWhatsAppConfig(@Body() body: any) {
+    return await this.commsService.updateWhatsAppConfig(body);
+  }
+
+  @Get('vapi/config')
+  async getVapiConfig() {
+    return await this.commsService.getVapiConfig();
+  }
+
+  @Post('vapi/config')
+  async updateVapiConfig(@Body() body: any) {
+    return await this.commsService.updateVapiConfig(body);
+  }
+
+  @Post('vapi/call')
+  async initiateVapiCall(@Req() req, @Body() body: any) {
+    const user = req.user;
+    return await this.commsService.initiateVapiCall(user?.workspaceId || 'grandsquare-mall', body);
+  }
+}

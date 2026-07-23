@@ -1,7 +1,8 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { RegisterUserSchema, LoginUserSchema, RefreshTokenSchema } from '../validators/auth.validator';
 import { ResponseUtil } from '../utils/response.util';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Controller('api/auth')
 export class AuthController {
@@ -28,5 +29,19 @@ export class AuthController {
     const validated = RefreshTokenSchema.parse(body);
     const result = await this.authService.refreshToken(validated.refreshToken);
     return ResponseUtil.success(result, 'Access token refreshed successfully');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getMe(@Req() req: any) {
+    return ResponseUtil.success({ user: req.user }, 'Current user retrieved successfully');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() req: any) {
+    // In a real app we'd invalidate the refresh token in the DB here
+    return ResponseUtil.success(null, 'Logged out successfully');
   }
 }
