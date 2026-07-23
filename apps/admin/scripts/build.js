@@ -1,7 +1,7 @@
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync, rmSync } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,6 +9,18 @@ const __dirname = dirname(__filename);
 const main = () => {
   const webDir = join(__dirname, "..");
   console.log(`Running build inside directory: ${webDir}`);
+
+  // Clean stale build output directory before building
+  const outputDir = join(webDir, ".output");
+  if (existsSync(outputDir)) {
+    try {
+      rmSync(outputDir, { recursive: true, force: true });
+      console.log("Successfully cleaned old .output build directory.");
+    } catch (e) {
+      console.warn("Failed to clean .output directory:", e);
+    }
+  }
+
   try {
     execSync("npx vite build", { cwd: webDir, stdio: "inherit" });
   } catch (e) {
@@ -53,18 +65,17 @@ const main = () => {
       console.log(`Successfully patched ${serverFnFile} for static site host execution`);
     });
 
+    // Only load main entry index JS script to allow dynamic chunk loading on demand
     const jsFiles = files.filter(f => f.endsWith(".js"));
-    const scriptTags = jsFiles
-      .filter(f => f.startsWith("_app") || f.startsWith("routes") || f.startsWith("setup") || f.startsWith("index"))
-      .map(f => `<script type="module" src="/assets/${f}"></script>`)
-      .join("\n    ");
+    const mainJs = jsFiles.find(f => f.startsWith("index-") && f.endsWith(".js"));
+    const scriptTags = mainJs ? `<script type="module" src="/assets/${mainJs}"></script>` : '';
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bizora OS — System Admin Portal</title>
+    <title>Bizora OS — Portal</title>
     <script>
       window.$_TSR = window.$_TSR || {
         buffer: [],
@@ -93,7 +104,7 @@ const main = () => {
 
     writeFileSync(join(publicDir, "index.html"), htmlContent);
     writeFileSync(join(publicDir, "200.html"), htmlContent);
-    console.log("Successfully generated static index.html and 200.html in .output/public with $_TSR stub");
+    console.log("Successfully generated clean static index.html and 200.html with main entry script only");
   }
 };
 
