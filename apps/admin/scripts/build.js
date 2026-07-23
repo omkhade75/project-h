@@ -17,18 +17,6 @@ const run = (cmd) => {
 };
 
 const main = () => {
-  const schemaPath = join(__dirname, "../../../packages/database/prisma/schema.prisma");
-  console.log(`Using database schema path: ${schemaPath}`);
-
-  // Generate Prisma client safely if schema exists
-  if (existsSync(schemaPath)) {
-    try {
-      console.log("Generating Prisma client...");
-      execSync(`npx prisma generate --schema="${schemaPath}"`, { stdio: "inherit" });
-    } catch (e) {
-      console.warn("Prisma generate warning: skipping schema generation in frontend app build.");
-    }
-  }
 
   // Build client bundle (run vite build inside app directory)
   const webDir = join(__dirname, "..");
