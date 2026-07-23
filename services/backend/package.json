@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "prebuild": "npm run build --prefix ../../packages/database",
     "build": "npx @nestjs/cli build || tsc",
     "start": "nest start",
     "dev": "nest start --watch",
