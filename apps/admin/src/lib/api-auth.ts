@@ -14,30 +14,43 @@ export type AuthUser = {
 };
 
 export const loginServer = async (data: { data: { email: string; password: string } }) => {
-  const payload = data.data ? data.data : data; 
-  const result = await fetchApi<{ user: AuthUser; token: string }>('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  try {
+    const payload = data.data ? data.data : data; 
+    const result = await fetchApi<{ user: AuthUser; token: string }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
 
-  if (result.success && result.data?.token) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('bizora_access_token', result.data.token);
+    if (result.success && result.data?.token) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bizora_access_token', result.data.token);
+      }
+      return { success: true, user: result.data.user };
     }
-    return { success: true, user: result.data.user };
+    return { success: false, user: null, error: result.error || result.message || 'Login failed' };
+  } catch (err: any) {
+    return { success: false, user: null, error: err?.message || 'Login failed' };
   }
-  throw new Error(result.error || result.message || 'Login failed');
 };
 
 export const getCurrentSessionServer = async () => {
-  const result = await fetchApi<{ user: AuthUser | null }>('/api/auth/me', {
-    method: 'GET',
-  });
-  
-  if (result.success && result.data) {
-    return { user: result.data.user || null };
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('bizora_access_token') : null;
+    if (!token) {
+      return { user: null };
+    }
+
+    const result = await fetchApi<{ user: AuthUser | null }>('/api/auth/me', {
+      method: 'GET',
+    });
+    
+    if (result.success && result.data) {
+      return { user: result.data.user || result.data || null };
+    }
+    return { user: null };
+  } catch (err) {
+    return { user: null };
   }
-  return { user: null };
 };
 
 export const logoutServer = async () => {
@@ -48,25 +61,33 @@ export const logoutServer = async () => {
 };
 
 export const impersonateTenantServer = async (data: { data: { workspaceId: string } }) => {
-  const payload = data.data ? data.data : data;
-  const result = await fetchApi('/api/auth/impersonate', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  
-  if (result.success) {
-    return { success: true };
+  try {
+    const payload = data.data ? data.data : data;
+    const result = await fetchApi('/api/auth/impersonate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    
+    if (result.success) {
+      return { success: true };
+    }
+    return { success: false };
+  } catch (err) {
+    return { success: false };
   }
-  throw new Error(result.error || result.message || 'Failed to impersonate');
 };
 
 export const stopImpersonatingServer = async () => {
-  const result = await fetchApi('/api/auth/stop-impersonate', {
-    method: 'POST',
-  });
-  
-  if (result.success) {
-    return { success: true };
+  try {
+    const result = await fetchApi('/api/auth/stop-impersonate', {
+      method: 'POST',
+    });
+    
+    if (result.success) {
+      return { success: true };
+    }
+    return { success: false };
+  } catch (err) {
+    return { success: false };
   }
-  throw new Error(result.error || result.message || 'Failed to stop impersonating');
 };
