@@ -61,7 +61,12 @@ const main = () => {
         buffer: [],
         t: new Map(),
         initialized: false,
-        router: null
+        router: {
+          matches: [],
+          lastMatchId: '',
+          manifest: {},
+          dehydratedData: {}
+        }
       };
     </script>
     ${mainCss ? `<link rel="stylesheet" href="/assets/${mainCss}">` : ''}
@@ -75,7 +80,7 @@ const main = () => {
 
     writeFileSync(join(publicDir, "index.html"), htmlContent);
     writeFileSync(join(publicDir, "200.html"), htmlContent);
-    console.log("Successfully generated static index.html and 200.html in .output/public with $_TSR stub");
+    console.log("Successfully generated static index.html and 200.html in .output/public with $_TSR router object stub");
   }
 };
 
