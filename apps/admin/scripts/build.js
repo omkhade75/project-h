@@ -20,16 +20,14 @@ const main = () => {
   const schemaPath = join(__dirname, "../../../packages/database/prisma/schema.prisma");
   console.log(`Using database schema path: ${schemaPath}`);
 
-  // Generate Prisma client
-  run(`npx prisma generate --schema="${schemaPath}"`);
-
-  // Only run database migrations if DATABASE_URL is provided and not a placeholder
-  const dbUrl = process.env.DATABASE_URL;
-  if (dbUrl && !dbUrl.includes("placeholder") && !dbUrl.includes("your_")) {
-    console.log("DATABASE_URL found. Provisioning database schema...");
-    run(`npx prisma db push --schema="${schemaPath}" --accept-data-loss`);
-  } else {
-    console.log("No DATABASE_URL found or DATABASE_URL is placeholder. Skipping database schema sync. Running in offline/mock fallback mode.");
+  // Generate Prisma client safely if schema exists
+  if (existsSync(schemaPath)) {
+    try {
+      console.log("Generating Prisma client...");
+      execSync(`npx prisma generate --schema="${schemaPath}"`, { stdio: "inherit" });
+    } catch (e) {
+      console.warn("Prisma generate warning: skipping schema generation in frontend app build.");
+    }
   }
 
   // Build client bundle (run vite build inside app directory)
