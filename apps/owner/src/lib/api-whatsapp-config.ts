@@ -1,8 +1,8 @@
 import { fetchApi } from './api-client';
 
-const handleResponse = (result: any) => {
-  if (result.success) return result.data ?? result;
-  throw new Error(result.error || result.message || 'API request failed');
+const handleResponse = (result: any, fallback: any = []) => {
+  if (result && result.success) return result.data ?? result;
+  return fallback;
 };
 
 export const getWhatsAppConfigServer = async () => handleResponse(await fetchApi('/api/whatsapp/config', { method: 'GET' }));
