@@ -1,7 +1,15 @@
-export const API_BASE_URL =
-  process.env.VITE_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'https://bizora-backend-gtoe.onrender.com';
+export const getApiBaseUrl = () => {
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env.VITE_API_URL) return process.env.VITE_API_URL;
+    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  }
+  return 'https://bizora-backend-gtoe.onrender.com';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export async function fetchApi<T = any>(
   endpoint: string,
@@ -15,10 +23,11 @@ export async function fetchApi<T = any>(
     };
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = 'Bearer ' + token;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(baseUrl + endpoint, {
       ...options,
       headers,
     });
@@ -26,7 +35,7 @@ export async function fetchApi<T = any>(
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error(`[API Client Error] Failed request to ${endpoint}:`, error);
+    console.error('[API Client Error] Failed request to ' + endpoint + ':', error);
     return { success: false, error };
   }
 }
