@@ -25,6 +25,7 @@ import { LogisticsController } from './controllers/logistics.controller';
 import { UtilitiesController } from './controllers/utilities.controller';
 import { ReportsController } from './controllers/reports.controller';
 import { CommsController } from './controllers/comms.controller';
+import { RegistrationController } from './controllers/registration.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
@@ -73,6 +74,7 @@ import { CommsService } from './services/comms.service';
     UtilitiesController,
     ReportsController,
     CommsController,
+    RegistrationController,
   ],
   providers: [
     AppService,
