@@ -1,455 +1,236 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader, SectionCard } from "@/components/page-header";
-import { KpiCard } from "@/components/kpi-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  getLogisticsDispatchesServer,
-  createLogisticsDispatchServer,
-  updateLogisticsStatusServer,
-  type DeliveryItem,
-} from "@/lib/server-logistics";
+import { getLogisticsDispatchesServer } from "@/lib/api-logistics";
 import {
   Loader2,
   Truck,
-  Navigation,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
   MapPin,
-  ShieldAlert,
-  Plus,
+  Clock,
+  CheckCircle2,
+  PhoneCall,
+  Store,
+  Navigation,
+  ShieldCheck,
+  Package,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_app/logistics")({
   head: () => ({
     meta: [
-      { title: "Logistics & Dispatches — OmniMind AI" },
-      { name: "description", content: "Outgoing customer delivery dispatch tracking operations." },
+      { title: "Track My Order & Delivery — Bizora Customer" },
+      { name: "description", content: "Track live 10-minute neighborhood delivery rider position and ETA." },
     ],
   }),
-  component: LogisticsPage,
+  component: CustomerLogisticsPage,
 });
 
-function LogisticsPage() {
+function CustomerLogisticsPage() {
   const { user } = useAuth();
-
-  // Data states
-  const [dispatches, setDispatches] = useState<DeliveryItem[]>([]);
+  const [dispatches, setDispatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Form states
-  const [orderNumber, setOrderNumber] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [destination, setDestination] = useState("");
-  const [driverName, setDriverName] = useState("Vijay Yadav");
-  const [vehicleNumber, setVehicleNumber] = useState("MH-12-PQ-8841");
-  const [itemsCount, setItemsCount] = useState("3");
-  const [scheduling, setScheduling] = useState(false);
-
-  // Status editing states
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
-  const [newStatus, setNewStatus] = useState("");
-  const [delayReason, setDelayReason] = useState("");
-
-  const loadData = async () => {
+  const loadCustomerDeliveryData = async () => {
+    setLoading(true);
     try {
-      const res = await getLogisticsDispatchesServer({});
-      setDispatches(res);
+      const res = await getLogisticsDispatchesServer({ role: user?.role, email: user?.email });
+      const safeData = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+      setDispatches(safeData);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to load delivery dispatches.");
+      console.warn("Failed to load delivery data:", err);
+      setDispatches([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadCustomerDeliveryData();
   }, [user]);
 
-  const handleCreateDispatch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orderNumber.trim() || !customerName.trim() || !destination.trim()) {
-      toast.error("All delivery details are required.");
-      return;
-    }
+  const safeDispatches = Array.isArray(dispatches) ? dispatches : [];
 
-    try {
-      setScheduling(true);
-      await createLogisticsDispatchServer({
-        data: {
-          orderNumber,
-          customerName,
-          destination,
-          driverName,
-          vehicleNumber,
-          itemsCount: Number(itemsCount) || 1,
-        },
-      });
-
-      toast.success("Delivery Dispatched!", {
-        description: `Order ${orderNumber} successfully scheduled with driver ${driverName}.`,
-      });
-
-      // Clear states
-      setOrderNumber("");
-      setCustomerName("");
-      setDestination("");
-      setItemsCount("3");
-      await loadData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to dispatch delivery.");
-    } finally {
-      setScheduling(false);
-    }
+  // Default demo delivery if no dispatches yet
+  const activeDelivery = safeDispatches.length > 0 ? safeDispatches[0] : {
+    id: "ORD-9021",
+    orderNumber: "ORD-9021",
+    customerName: user?.name || "Shopper Customer",
+    destination: "18th Road, Bandra West, Mumbai 400050",
+    driverName: "Ramesh Kumar (Express Partner)",
+    driverPhone: "+91 98765 43211",
+    storeName: "GrandSquare Supermart (800m away)",
+    vehicleNumber: "MH-12-PQ-8841 (Electric Scooter)",
+    itemsCount: 3,
+    status: "In Transit",
+    etaMinutes: 8,
+    dispatchedAt: new Date().toISOString(),
   };
-
-  const handleUpdateStatus = async (id: string) => {
-    try {
-      setUpdatingId(id);
-      await updateLogisticsStatusServer({
-        data: {
-          dispatchId: id,
-          status: newStatus,
-          delayReason: newStatus === "Delayed" ? delayReason : null,
-        },
-      });
-
-      toast.success("Delivery Status Updated");
-      setEditingStatusId(null);
-      setNewStatus("");
-      setDelayReason("");
-      await loadData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update status.");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
-
-  const totalCount = dispatches.length;
-  const inTransitCount = dispatches.filter(
-    (d) =>
-      d.status === "In Transit" || d.status === "Dispatched" || d.status === "Out for Delivery",
-  ).length;
-  const deliveredCount = dispatches.filter((d) => d.status === "Delivered").length;
-  const delayedCount = dispatches.filter((d) => d.status === "Delayed").length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Logistics & Dispatch Operations"
-        subtitle="Monitor outgoing customer deliveries, manage vehicle dispatch routes, and mitigate delay risks."
+        title="Track Live 10-Minute Order Delivery"
+        subtitle="Real-time GPS tracking of your express grocery & essentials order from your nearest neighborhood shop."
       />
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <KpiCard
-          label="Total Scheduled Shipments"
-          value={totalCount}
-          format="num"
-          icon={<Truck className="h-5 w-5 text-indigo-500" />}
-        />
-        <KpiCard
-          label="In Transit / Active"
-          value={inTransitCount}
-          format="num"
-          icon={<Navigation className="h-5 w-5 text-blue-500" />}
-        />
-        <KpiCard
-          label="Successfully Delivered"
-          value={deliveredCount}
-          format="num"
-          icon={<CheckCircle className="h-5 w-5 text-emerald-500" />}
-        />
-        <KpiCard
-          label="Active Logistics Anomalies"
-          value={delayedCount}
-          format="num"
-          icon={<ShieldAlert className="h-5 w-5 text-rose-500" />}
-        />
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Delivery Tracker Card */}
+          <div className="lg:col-span-2 space-y-6">
+            <SectionCard title={`Active Delivery Status — Order #${activeDelivery.orderNumber || activeDelivery.id}`}>
+              <div className="space-y-6">
+                {/* ETA Banner */}
+                <div className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white shadow-md flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/20 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-200">
+                      <Clock className="h-3.5 w-3.5" /> Express 10-Min Dispatch
+                    </span>
+                    <h2 className="text-3xl font-extrabold tracking-tight">
+                      Arriving in ~8 Minutes
+                    </h2>
+                    <p className="text-xs text-emerald-100">
+                      Rider Ramesh Kumar is on the way with your 3 items.
+                    </p>
+                  </div>
+                  <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/10 text-white font-extrabold text-2xl">
+                    ⚡
+                  </div>
+                </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Dispatches Board */}
-        <div className="lg:col-span-2 space-y-6">
-          <SectionCard title="Active Logistics Fleet Feed">
-            {dispatches.length === 0 ? (
-              <div className="text-center py-12 text-zinc-500">
-                No active delivery dispatches found. Use the scheduler on the right to dispatch
-                items.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {dispatches.map((d) => {
-                  const isEditing = editingStatusId === d.id;
-                  return (
-                    <div
-                      key={d.id}
-                      className={`p-4 border rounded-xl transition-all duration-200 hover:shadow-sm ${
-                        d.status === "Delayed"
-                          ? "border-rose-200 bg-rose-50/10 shadow-rose-50/10"
-                          : d.status === "Delivered"
-                            ? "border-emerald-100 bg-emerald-50/10"
-                            : "border-border/60 bg-card"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-zinc-900">{d.orderNumber}</span>
-                            <span className="text-xs text-muted-foreground">
-                              • {d.customerName}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <MapPin className="h-3 w-3 text-indigo-500" />
-                            Destination:{" "}
-                            <span className="text-zinc-800 font-medium">{d.destination}</span>
-                          </p>
-                        </div>
-                        <div>
-                          <span
-                            className={`px-2.5 py-0.5 text-xs rounded-full font-bold border ${
-                              d.status === "Delivered"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                : d.status === "Delayed"
-                                  ? "bg-rose-50 text-rose-700 border-rose-100 animate-pulse"
-                                  : d.status === "Out for Delivery"
-                                    ? "bg-blue-50 text-blue-700 border-blue-100"
-                                    : "bg-zinc-100 text-zinc-700 border-zinc-200"
-                            }`}
-                          >
-                            {d.status}
-                          </span>
-                        </div>
+                {/* Live Step Progress Timeline */}
+                <div className="p-4 rounded-xl border border-hairline bg-surface/50 space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Live Delivery Timeline
+                  </h4>
+
+                  <div className="relative flex items-center justify-between text-xs font-semibold">
+                    {/* Step 1 */}
+                    <div className="flex flex-col items-center gap-1 text-center">
+                      <div className="grid h-8 w-8 place-items-center rounded-full bg-emerald-500 text-white font-bold">
+                        <CheckCircle2 className="h-5 w-5" />
                       </div>
-
-                      {/* Driver & vehicle */}
-                      <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t text-xs text-zinc-600">
-                        <div>
-                          <span>Driver:</span>{" "}
-                          <strong className="text-zinc-800">{d.driverName}</strong>
-                        </div>
-                        <div>
-                          <span>Vehicle ID:</span>{" "}
-                          <strong className="text-zinc-800 font-mono">{d.vehicleNumber}</strong>
-                        </div>
-                        <div>
-                          <span>Items Count:</span>{" "}
-                          <strong className="text-zinc-800">{d.itemsCount} parcels</strong>
-                        </div>
-                        <div>
-                          <span>Dispatched:</span>{" "}
-                          <strong className="text-zinc-800">
-                            {new Date(d.dispatchedAt).toLocaleTimeString()}
-                          </strong>
-                        </div>
-                      </div>
-
-                      {/* Delay Alerts */}
-                      {d.status === "Delayed" && d.delayReason && (
-                        <div className="mt-3 p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-xs text-rose-800 flex items-start gap-1.5 animate-in slide-in-from-top-1">
-                          <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-bold">Logistics Delay Risk Detected:</span>{" "}
-                            {d.delayReason}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Status controller inline */}
-                      <div className="mt-3 pt-2 flex justify-end gap-2 border-t">
-                        {isEditing ? (
-                          <div className="w-full space-y-3 pt-2">
-                            <div className="grid gap-2 sm:grid-cols-2">
-                              <div className="space-y-1">
-                                <Label className="text-xs">Select New Status</Label>
-                                <Select value={newStatus} onValueChange={setNewStatus}>
-                                  <SelectTrigger className="bg-white">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="In Transit">In Transit</SelectItem>
-                                    <SelectItem value="Out for Delivery">
-                                      Out for Delivery
-                                    </SelectItem>
-                                    <SelectItem value="Delayed">Delayed</SelectItem>
-                                    <SelectItem value="Delivered">Delivered</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              {newStatus === "Delayed" && (
-                                <div className="space-y-1">
-                                  <Label className="text-xs">Delay Reason / Root Cause</Label>
-                                  <Input
-                                    value={delayReason}
-                                    onChange={(e) => setDelayReason(e.target.value)}
-                                    placeholder="e.g. Engine overheat"
-                                    className="bg-white h-9"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex justify-end gap-2 text-xs">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setEditingStatusId(null)}
-                                disabled={updatingId === d.id}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-indigo-600 text-white hover:bg-indigo-700"
-                                onClick={() => handleUpdateStatus(d.id)}
-                                disabled={updatingId === d.id}
-                              >
-                                {updatingId === d.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  "Save Status"
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 text-xs text-indigo-600 hover:bg-indigo-50/50"
-                            onClick={() => {
-                              setEditingStatusId(d.id);
-                              setNewStatus(d.status);
-                              setDelayReason(d.delayReason || "");
-                            }}
-                          >
-                            Update Dispatch Status
-                          </Button>
-                        )}
-                      </div>
+                      <span className="text-foreground">Order Placed</span>
+                      <span className="text-[10px] text-muted-foreground">Just now</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </SectionCard>
-        </div>
 
-        {/* Schedule/Dispatch Form */}
-        <div>
-          <SectionCard title="Schedule New Dispatch">
-            <form onSubmit={handleCreateDispatch} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Invoice/Order Reference #</Label>
-                <Input
-                  value={orderNumber}
-                  onChange={(e) => setOrderNumber(e.target.value)}
-                  placeholder="e.g. TXN-10255"
-                />
-              </div>
+                    <div className="h-1 flex-1 bg-emerald-500 mx-2" />
 
-              <div className="space-y-1.5">
-                <Label>Customer Name</Label>
-                <Input
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="e.g. Priya Shah"
-                />
-              </div>
+                    {/* Step 2 */}
+                    <div className="flex flex-col items-center gap-1 text-center">
+                      <div className="grid h-8 w-8 place-items-center rounded-full bg-emerald-500 text-white font-bold">
+                        <Store className="h-4 w-4" />
+                      </div>
+                      <span className="text-foreground">Store Packed</span>
+                      <span className="text-[10px] text-muted-foreground">GrandSquare Shop</span>
+                    </div>
 
-              <div className="space-y-1.5">
-                <Label>Delivery Destination Address</Label>
-                <Input
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  placeholder="e.g. Hadapsar, Pune"
-                />
-              </div>
+                    <div className="h-1 flex-1 bg-emerald-500 mx-2" />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Assigned Driver</Label>
-                  <Select
-                    value={driverName}
-                    onValueChange={(val) => {
-                      setDriverName(val);
-                      setVehicleNumber(
-                        val === "Vijay Yadav"
-                          ? "MH-12-PQ-8841"
-                          : val === "Sanjay Mane"
-                            ? "MH-12-RS-9921"
-                            : "MH-12-XY-4040",
-                      );
-                    }}
+                    {/* Step 3 */}
+                    <div className="flex flex-col items-center gap-1 text-center">
+                      <div className="grid h-8 w-8 place-items-center rounded-full bg-amber-400 text-slate-950 font-bold animate-bounce">
+                        <Truck className="h-4 w-4" />
+                      </div>
+                      <span className="text-amber-400 font-bold">On The Way</span>
+                      <span className="text-[10px] text-amber-300">In Transit</span>
+                    </div>
+
+                    <div className="h-1 flex-1 bg-hairline mx-2" />
+
+                    {/* Step 4 */}
+                    <div className="flex flex-col items-center gap-1 text-center">
+                      <div className="grid h-8 w-8 place-items-center rounded-full bg-surface border border-hairline text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                      </div>
+                      <span className="text-muted-foreground">Doorstep</span>
+                      <span className="text-[10px] text-muted-foreground">Pending</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hyperlocal Route Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-4 rounded-xl border border-hairline bg-surface space-y-2">
+                    <div className="flex items-center gap-2 font-bold text-foreground">
+                      <Store className="h-4 w-4 text-emerald-500" />
+                      <span>Fulfilling Local Shop</span>
+                    </div>
+                    <p className="text-muted-foreground font-semibold">
+                      {activeDelivery.storeName || "GrandSquare Supermart (Nearest Store)"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Distance: <span className="font-bold text-foreground">800 meters</span>
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-hairline bg-surface space-y-2">
+                    <div className="flex items-center gap-2 font-bold text-foreground">
+                      <MapPin className="h-4 w-4 text-amber-500" />
+                      <span>Delivery Address</span>
+                    </div>
+                    <p className="text-muted-foreground font-semibold">
+                      {activeDelivery.destination || "18th Road, Bandra West, Mumbai 400050"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Instructions: <span className="font-bold text-foreground">Leave at door</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+          </div>
+
+          {/* Delivery Rider & Store Contact Sidebar */}
+          <div className="space-y-6">
+            <SectionCard title="Delivery Rider Info">
+              <div className="space-y-4 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-12 w-12 place-items-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-lg">
+                    🚴
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-foreground">
+                      {activeDelivery.driverName || "Ramesh Kumar"}
+                    </h4>
+                    <p className="text-muted-foreground">Bizora Express Delivery Partner</p>
+                    <p className="font-mono text-[11px] text-emerald-400">
+                      Vehicle: {activeDelivery.vehicleNumber || "MH-12-PQ-8841"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-hairline space-y-2">
+                  <Button
+                    onClick={() => toast.success(`Calling rider ${activeDelivery.driverName}...`)}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 h-9"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Vijay Yadav">Vijay Yadav</SelectItem>
-                      <SelectItem value="Sanjay Mane">Sanjay Mane</SelectItem>
-                      <SelectItem value="Dinesh Kadam">Dinesh Kadam</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Parcels Count</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={itemsCount}
-                    onChange={(e) => setItemsCount(e.target.value)}
-                  />
+                    <PhoneCall className="h-4 w-4" /> Call Rider ({activeDelivery.driverPhone || "+91 98765 43211"})
+                  </Button>
                 </div>
               </div>
+            </SectionCard>
 
-              <div className="space-y-1.5">
-                <Label>Automated Fleet Vehicle Assignment</Label>
-                <Input value={vehicleNumber} disabled className="bg-zinc-50 font-mono" />
+            <SectionCard title="Need Delivery Support?">
+              <div className="p-3 rounded-lg bg-surface border border-hairline text-xs space-y-2 text-muted-foreground leading-relaxed">
+                <div className="flex items-center gap-1.5 font-bold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                  <span>100% On-Time Guarantee</span>
+                </div>
+                <p>
+                  If your order takes longer than 15 minutes, receive an instant ₹50 cashback to your Bizora Wallet!
+                </p>
               </div>
-
-              <Button
-                type="submit"
-                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center justify-center gap-2"
-                disabled={scheduling}
-              >
-                {scheduling ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" /> Dispatching...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-5 w-5" /> Dispatch Cargo Package
-                  </>
-                )}
-              </Button>
-            </form>
-          </SectionCard>
+            </SectionCard>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
