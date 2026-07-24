@@ -96,44 +96,64 @@ export class CommsService {
       else phone = "+" + phone;
     }
 
+    const recipientName = data.recipientName || "Aapka Business Partner";
+    const contextMsg = data.messageContext || data.script || "Bizora AI se aap ke liye important update hai.";
+
     let logId = "";
     try {
       const log = await this.prisma.messageLog.create({
         data: {
           workspaceId,
           channel: "VOICE",
-          recipientName: data.recipientName || "Voice Recipient",
+          recipientName,
           recipientPhone: phone,
           messageType: "CRM_OUTREACH",
-          body: data.messageContext || data.script || "Bizora AI Calling Agent Outreach",
+          body: contextMsg,
           status: "PENDING",
         },
       });
       logId = log.id;
     } catch (dbErr) {}
 
-    // Dispatch real outbound phone call via Vapi REST API
+    // Dispatch real outbound phone call via Vapi REST API with Indian Hindi/Hinglish Voice Override
     try {
+      const firstGreeting = `Namaste ${recipientName}! Main Bizora AI Voice Assistant bol raha hu. ${contextMsg}`;
+
+      const vapiPayload = {
+        phoneNumberId: config.vapiPhoneId,
+        assistantId: config.vapiAgentId,
+        customer: {
+          number: phone,
+          name: recipientName,
+        },
+        assistantOverrides: {
+          firstMessage: firstGreeting,
+          model: {
+            provider: "openai",
+            model: "gpt-4o-mini",
+            temperature: 0.3,
+            systemPrompt: "You are Bizora AI, an extremely fast, polite, and articulate Indian AI Calling Assistant. You speak natural, fluent Hindi and Hinglish with an authentic Indian regional tone and polite Indian mannerisms (Namaste, Ji, Dhanyawad). Keep responses concise (1-2 sentences), professional, ultra-fast, and helpful for store owners, suppliers, and customers. Always respond instantly and speak warmly in clear Indian Hindi/Hinglish."
+          },
+          voice: {
+            provider: "azure",
+            voiceId: "hi-IN-SwaraNeural",
+          },
+          variableValues: {
+            messageContext: contextMsg,
+            recipientName: recipientName,
+            language: "Hindi / Hinglish",
+            accent: "Indian Regional",
+          },
+        },
+      };
+
       const vapiResponse = await fetch("https://api.vapi.ai/call/phone", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${config.vapiPrivateKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          phoneNumberId: config.vapiPhoneId,
-          assistantId: config.vapiAgentId,
-          customer: {
-            number: phone,
-            name: data.recipientName || "Valued Business Partner",
-          },
-          assistantOverrides: {
-            variableValues: {
-              messageContext: data.messageContext || data.script || "Urgent operational update regarding your business account.",
-              recipientName: data.recipientName || "Partner",
-            },
-          },
-        }),
+        body: JSON.stringify(vapiPayload),
       });
 
       const resData: any = await vapiResponse.json();
@@ -153,6 +173,7 @@ export class CommsService {
         data: {
           callId: resData.id || "vapi-call-" + Date.now(),
           status: resData.status || (vapiResponse.ok ? "queued" : "failed"),
+          firstMessage: firstGreeting,
           details: resData,
         },
       };
