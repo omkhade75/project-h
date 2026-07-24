@@ -15,6 +15,15 @@ export class CommsController {
     return await this.commsService.updateWhatsAppConfig(body);
   }
 
+  @Post('whatsapp/send')
+  async sendWhatsAppMessage(@Req() req, @Body() body: any) {
+    const user = req.user;
+    return await this.commsService.sendWhatsAppMessage({
+      ...body,
+      workspaceId: user?.workspaceId || 'grandsquare-mall',
+    });
+  }
+
   @Get('vapi/config')
   async getVapiConfig() {
     return await this.commsService.getVapiConfig();
