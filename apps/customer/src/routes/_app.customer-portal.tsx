@@ -21,19 +21,21 @@ import {
   X,
   Zap,
   Tag,
+  Filter,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader, StatusPill } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { useBusinessData } from "@/lib/business-context";
 
 export const Route = createFileRoute("/_app/customer-portal")({
   head: () => ({
     meta: [
-      { title: "Blinkit / Amazon Quick Store — Bizora Customer" },
+      { title: "Amazon Fresh & Nearby Store — Bizora Customer" },
       {
         name: "description",
-        content: "Order grocery, electronics, beauty & fashion with 10-minute hyperlocal shopkeeper delivery dispatch.",
+        content: "Amazon-style hyperlocal storefront with live inventory from your nearest store.",
       },
     ],
   }),
@@ -46,146 +48,44 @@ interface CartItem {
   category: string;
   price: number;
   mrp: number;
-  image: string;
+  imageUrl: string;
   unit: string;
   quantity: number;
+  storeStock: number;
 }
 
-interface ProductCatalogItem {
-  id: string;
-  name: string;
-  category: string;
-  dept: string;
-  price: number;
-  mrp: number;
-  unit: string;
-  rating: number;
-  reviews: number;
-  badge?: string;
-  image: string;
-}
+// Map high-resolution Unsplash product photos for Amazon UI aesthetics
+const PRODUCT_IMAGE_MAP: Record<string, string> = {
+  "Amul Taaza Milk 1L": "https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=600&q=80",
+  "Amul Butter 500g": "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=600&q=80",
+  "Sony WH-1000XM5 Wireless Headphones": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+  "Lakmé Perfecting Liquid Foundation": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+  "Nescafé Gold Blend Premium Coffee 200g": "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=600&q=80",
+  "Organic Ratnagiri Alphonso Mangoes 1kg": "https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=600&q=80",
+  "Levi's 511 Slim Fit Denim Jeans": "https://images.unsplash.com/photo-1542272604-780c36856d67?auto=format&fit=crop&w=600&q=80",
+  "HP LaserJet Pro Wireless Printer": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?auto=format&fit=crop&w=600&q=80",
+  "Dairy": "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80",
+  "Electronics": "https://images.unsplash.com/photo-1498049860654-af1a5c566876?auto=format&fit=crop&w=600&q=80",
+  "Beauty": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=600&q=80",
+  "Fashion": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=600&q=80",
+  "Default": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+};
 
 export function CustomerPortal() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  // Mock catalog matching Amazon / Blinkit quick-commerce
-  const initialProducts: ProductCatalogItem[] = [
-    {
-      id: "prod-001",
-      name: "Amul Taaza Fresh Toned Milk 1L",
-      category: "Dairy & Eggs",
-      dept: "Grocery",
-      price: 68,
-      mrp: 75,
-      unit: "1 Litre Pouch",
-      rating: 4.9,
-      reviews: 1420,
-      badge: "⚡ 10 MIN DELIVERY",
-      image: "🥛",
-    },
-    {
-      id: "prod-002",
-      name: "Amul Pasteurised Butter 500g",
-      category: "Dairy & Eggs",
-      dept: "Grocery",
-      price: 265,
-      mrp: 285,
-      unit: "500g Pack",
-      rating: 4.8,
-      reviews: 890,
-      badge: "🔥 POPULAR",
-      image: "🧈",
-    },
-    {
-      id: "prod-003",
-      name: "Sony WH-1000XM5 Wireless ANC Headphones",
-      category: "Electronics",
-      dept: "Electronics",
-      price: 29990,
-      mrp: 34990,
-      unit: "1 Unit (Black)",
-      rating: 4.9,
-      reviews: 512,
-      badge: "⭐ BESTSELLER",
-      image: "🎧",
-    },
-    {
-      id: "prod-004",
-      name: "Lakmé Perfecting Liquid Foundation 27ml",
-      category: "Beauty & Cosmetics",
-      dept: "Beauty",
-      price: 185,
-      mrp: 225,
-      unit: "27ml Glass Bottle",
-      rating: 4.6,
-      reviews: 320,
-      badge: "15% OFF",
-      image: "💄",
-    },
-    {
-      id: "prod-005",
-      name: "Nescafé Gold Blend Premium Coffee 200g",
-      category: "Beverages",
-      dept: "Grocery",
-      price: 649,
-      mrp: 750,
-      unit: "200g Jar",
-      rating: 4.8,
-      reviews: 950,
-      badge: "⚡ 10 MIN DELIVERY",
-      image: "☕",
-    },
-    {
-      id: "prod-006",
-      name: "Organic Ratnagiri Alphonso Mangoes 1kg",
-      category: "Fresh Fruits",
-      dept: "Grocery",
-      price: 499,
-      mrp: 650,
-      unit: "1kg (approx 4-5 pcs)",
-      rating: 4.9,
-      reviews: 2100,
-      badge: "🥭 FRESH HARVEST",
-      image: "🥭",
-    },
-    {
-      id: "prod-007",
-      name: "Levi's 511 Slim Fit Stretch Denim Jeans",
-      category: "Apparel & Fashion",
-      dept: "Fashion",
-      price: 3499,
-      mrp: 4299,
-      unit: "Size 32/32",
-      rating: 4.7,
-      reviews: 430,
-      badge: "🔥 20% OFF",
-      image: "👖",
-    },
-    {
-      id: "prod-008",
-      name: "HP LaserJet Pro Wireless Monochrome Printer",
-      category: "Electronics",
-      dept: "Electronics",
-      price: 16999,
-      mrp: 19999,
-      unit: "1 Printer Set",
-      rating: 4.7,
-      reviews: 180,
-      badge: "OFFICE ESSENTIAL",
-      image: "🖨️",
-    },
-  ];
+  const { products: dbProducts } = useBusinessData(); // Live database inventory from nearest store!
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [inStockOnly, setInStockOnly] = useState(true); // Default to showing only products in stock at nearest shop
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [address, setAddress] = useState("Flat 402, Sunshine Heights, Bandra West, Mumbai 400050");
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "COD" | "Wallet">("UPI");
 
-  // Hyperlocal Order Grab Simulation State
+  // Hyperlocal Orders
   const [placedOrders, setPlacedOrders] = useState<Array<{
     id: string;
     items: CartItem[];
@@ -201,15 +101,15 @@ export function CustomerPortal() {
     {
       id: "ORD-9021",
       items: [
-        { id: "prod-001", name: "Amul Taaza Fresh Toned Milk 1L", category: "Dairy", price: 68, mrp: 75, image: "🥛", unit: "1L", quantity: 2 },
-        { id: "prod-002", name: "Amul Pasteurised Butter 500g", category: "Dairy", price: 265, mrp: 285, image: "🧈", unit: "500g", quantity: 1 }
+        { id: "prod-001", name: "Amul Taaza Milk 1L", category: "Grocery", price: 68, mrp: 75, imageUrl: PRODUCT_IMAGE_MAP["Amul Taaza Milk 1L"], unit: "1L", quantity: 2, storeStock: 128 },
+        { id: "prod-002", name: "Amul Butter 500g", category: "Grocery", price: 265, mrp: 285, imageUrl: PRODUCT_IMAGE_MAP["Amul Butter 500g"], unit: "500g", quantity: 1, storeStock: 45 }
       ],
       total: 401,
       address: "Bandra West, Mumbai 400050",
       status: "ACCEPTED_BY_STORE",
       acceptedStore: "GrandSquare Supermart (Store ID: #STR-104)",
       storePhone: "+91 98765 43210",
-      driverName: "Ramesh Kumar",
+      driverName: "Ramesh Kumar (Express Partner)",
       driverPhone: "+91 98765 43211",
       createdAt: "10 mins ago"
     }
@@ -217,8 +117,50 @@ export function CustomerPortal() {
 
   const [activeTab, setActiveTab] = useState<"STORE" | "ORDERS">("STORE");
 
-  // Add / Remove from Cart
-  const handleAddToCart = (product: ProductCatalogItem) => {
+  // Transform Database Products into Amazon UI Items
+  const catalogProducts = useMemo(() => {
+    // Fallback items if DB loading
+    const baseItems = dbProducts && dbProducts.length > 0 ? dbProducts : [
+      { id: "SKU-10021", name: "Amul Taaza Milk 1L", category: "Grocery", dept: "Grocery", price: 68, cost: 54, stock: 128, reorder: 200, status: "ok" },
+      { id: "SKU-10022", name: "Amul Butter 500g", category: "Grocery", dept: "Grocery", price: 265, cost: 210, stock: 45, reorder: 50, status: "low" },
+      { id: "SKU-10023", name: "Sony WH-1000XM5 Wireless Headphones", category: "Electronics", dept: "Electronics", price: 29990, cost: 24000, stock: 8, reorder: 10, status: "ok" },
+      { id: "SKU-10024", name: "Lakmé Perfecting Liquid Foundation", category: "Beauty", dept: "Beauty", price: 185, cost: 140, stock: 4, reorder: 15, status: "critical" },
+      { id: "SKU-10025", name: "Nescafé Gold Blend Premium Coffee 200g", category: "Beverages", dept: "Grocery", price: 649, cost: 500, stock: 32, reorder: 40, status: "ok" },
+      { id: "SKU-10026", name: "Organic Ratnagiri Alphonso Mangoes 1kg", category: "Fresh Fruits", dept: "Grocery", price: 499, cost: 380, stock: 60, reorder: 30, status: "ok" },
+      { id: "SKU-10027", name: "Levi's 511 Slim Fit Denim Jeans", category: "Fashion", dept: "Fashion", price: 3499, cost: 2500, stock: 14, reorder: 20, status: "ok" },
+      { id: "SKU-10028", name: "HP LaserJet Pro Wireless Printer", category: "Electronics", dept: "Electronics", price: 16999, cost: 13500, stock: 5, reorder: 5, status: "ok" },
+    ];
+
+    return baseItems.map((p: any) => {
+      const img = PRODUCT_IMAGE_MAP[p.name] || PRODUCT_IMAGE_MAP[p.dept] || PRODUCT_IMAGE_MAP["Default"];
+      const mrp = Math.round(p.price * 1.15);
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category || p.dept || "Grocery",
+        dept: p.dept || "Grocery",
+        price: p.price,
+        mrp,
+        stock: p.stock ?? 15,
+        rating: 4.8,
+        reviews: Math.floor(100 + Math.random() * 900),
+        imageUrl: img,
+        isAvailableInNearestShop: (p.stock ?? 15) > 0,
+      };
+    });
+  }, [dbProducts]);
+
+  // Filter Catalog Products
+  const filteredProducts = useMemo(() => {
+    return catalogProducts.filter((p) => {
+      const matchCat = selectedCategory === "All" || p.category.includes(selectedCategory) || p.dept.includes(selectedCategory);
+      const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchStock = inStockOnly ? p.isAvailableInNearestShop : true;
+      return matchCat && matchSearch && matchStock;
+    });
+  }, [catalogProducts, selectedCategory, searchQuery, inStockOnly]);
+
+  const handleAddToCart = (product: any) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -234,9 +176,10 @@ export function CustomerPortal() {
           category: product.category,
           price: product.price,
           mrp: product.mrp,
-          image: product.image,
-          unit: product.unit,
+          imageUrl: product.imageUrl,
+          unit: "1 Unit",
           quantity: 1,
+          storeStock: product.stock,
         },
       ];
     });
@@ -279,9 +222,9 @@ export function CustomerPortal() {
     setIsCheckoutOpen(false);
     setActiveTab("ORDERS");
 
-    toast.success(`🎉 Order ${newOrderId} placed! Searching nearest shopkeepers...`);
+    toast.success(`🎉 Amazon Fresh Order ${newOrderId} placed! Dispatching to GrandSquare Supermart...`);
 
-    // Simulate Shopkeeper Grabbing Order First (within 3.5 seconds)
+    // Simulate Shopkeeper Grabbing Order First
     setTimeout(() => {
       setPlacedOrders((prev) =>
         prev.map((o) => {
@@ -289,9 +232,9 @@ export function CustomerPortal() {
             return {
               ...o,
               status: "ACCEPTED_BY_STORE",
-              acceptedStore: "GrandSquare Supermart (Store ID: #STR-104)",
+              acceptedStore: "GrandSquare Supermart (Nearest Local Shop)",
               storePhone: "+91 98765 43210",
-              driverName: "Ramesh Kumar (Express Delivery)",
+              driverName: "Ramesh Kumar (Express Partner)",
               driverPhone: "+91 98765 43211",
             };
           }
@@ -299,405 +242,331 @@ export function CustomerPortal() {
         })
       );
       toast.success(
-        `🚨 Shopkeeper "GrandSquare Supermart" grabbed & accepted your order first! Express delivery dispatched!`,
+        `🚨 Nearest Shopkeeper "GrandSquare Supermart" grabbed & accepted your order first! Express delivery dispatched!`,
         { duration: 6000 }
       );
-    }, 3500);
+    }, 3200);
   };
 
-  const categories = ["All", "Grocery & Dairy", "Electronics", "Beauty & Cosmetics", "Apparel & Fashion"];
-
-  const filteredProducts = useMemo(() => {
-    return initialProducts.filter((p) => {
-      const matchCat = selectedCategory === "All" || p.category.includes(selectedCategory) || p.dept.includes(selectedCategory);
-      const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchCat && matchSearch;
-    });
-  }, [selectedCategory, searchQuery]);
-
   return (
-    <div className="space-y-6 pb-20">
-      {/* Top Banner & Header */}
-      <div className="rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-700 p-6 text-white shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-                <Zap className="h-3.5 w-3.5 text-yellow-300 fill-yellow-300" /> Blinkit 10-Min Storefront
-              </span>
-              <span className="text-xs text-white/80">· Powered by Bizora AI</span>
+    <div className="-mx-4 -mt-4 min-h-screen bg-[#eaeded] text-slate-900 pb-20">
+      {/* 1. Amazon Top Dark Navy Navigation Bar */}
+      <header className="bg-[#131921] text-white">
+        <div className="mx-auto flex items-center justify-between px-4 py-2.5 gap-4">
+          {/* Amazon Brand Logo */}
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab("STORE")}>
+            <div className="flex items-center gap-1 font-bold text-xl tracking-tight text-white">
+              <span className="text-amber-400 font-extrabold">amazon</span>
+              <span className="text-cyan-400 text-sm font-semibold">fresh</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              Order Fresh Grocery, Tech & Fashion
-            </h1>
-            <p className="text-sm text-cyan-100 flex items-center gap-1.5 pt-1">
-              <MapPin className="h-4 w-4 text-yellow-300" />
-              <span>Delivering to: <strong className="text-white">{address}</strong></span>
-              <button onClick={() => setAddress(prompt("Enter delivery address:", address) || address)} className="underline text-xs ml-1 hover:text-white">Change</button>
-            </p>
+            <span className="text-[10px] bg-amber-400 text-slate-950 font-extrabold px-1.5 py-0.5 rounded">
+              .in
+            </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-white/10 p-3 backdrop-blur-md border border-white/20 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-cyan-200">Customer Wallet</p>
-              <p className="text-lg font-bold">₹24,500</p>
-            </div>
-            <div className="rounded-xl bg-white/10 p-3 backdrop-blur-md border border-white/20 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-cyan-200">VIP Loyalty</p>
-              <p className="text-lg font-bold flex items-center justify-center gap-1">
-                <Star className="h-4 w-4 text-yellow-300 fill-yellow-300" /> 1,250 Pts
-              </p>
+          {/* Delivery Location Pill */}
+          <div
+            onClick={() => setAddress(prompt("Enter delivery address:", address) || address)}
+            className="hidden lg:flex items-center gap-1.5 rounded border border-transparent p-1.5 text-xs hover:border-white cursor-pointer"
+          >
+            <MapPin className="h-4 w-4 text-amber-400 shrink-0" />
+            <div>
+              <p className="text-[10px] text-slate-300">Deliver to Aditi</p>
+              <p className="font-bold line-clamp-1 text-white">Bandra West, Mumbai 400050</p>
             </div>
           </div>
-        </div>
 
-        {/* Search Bar */}
-        <div className="mt-6 flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
+          {/* Amazon Search Bar */}
+          <div className="flex flex-1 max-w-3xl items-center rounded-md bg-white text-slate-900 shadow-sm overflow-hidden border-2 border-amber-400">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-slate-100 text-xs font-semibold px-2 py-2.5 border-r border-slate-300 focus:outline-none cursor-pointer"
+            >
+              <option value="All">All Categories</option>
+              <option value="Grocery">Amazon Fresh & Dairy</option>
+              <option value="Electronics">Electronics & Tech</option>
+              <option value="Beauty">Beauty & Cosmetics</option>
+              <option value="Fashion">Fashion & Clothing</option>
+            </select>
+
             <input
               type="text"
-              placeholder="Search 5,000+ products (e.g. Amul Milk, Sony ANC, Lakmé, Coffee, Jeans...)"
+              placeholder="Search Amazon Fresh & products in your nearest store..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border-0 bg-white/95 px-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-inner"
+              className="w-full px-3 py-2 text-sm text-slate-900 focus:outline-none"
             />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
-                <X className="h-4 w-4" />
-              </button>
-            )}
+
+            <button className="bg-amber-400 hover:bg-amber-500 text-slate-950 px-4 py-2.5 font-bold transition-colors">
+              <Search className="h-4 w-4" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab("STORE")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === "STORE" ? "bg-white text-blue-700 shadow-md" : "bg-white/10 text-white hover:bg-white/20"
-              }`}
-            >
-              🛍️ Shop Storefront
-            </button>
-            <button
+          {/* Account & Orders */}
+          <div className="flex items-center gap-4 text-xs">
+            <div
               onClick={() => setActiveTab("ORDERS")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
-                activeTab === "ORDERS" ? "bg-white text-blue-700 shadow-md" : "bg-white/10 text-white hover:bg-white/20"
-              }`}
+              className="rounded border border-transparent p-1.5 hover:border-white cursor-pointer"
             >
-              📦 Track Orders ({placedOrders.length})
-            </button>
+              <p className="text-[10px] text-slate-300">Returns</p>
+              <p className="font-bold text-white">& Orders ({placedOrders.length})</p>
+            </div>
+
+            {/* Cart Button */}
+            <div
+              onClick={() => setIsCheckoutOpen(true)}
+              className="relative flex items-center gap-1 rounded border border-transparent p-1.5 hover:border-white cursor-pointer"
+            >
+              <div className="relative">
+                <ShoppingCart className="h-7 w-7 text-amber-400" />
+                <span className="absolute -top-1 right-0 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-[10px] font-extrabold text-slate-950">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              </div>
+              <span className="hidden sm:inline font-bold text-white text-sm">Cart</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content View */}
-      {activeTab === "STORE" && (
-        <div className="space-y-6">
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`rounded-full px-4 py-2 text-xs font-semibold whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/20"
-                    : "bg-surface border border-hairline hover:bg-muted text-muted-foreground"
-                }`}
-              >
-                {cat === "All" ? "✨ All Products" : cat}
-              </button>
-            ))}
+        {/* 2. Amazon Secondary Navigation Strip */}
+        <div className="bg-[#232f3e] text-white text-xs px-4 py-1.5 flex items-center justify-between overflow-x-auto border-t border-slate-700">
+          <div className="flex items-center gap-5 whitespace-nowrap font-medium">
+            <span className="flex items-center gap-1 font-bold text-amber-400">
+              <Store className="h-3.5 w-3.5" /> Nearest Shop: GrandSquare Supermart (800m)
+            </span>
+            <button onClick={() => setSelectedCategory("All")} className="hover:text-amber-400">
+              All Products
+            </button>
+            <button onClick={() => setSelectedCategory("Grocery")} className="hover:text-amber-400">
+              Fresh Dairy & Grocery
+            </button>
+            <button onClick={() => setSelectedCategory("Electronics")} className="hover:text-amber-400">
+              Electronics Deals
+            </button>
+            <button onClick={() => setSelectedCategory("Beauty")} className="hover:text-amber-400">
+              Beauty & Health
+            </button>
+            <button onClick={() => setSelectedCategory("Fashion")} className="hover:text-amber-400">
+              Fashion Store
+            </button>
           </div>
 
-          {/* Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Real Inventory Filter Toggle */}
+          <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">
+            <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+              <Check className="h-3 w-3" /> Available at Nearest Shop Only
+            </span>
+            <input
+              type="checkbox"
+              checked={inStockOnly}
+              onChange={(e) => setInStockOnly(e.target.checked)}
+              className="accent-amber-400 cursor-pointer h-3.5 w-3.5"
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* 3. Main Amazon Product Showcase */}
+      <div className="mx-auto max-w-7xl px-4 pt-4">
+        {/* Amazon Deals Hero Banner */}
+        <div className="relative rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 p-6 text-white shadow-md overflow-hidden mb-6">
+          <div className="relative z-10 max-w-xl space-y-2">
+            <span className="inline-flex items-center gap-1 rounded bg-black/40 px-2.5 py-0.5 text-xs font-bold text-amber-300">
+              ⚡ AMAZON FLASH SALE · 10-MIN EXPRESS DISPATCH
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              Live Stock From Your Local Bandra Shop
+            </h2>
+            <p className="text-xs text-amber-100">
+              Orders placed here are broadcast directly to local shopkeepers. First shopkeeper to accept delivers within 10 minutes!
+            </p>
+          </div>
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:block text-7xl opacity-80">
+            📦
+          </div>
+        </div>
+
+        {/* Product Cards Grid (Amazon Style) */}
+        {activeTab === "STORE" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredProducts.map((p) => {
               const inCart = cart.find((item) => item.id === p.id);
               return (
                 <div
                   key={p.id}
-                  className="group glass rounded-2xl border border-hairline p-4 transition-all hover:border-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/10 flex flex-col justify-between"
+                  className="bg-white rounded-lg border border-slate-200 p-4 transition-all hover:shadow-lg flex flex-col justify-between"
                 >
-                  <div className="space-y-3">
-                    {/* Badge & Visual */}
-                    <div className="relative grid h-36 w-full place-items-center rounded-xl bg-gradient-to-br from-surface to-muted/40 border border-hairline overflow-hidden">
-                      {p.badge && (
-                        <span className="absolute left-2 top-2 rounded-full bg-cyan-500 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-white shadow-sm">
-                          {p.badge}
-                        </span>
-                      )}
-                      <span className="text-5xl transition-transform group-hover:scale-110 duration-300">
-                        {p.image}
+                  <div className="space-y-2.5">
+                    {/* Real Product Image */}
+                    <div className="relative h-48 w-full overflow-hidden rounded-md bg-slate-50 flex items-center justify-center">
+                      <img
+                        src={p.imageUrl}
+                        alt={p.name}
+                        className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                      {/* Prime Badge */}
+                      <span className="absolute top-2 left-2 rounded bg-cyan-600 px-2 py-0.5 text-[10px] font-extrabold text-white uppercase shadow-sm">
+                        prime ⚡ 10-MIN
                       </span>
                     </div>
 
-                    {/* Meta */}
+                    {/* Meta & Title */}
                     <div>
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>{p.category}</span>
-                        <span className="flex items-center gap-0.5 text-amber-500 font-semibold">
-                          <Star className="h-3 w-3 fill-amber-500" /> {p.rating} ({p.reviews})
-                        </span>
-                      </div>
-                      <h3 className="mt-1 font-semibold text-sm line-clamp-2 group-hover:text-cyan-500 transition-colors">
+                      <h3 className="font-medium text-sm text-slate-900 line-clamp-2 hover:text-amber-600 cursor-pointer leading-snug">
                         {p.name}
                       </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{p.unit}</p>
+
+                      {/* Ratings */}
+                      <div className="flex items-center gap-1 mt-1 text-xs">
+                        <div className="flex text-amber-400">
+                          {"★".repeat(4)}
+                          <span className="text-slate-300">★</span>
+                        </div>
+                        <span className="text-slate-600 font-bold text-[11px]">{p.rating}</span>
+                        <span className="text-slate-400 text-[11px]">({p.reviews})</span>
+                      </div>
+
+                      {/* Live Store Stock Status Badge */}
+                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="font-bold text-emerald-700">
+                          In Stock at GrandSquare Store ({p.stock} units)
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Pricing & Add Button */}
-                  <div className="mt-4 pt-3 border-t border-hairline flex items-center justify-between">
-                    <div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-extrabold text-foreground">
-                          ₹{p.price.toLocaleString("en-IN")}
-                        </span>
-                        <span className="text-xs text-muted-foreground line-through">
-                          ₹{p.mrp.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-bold text-emerald-500">
-                        Save ₹{(p.mrp - p.price).toLocaleString("en-IN")}
+                  {/* Price & Add to Cart */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-red-600 font-bold">-15%</span>
+                      <span className="text-xl font-extrabold text-slate-900">
+                        ₹{p.price.toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-xs text-slate-400 line-through">
+                        M.R.P.: ₹{p.mrp.toLocaleString("en-IN")}
                       </span>
                     </div>
 
+                    <p className="text-[10px] text-slate-500">
+                      FREE Delivery by <strong className="text-slate-800">Nearby Local Shopkeeper</strong>
+                    </p>
+
                     {inCart ? (
-                      <div className="flex items-center gap-2 rounded-lg bg-cyan-600 px-2 py-1 text-white shadow-sm">
-                        <button onClick={() => handleUpdateQuantity(p.id, -1)} className="p-1 hover:bg-cyan-700 rounded">
-                          <Minus className="h-3.5 w-3.5" />
+                      <div className="flex items-center justify-between rounded-lg bg-amber-400 px-3 py-1.5 text-slate-950 font-bold shadow-sm">
+                        <button onClick={() => handleUpdateQuantity(p.id, -1)} className="p-1 hover:bg-amber-500 rounded">
+                          <Minus className="h-4 w-4" />
                         </button>
-                        <span className="text-xs font-bold w-4 text-center">{inCart.quantity}</span>
-                        <button onClick={() => handleUpdateQuantity(p.id, 1)} className="p-1 hover:bg-cyan-700 rounded">
-                          <Plus className="h-3.5 w-3.5" />
+                        <span className="text-sm">{inCart.quantity} in cart</span>
+                        <button onClick={() => handleUpdateQuantity(p.id, 1)} className="p-1 hover:bg-amber-500 rounded">
+                          <Plus className="h-4 w-4" />
                         </button>
                       </div>
                     ) : (
-                      <Button
-                        size="sm"
+                      <button
                         onClick={() => handleAddToCart(p)}
-                        className="rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-600/20"
+                        className="w-full rounded-full bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold py-2 text-xs transition-colors shadow-sm"
                       >
-                        <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> ADD TO CART
-                      </Button>
+                        Add to Cart
+                      </button>
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Track Orders View */}
-      {activeTab === "ORDERS" && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Truck className="h-5 w-5 text-cyan-500" /> Live Hyperlocal Dispatch Tracking
-          </h2>
+        {/* Track Orders Section */}
+        {activeTab === "ORDERS" && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Truck className="h-5 w-5 text-amber-500" /> Your Amazon Fresh Orders
+            </h2>
 
-          <div className="grid grid-cols-1 gap-4">
             {placedOrders.map((ord) => (
-              <div key={ord.id} className="rounded-2xl border border-hairline bg-surface p-6 shadow-md space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-hairline pb-4">
+              <div key={ord.id} className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm space-y-4">
+                <div className="flex justify-between border-b pb-3">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-base font-bold text-cyan-500">{ord.id}</span>
-                      <span className="text-xs text-muted-foreground">· Placed {ord.createdAt}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Delivery Address: {ord.address}</p>
+                    <span className="font-bold text-amber-600 font-mono text-base">{ord.id}</span>
+                    <p className="text-xs text-slate-500">Deliver to: {ord.address}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-extrabold">₹{ord.total.toLocaleString("en-IN")}</p>
-                    <StatusPill
-                      status={ord.status === "ACCEPTED_BY_STORE" ? "ok" : "warn"}
-                      label={ord.status === "ACCEPTED_BY_STORE" ? "ACCEPTED BY NEARBY STORE" : "SEARCHING SHOPKEEPERS..."}
-                    />
+                    <span className="text-lg font-bold">₹{ord.total}</span>
+                    <p className="text-xs text-emerald-600 font-bold">Accepted by Local Shop</p>
                   </div>
                 </div>
 
-                {/* Hyperlocal Grab Result Banner */}
-                {ord.status === "ACCEPTED_BY_STORE" ? (
-                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500 text-white font-bold">
-                        <Store className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-                          ⚡ Shopkeeper Accepted First!
-                        </p>
-                        <h4 className="font-bold text-sm text-foreground">{ord.acceptedStore}</h4>
-                        <p className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
-                          <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {ord.storePhone}</span>
-                          <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> Driver: {ord.driverName} ({ord.driverPhone})</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => toast.info(`Calling store owner at ${ord.storePhone}...`)}>
-                        <Phone className="mr-1.5 h-3.5 w-3.5" /> Call Store
-                      </Button>
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white">
-                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Live ETA: 8 Mins
-                      </Button>
-                    </div>
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-bold text-emerald-800">⚡ Accepted by {ord.acceptedStore}</p>
+                    <p className="text-slate-600">Store Contact: {ord.storePhone} | Driver: {ord.driverName}</p>
                   </div>
-                ) : (
-                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 flex items-center gap-3 animate-pulse">
-                    <Clock className="h-6 w-6 text-amber-500" />
-                    <div>
-                      <h4 className="font-bold text-sm text-amber-400">Searching Nearby Shopkeepers in Bandra West...</h4>
-                      <p className="text-xs text-muted-foreground">The first store owner to grab this order will deliver it within 10 minutes!</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Items Summary */}
-                <div className="space-y-2 pt-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Order Items:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {ord.items.map((it) => (
-                      <span key={it.id} className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-muted/40 px-3 py-1 text-xs">
-                        <span>{it.image}</span>
-                        <span className="font-medium">{it.name}</span>
-                        <span className="text-muted-foreground">x{it.quantity}</span>
-                        <span className="font-bold">₹{it.price * it.quantity}</span>
-                      </span>
-                    ))}
-                  </div>
+                  <span className="bg-emerald-600 text-white font-bold px-3 py-1 rounded">
+                    ETA: 8 Mins
+                  </span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Floating Bottom Cart Bar */}
       {cart.length > 0 && !isCheckoutOpen && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-xl rounded-2xl bg-slate-900 p-4 text-white shadow-2xl border border-slate-700 flex items-center justify-between animate-bounce-short">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-500 text-white font-bold">
-              {cart.reduce((sum, item) => sum + item.quantity, 0)}
-            </div>
-            <div>
-              <p className="text-xs text-slate-300">
-                {cart.length} SKUs · Total: <strong className="text-white text-base">₹{cartTotal.toLocaleString("en-IN")}</strong>
-              </p>
-              <p className="text-[11px] text-emerald-400 font-semibold">Saved ₹{cartSavings.toLocaleString("en-IN")} with store discounts!</p>
-            </div>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-xl rounded-xl bg-[#131921] p-4 text-white shadow-2xl border border-slate-700 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-slate-300">
+              Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items):
+            </p>
+            <p className="text-lg font-extrabold text-amber-400">₹{cartTotal.toLocaleString("en-IN")}</p>
           </div>
 
-          <Button
+          <button
             onClick={() => setIsCheckoutOpen(true)}
-            className="rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-6 py-2.5 text-xs shadow-lg shadow-cyan-500/25"
+            className="rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold px-6 py-2.5 text-xs shadow-md"
           >
-            VIEW CART & CHECKOUT <ArrowRight className="ml-1.5 h-4 w-4" />
-          </Button>
+            PROCEED TO CHECKOUT
+          </button>
         </div>
       )}
 
-      {/* Checkout Drawer / Modal */}
+      {/* Amazon Checkout Drawer */}
       {isCheckoutOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-hairline bg-background p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-hairline pb-4">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-cyan-500" />
-                <h3 className="font-bold text-lg">Hyperlocal Express Checkout</h3>
-              </div>
-              <button onClick={() => setIsCheckoutOpen(false)} className="text-muted-foreground hover:text-foreground">
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl space-y-4 text-slate-900">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-bold text-lg text-[#131921]">Amazon Fresh Checkout</h3>
+              <button onClick={() => setIsCheckoutOpen(false)} className="text-slate-400 hover:text-slate-700">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Cart Items List */}
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-48 overflow-y-auto">
               {cart.map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded-xl bg-surface p-3 border border-hairline">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-2xl">{item.image}</span>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground line-clamp-1">{item.name}</p>
-                      <p className="text-[11px] text-muted-foreground">₹{item.price} × {item.quantity}</p>
-                    </div>
-                  </div>
+                <div key={item.id} className="flex items-center justify-between text-xs border-b pb-2">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => handleUpdateQuantity(item.id, -1)} className="p-1 hover:bg-muted rounded">
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="text-xs font-bold">{item.quantity}</span>
-                    <button onClick={() => handleUpdateQuantity(item.id, 1)} className="p-1 hover:bg-muted rounded">
-                      <Plus className="h-3 w-3" />
-                    </button>
-                    <span className="text-xs font-bold text-foreground min-w-[50px] text-right">
-                      ₹{item.price * item.quantity}
-                    </span>
+                    <img src={item.imageUrl} className="h-10 w-10 object-cover rounded" alt={item.name} />
+                    <span className="font-semibold">{item.name} (x{item.quantity})</span>
                   </div>
+                  <span className="font-bold">₹{item.price * item.quantity}</span>
                 </div>
               ))}
             </div>
 
-            {/* Address & Payment Method */}
-            <div className="space-y-3 pt-2 border-t border-hairline text-xs">
-              <div>
-                <label className="font-bold block mb-1">Delivery Address (Blinkit 10-Min Radius)</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border bg-surface text-xs focus:ring-cyan-500"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">Payment Method</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["UPI", "COD", "Wallet"] as const).map((method) => (
-                    <button
-                      key={method}
-                      onClick={() => setPaymentMethod(method)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
-                        paymentMethod === method
-                          ? "border-cyan-500 bg-cyan-500/10 text-cyan-500"
-                          : "border-hairline bg-surface hover:bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {method === "UPI" ? "📱 Instant UPI" : method === "COD" ? "💵 Cash on Delivery" : "💳 Customer Wallet"}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="bg-slate-50 p-3 rounded text-xs space-y-1">
+              <div className="flex justify-between"><span>Items Subtotal:</span><span>₹{cartTotal}</span></div>
+              <div className="flex justify-between text-emerald-600 font-bold"><span>Delivery:</span><span>FREE Express</span></div>
+              <div className="flex justify-between font-extrabold text-sm border-t pt-1"><span>Order Total:</span><span>₹{cartTotal}</span></div>
             </div>
 
-            {/* Price Summary */}
-            <div className="rounded-xl bg-muted/40 p-4 space-y-1.5 text-xs">
-              <div className="flex justify-between">
-                <span>Item Subtotal</span>
-                <span>₹{cartTotal.toLocaleString("en-IN")}</span>
-              </div>
-              <div className="flex justify-between text-emerald-500 font-semibold">
-                <span>Store Discount Savings</span>
-                <span>-₹{cartSavings.toLocaleString("en-IN")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>10-Min Express Delivery Fee</span>
-                <span className="text-emerald-500 font-bold">FREE</span>
-              </div>
-              <div className="flex justify-between border-t border-hairline pt-2 text-sm font-extrabold text-foreground">
-                <span>Grand Total</span>
-                <span>₹{cartTotal.toLocaleString("en-IN")}</span>
-              </div>
-            </div>
-
-            <Button
+            <button
               onClick={handlePlaceOrder}
-              className="w-full rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold py-3 text-sm shadow-lg shadow-cyan-600/30"
+              className="w-full rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold py-3 text-sm shadow-md"
             >
-              🚀 PLACE ORDER & BROADCAST TO NEARBY SHOPS
-            </Button>
+              PLACE ORDER & BROADCAST TO NEARBY SHOP
+            </button>
           </div>
         </div>
       )}
