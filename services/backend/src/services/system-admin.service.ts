@@ -14,7 +14,31 @@ export class SystemAdminService {
     if (user && user.isSystemAdmin === false) {
       // throw new UnauthorizedException('System Admin access required.');
     }
-    return user || { id: 'admin123', email: 'admin@omnimind.ai' };
+    return user || { id: 'admin123', email: process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com' };
+  }
+
+  private async sendResendEmail(toEmail: string, subject: string, htmlContent: string) {
+    const apiKey = process.env.RESEND_API_KEY || "re_aKZeAQDH_915aDwRpwS1JdaWsMrikuRah";
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "OmniMind AI System Admin <onboarding@resend.dev>",
+          to: [toEmail],
+          subject,
+          html: htmlContent,
+        }),
+      });
+      const data = await res.json();
+      return { success: res.ok, data };
+    } catch (err) {
+      console.error("[Resend Email Error]:", err);
+      return { success: false, error: err };
+    }
   }
 
   async registerCompany(data: any) {
@@ -57,7 +81,6 @@ export class SystemAdminService {
         },
       });
     } catch (err: any) {
-      // Create memory fallback if Prisma fails
       pendingRecord = {
         id: "preg-" + Date.now(),
         companyName,
@@ -67,7 +90,7 @@ export class SystemAdminService {
       };
     }
 
-    // Dispatch Instant WhatsApp & Log Alert to Super Admin
+    // 1. Dispatch Instant WhatsApp Alert to Super Admin
     const adminAlertMsg = `🔔 [NEW COMPANY REGISTRATION ALERT]\n\n🏢 Company: ${companyName}\n👤 Owner: ${ownerName}\n📱 Mobile: ${mobileNumber}\n✉️ Email: ${ownerEmail}\n📍 Location: ${city}\n\n👉 Review & Approve in Super Admin Dashboard: bizora-admin.onrender.com/system-admin`;
 
     try {
@@ -79,9 +102,43 @@ export class SystemAdminService {
       });
     } catch (e) {}
 
+    // 2. Dispatch Live HTML Email Alert to Super Admin (khade8915@gmail.com) via Resend API
+    const adminEmail = process.env.SYSTEM_ADMIN_EMAIL || "khade8915@gmail.com";
+    const emailHtml = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 32px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="color: #818cf8; margin: 0; font-size: 24px; font-weight: 700;">OmniMind AI — Super Admin</h2>
+          <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">New Store Owner Registration Notification</p>
+        </div>
+        <div style="background-color: #1e293b; border-radius: 12px; padding: 24px; border: 1px solid #334155;">
+          <h3 style="color: #38bdf8; margin-top: 0; font-size: 18px; border-bottom: 1px solid #334155; padding-bottom: 12px;">Company Details</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #e2e8f0;">
+            <tr><td style="padding: 10px 0; border-bottom: 1px solid #334155; color: #94a3b8; font-weight: 600;">Company Name:</td><td style="padding: 10px 0; border-bottom: 1px solid #334155; text-align: right; font-weight: 700; color: #ffffff;">${companyName}</td></tr>
+            <tr><td style="padding: 10px 0; border-bottom: 1px solid #334155; color: #94a3b8; font-weight: 600;">Owner Name:</td><td style="padding: 10px 0; border-bottom: 1px solid #334155; text-align: right; font-weight: 700; color: #ffffff;">${ownerName}</td></tr>
+            <tr><td style="padding: 10px 0; border-bottom: 1px solid #334155; color: #94a3b8; font-weight: 600;">Mobile Number:</td><td style="padding: 10px 0; border-bottom: 1px solid #334155; text-align: right; color: #38bdf8;">${mobileNumber}</td></tr>
+            <tr><td style="padding: 10px 0; border-bottom: 1px solid #334155; color: #94a3b8; font-weight: 600;">Email Address:</td><td style="padding: 10px 0; border-bottom: 1px solid #334155; text-align: right; color: #818cf8;">${ownerEmail}</td></tr>
+            <tr><td style="padding: 10px 0; color: #94a3b8; font-weight: 600;">City / Location:</td><td style="padding: 10px 0; text-align: right; color: #ffffff;">${city}</td></tr>
+          </table>
+        </div>
+        <div style="margin-top: 32px; text-align: center;">
+          <a href="https://bizora-admin.onrender.com/system-admin" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);">
+            Approve Registration in Dashboard →
+          </a>
+        </div>
+      </div>
+    `;
+
+    try {
+      await this.sendResendEmail(
+        adminEmail,
+        `🔔 [New Company Registration]: ${companyName} (${ownerName})`,
+        emailHtml
+      );
+    } catch (e) {}
+
     return {
       success: true,
-      message: "Company registration request submitted successfully. Super Admin has been notified for approval.",
+      message: "Company registration request submitted successfully. Super Admin has been notified via Email & WhatsApp for approval.",
       data: pendingRecord,
     };
   }
@@ -252,7 +309,7 @@ export class SystemAdminService {
       });
     });
 
-    // Dispatch Instant Approval Notification to Owner's WhatsApp / Email
+    // 1. Dispatch Instant Approval WhatsApp Notification to Owner
     try {
       await this.commsService.sendWhatsAppMessage({
         recipientPhone: registration.mobileNumber,
@@ -260,6 +317,35 @@ export class SystemAdminService {
         message: `🎉 [CONGRATULATIONS ${registration.ownerName.toUpperCase()}]!\n\nYour company "${registration.companyName}" has been APPROVED by the Platform Super Admin!\n\nKey Login Details:\n- Owner Portal: bizora-owner.onrender.com\n- Email: ${registration.ownerEmail}\n\nYou can now log in and manage your store dashboard!`,
         workspaceId,
       });
+    } catch (e) {}
+
+    // 2. Dispatch Live HTML Approval Email to Owner via Resend API
+    const ownerApprovalEmailHtml = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 32px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #10b981;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="color: #34d399; margin: 0; font-size: 24px; font-weight: 700;">🎉 Company Approved!</h2>
+          <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">Welcome to OmniMind AI Business Intelligence OS</p>
+        </div>
+        <p style="font-size: 15px; color: #e2e8f0; line-height: 1.6;">Dear <strong>${registration.ownerName}</strong>,</p>
+        <p style="font-size: 15px; color: #e2e8f0; line-height: 1.6;">Great news! Your company <strong>${registration.companyName}</strong> has been officially approved by the Platform Super Admin.</p>
+        <div style="background-color: #1e293b; border-radius: 12px; padding: 20px; margin: 24px 0; border: 1px solid #334155;">
+          <p style="margin: 0; font-size: 14px; color: #94a3b8;">Registered Email: <strong style="color: #34d399;">${registration.ownerEmail}</strong></p>
+          <p style="margin: 8px 0 0 0; font-size: 14px; color: #94a3b8;">Owner Portal URL: <strong style="color: #38bdf8;">bizora-owner.onrender.com</strong></p>
+        </div>
+        <div style="text-align: center; margin-top: 32px;">
+          <a href="https://bizora-owner.onrender.com/login" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+            Login to Owner Dashboard →
+          </a>
+        </div>
+      </div>
+    `;
+
+    try {
+      await this.sendResendEmail(
+        registration.ownerEmail,
+        `🎉 Company Approved: Welcome to OmniMind AI!`,
+        ownerApprovalEmailHtml
+      );
     } catch (e) {}
 
     return { success: true, data: { workspaceId } };
