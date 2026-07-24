@@ -58,12 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getCurrentSessionServer().then((res) => {
-      if (res.user) {
-        setUser(mapAuthUserToUser(res.user));
-      }
-      setLoading(false);
-    });
+    getCurrentSessionServer()
+      .then((res) => {
+        if (res && res.user) {
+          setUser(mapAuthUserToUser(res.user));
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
   }, []);
 
   const login = async (email: string, password: string) => {

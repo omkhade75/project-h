@@ -1,13 +1,5 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getTenantPrisma } from "./server/prisma";
-import { getSecureSessionUser } from "./server-auth";
+// Bridge module: re-exports from REST API client instead of createServerFn
+// This enables static site deployment without server-side rendering
 
-export const getMessageLogsServer = createServerFn({ method: "GET" }).handler(async () => {
-  const user = await getSecureSessionUser();
-  if (!user) throw new Error("Unauthorized");
-  const prisma = getTenantPrisma(user.workspaceId);
+export { getMessageLogsServer } from './api-whatsapp-logs';
 
-  return prisma.messageLog.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-});
