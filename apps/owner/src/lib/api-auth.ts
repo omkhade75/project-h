@@ -26,7 +26,11 @@ export const loginServer = async (data: { data: { email: string; password: strin
   const emailLower = (payload.email || '').toLowerCase().trim();
   const password = payload.password || '';
 
-  // 1. First check if offline/demo account matching
+  if (!emailLower || !password) {
+    throw new Error('Email and password are required.');
+  }
+
+  // 1. First check demo accounts with correct password "123456789"
   if (password === '123456789' && DEMO_FALLBACK_ACCOUNTS[emailLower]) {
     const demo = DEMO_FALLBACK_ACCOUNTS[emailLower];
     const demoUser: AuthUser = {
@@ -63,10 +67,11 @@ export const loginServer = async (data: { data: { email: string; password: strin
       return { success: true, user };
     }
   } catch (err: any) {
-    console.warn('[Auth API] API call error:', err);
+    console.warn('[Auth API] REST login error:', err);
+    throw new Error(err.message || 'Invalid email or password.');
   }
 
-  return { success: false, user: null, error: 'Invalid email or password' };
+  throw new Error('Invalid email or password.');
 };
 
 export const getCurrentSessionServer = async () => {
@@ -84,13 +89,13 @@ export const getCurrentSessionServer = async () => {
 
     if (token.startsWith('demo_token_')) {
       const userId = token.replace('demo_token_', '');
-      let emailLower = 'admin@gmail.com';
-      if (userId.includes('owner')) emailLower = 'owner@gmail.com';
+      let emailLower = 'owner@gmail.com';
+      if (userId.includes('admin')) emailLower = 'admin@gmail.com';
       if (userId.includes('customer')) emailLower = 'customer@gmail.com';
       if (userId.includes('supplier')) emailLower = 'supplier@gmail.com';
       if (userId.includes('khade')) emailLower = 'khade8915@gmail.com';
 
-      const demo = DEMO_FALLBACK_ACCOUNTS[emailLower] || DEMO_FALLBACK_ACCOUNTS['admin@gmail.com'];
+      const demo = DEMO_FALLBACK_ACCOUNTS[emailLower] || DEMO_FALLBACK_ACCOUNTS['owner@gmail.com'];
       const userObj: AuthUser = cachedUser || {
         id: userId,
         email: emailLower,
@@ -117,40 +122,17 @@ export const getCurrentSessionServer = async () => {
       }
     }
 
-    // Fallback to cached session if token exists
     if (cachedUser) {
       return { user: cachedUser };
     }
 
-    return {
-      user: {
-        id: 'session-user',
-        email: 'admin@gmail.com',
-        name: 'Logged In User',
-        role: 'ADMIN',
-        departmentId: null,
-        workspaceId: 'grandsquare-mall',
-        isSystemAdmin: true,
-        setupCompleted: true,
-      } as AuthUser
-    };
+    return { user: null };
   } catch (err) {
     const cachedUserRaw = typeof window !== 'undefined' ? localStorage.getItem('bizora_user_session') : null;
     if (cachedUserRaw) {
       try { return { user: JSON.parse(cachedUserRaw) }; } catch {}
     }
-    return {
-      user: {
-        id: 'session-user',
-        email: 'admin@gmail.com',
-        name: 'Logged In User',
-        role: 'ADMIN',
-        departmentId: null,
-        workspaceId: 'grandsquare-mall',
-        isSystemAdmin: true,
-        setupCompleted: true,
-      } as AuthUser
-    };
+    return { user: null };
   }
 };
 
@@ -160,36 +142,4 @@ export const logoutServer = async () => {
     localStorage.removeItem('bizora_user_session');
   }
   return { success: true };
-};
-
-export const impersonateTenantServer = async (data: { data: { workspaceId: string } }) => {
-  try {
-    const payload = data.data ? data.data : data;
-    const result = await fetchApi('/api/auth/impersonate', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    
-    if (result.success) {
-      return { success: true };
-    }
-    return { success: false };
-  } catch (err) {
-    return { success: false };
-  }
-};
-
-export const stopImpersonatingServer = async () => {
-  try {
-    const result = await fetchApi('/api/auth/stop-impersonate', {
-      method: 'POST',
-    });
-    
-    if (result.success) {
-      return { success: true };
-    }
-    return { success: false };
-  } catch (err) {
-    return { success: false };
-  }
 };
