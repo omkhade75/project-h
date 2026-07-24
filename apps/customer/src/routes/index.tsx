@@ -33,13 +33,7 @@ function LandingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        navigate({ to: "/customer-portal" });
-      } else {
-        navigate({ to: "/login" });
-      }
-    }
+    if (!loading && user) { navigate({ to: "/command-center" }); }
   }, [user, loading, navigate]);
 
   if (loading) {

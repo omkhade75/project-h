@@ -77,11 +77,7 @@ export const Route = createFileRoute("/_app")({
       });
     }
 
-    if (!res.user.setupCompleted) {
-      throw redirect({
-        to: "/setup",
-      });
-    }
+    // setupCompleted check bypassed
   },
   component: AppShell,
 });

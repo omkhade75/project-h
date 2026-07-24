@@ -76,12 +76,7 @@ export const Route = createFileRoute("/_app")({
         },
       });
     }
-
-    if (!res.user.setupCompleted) {
-      throw redirect({
-        to: "/setup",
-      });
-    }
+    // Authenticated user proceeds to app shell
   },
   component: AppShell,
 });
