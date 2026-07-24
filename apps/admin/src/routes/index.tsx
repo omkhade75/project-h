@@ -1,17 +1,14 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ShieldAlert,
   Building,
-  Users,
   ShieldCheck,
   Activity,
   Key,
   ArrowRight,
   ChevronRight,
-  Zap,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,14 +25,7 @@ export const Route = createFileRoute("/")({
 });
 
 function AdminLandingPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate({ to: "/system-admin" });
-    }
-  }, [user, loading, navigate]);
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -104,7 +94,7 @@ function AdminLandingPage() {
           </div>
 
           <p className="mt-6 text-xs text-muted-foreground">
-            Sign in with Super Admin email: <code className="rounded bg-surface px-1.5 py-0.5 text-foreground font-mono">khade8915@gmail.com</code> / password <code className="rounded bg-surface px-1.5 py-0.5 text-foreground font-mono">123456789</code>
+            Sign in with Super Admin email & password to access company approvals console.
           </p>
         </section>
 
