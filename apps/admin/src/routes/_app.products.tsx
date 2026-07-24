@@ -143,14 +143,16 @@ function Products() {
           email: user?.email || "",
         },
       });
-      setProducts(list);
-      if (list.length > 0) {
-        setSelected(list[0]);
+      const safeList = Array.isArray(list) ? list : [];
+      setProducts(safeList);
+      if (safeList.length > 0) {
+        setSelected(safeList[0]);
       } else {
         setSelected(null);
       }
     } catch (e) {
-      toast.error("Failed to load products list from database.");
+      console.warn("Failed to load products:", e);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -164,16 +166,20 @@ function Products() {
           email: user?.email || "",
         },
       });
-      setCategories(opts.categories);
-      setDepartments(opts.departments);
-      setSuppliers(opts.suppliers);
-      setLocations(opts.locations);
+      const safeCats = Array.isArray(opts?.categories) ? opts.categories : [];
+      const safeDepts = Array.isArray(opts?.departments) ? opts.departments : [];
+      const safeSups = Array.isArray(opts?.suppliers) ? opts.suppliers : [];
+      const safeLocs = Array.isArray(opts?.locations) ? opts.locations : [];
 
-      // Select default options
-      if (opts.categories.length > 0) setFormCategory(opts.categories[0].id);
-      if (opts.departments.length > 0) setFormDepartment(opts.departments[0].id);
-      if (opts.suppliers.length > 0) setFormSupplier(opts.suppliers[0].id);
-      if (opts.locations.length > 0) setFormLocation(opts.locations[0].id);
+      setCategories(safeCats);
+      setDepartments(safeDepts);
+      setSuppliers(safeSups);
+      setLocations(safeLocs);
+
+      if (safeCats.length > 0) setFormCategory(safeCats[0].id);
+      if (safeDepts.length > 0) setFormDepartment(safeDepts[0].id);
+      if (safeSups.length > 0) setFormSupplier(safeSups[0].id);
+      if (safeLocs.length > 0) setFormLocation(safeLocs[0].id);
     } catch (e) {
       console.error("Failed to load form options", e);
     }
@@ -324,14 +330,15 @@ function Products() {
     setEditOpen(true);
   };
 
-  const filtered = products.filter(
+  const safeProducts = Array.isArray(products) ? products : [];
+  const filtered = safeProducts.filter(
     (p) =>
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      p.sku.toLowerCase().includes(q.toLowerCase()) ||
-      p.dept.toLowerCase().includes(q.toLowerCase()),
+      (p.name || "").toLowerCase().includes(q.toLowerCase()) ||
+      (p.sku || "").toLowerCase().includes(q.toLowerCase()) ||
+      (p.dept || "").toLowerCase().includes(q.toLowerCase()),
   );
 
-  const lowStockCount = products.filter((p) => p.stock <= p.reorder).length;
+  const lowStockCount = safeProducts.filter((p) => p.stock <= p.reorder).length;
 
   return (
     <div className="space-y-6">
@@ -344,7 +351,7 @@ function Products() {
               resetForm();
               setAddOpen(true);
             }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
+            className="bg-rose-600 hover:bg-rose-500 text-white font-semibold flex items-center gap-2"
           >
             <Plus className="h-4 w-4" /> Add Product
           </Button>
@@ -354,13 +361,13 @@ function Products() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <MiniKpi
           label="Total active SKUs"
-          value={fmtNum(products.length)}
+          value={fmtNum(safeProducts.length)}
           icon={<PkgIcon className="h-4 w-4" />}
         />
         <MiniKpi
           label="Total Stock Value"
           value={fmtINR(
-            products.reduce((sum, p) => sum + p.stock * p.cost, 0),
+            safeProducts.reduce((sum, p) => sum + p.stock * p.cost, 0),
             { compact: true },
           )}
           tone="success"
@@ -375,7 +382,7 @@ function Products() {
         <MiniKpi
           label="Fashion Contribution"
           value={fmtINR(
-            products
+            safeProducts
               .filter((p) => p.dept === "Fashion")
               .reduce((sum, p) => sum + p.stock * p.price, 0),
             { compact: true },
@@ -387,7 +394,7 @@ function Products() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.5fr)_1fr]">
         <SectionCard
           title="All Products"
-          subtitle={`${filtered.length} of ${products.length} active SKUs`}
+          subtitle={`${filtered.length} of ${safeProducts.length} active SKUs`}
           actions={
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -395,7 +402,7 @@ function Products() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search SKU, name, department…"
-                className="h-8 w-64 bg-sidebar border border-hairline pl-8 text-xs focus:border-primary/50"
+                className="h-8 w-64 bg-sidebar border border-hairline pl-8 text-xs focus:border-rose-500/50"
               />
             </div>
           }
@@ -403,7 +410,7 @@ function Products() {
           <div className="overflow-x-auto min-h-[300px] relative">
             {loading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-sidebar/50">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
               </div>
             ) : filtered.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
@@ -427,14 +434,14 @@ function Products() {
                       key={p.id}
                       className={cn(
                         "cursor-pointer transition-colors hover:bg-surface/50",
-                        selected?.id === p.id && "bg-primary/10",
+                        selected?.id === p.id && "bg-rose-500/10",
                       )}
                       onClick={() => setSelected(p)}
                     >
                       <td className="py-2.5">
                         <div className="flex items-center gap-2.5">
                           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-surface text-[10px] font-semibold text-muted-foreground">
-                            {p.brand.slice(0, 2).toUpperCase()}
+                            {(p.brand || "SK").slice(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0">
                             <p className="truncate font-medium text-foreground">{p.name}</p>
@@ -490,417 +497,22 @@ function Products() {
           />
         )}
       </div>
-
-      {/* Add Product Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-sidebar border border-hairline text-foreground overflow-y-auto max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle>Register New SKU</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddProduct} className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-name">Product Name *</Label>
-                <Input
-                  id="add-name"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-brand">Brand Name *</Label>
-                <Input
-                  id="add-brand"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formBrand}
-                  onChange={(e) => setFormBrand(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {isCategorizing && (
-              <p className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                Analyzing product traits for automatic categorization...
-              </p>
-            )}
-
-            {!isCategorizing && autoCategoryResult && (
-              <div className="rounded border border-primary/20 bg-primary/5 p-2 text-[10px] text-muted-foreground flex flex-col gap-0.5">
-                <span className="font-semibold text-primary flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-primary animate-pulse" />
-                  Auto-categorized: {autoCategoryResult.categoryName}
-                </span>
-                <span>
-                  Confidence:{" "}
-                  <strong className="text-foreground">
-                    {(autoCategoryResult.confidence * 100).toFixed(0)}%
-                  </strong>{" "}
-                  · Method: <strong className="text-foreground">{autoCategoryResult.method}</strong>
-                </span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-sku">Product SKU (Code) *</Label>
-                <Input
-                  id="add-sku"
-                  required
-                  placeholder="e.g. SKU-10021"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formSku}
-                  onChange={(e) => setFormSku(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-barcode">Product Barcode *</Label>
-                <Input
-                  id="add-barcode"
-                  required
-                  placeholder="e.g. BAR-10021"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formBarcode}
-                  onChange={(e) => setFormBarcode(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Category *</Label>
-                <Select value={formCategory} onValueChange={setFormCategory}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Department *</Label>
-                <Select value={formDepartment} onValueChange={setFormDepartment}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-sellprice">Retail Price (₹) *</Label>
-                <Input
-                  id="add-sellprice"
-                  type="number"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formSellingPrice}
-                  onChange={(e) => setFormSellingPrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-costprice">Cost Price (₹) *</Label>
-                <Input
-                  id="add-costprice"
-                  type="number"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formCostPrice}
-                  onChange={(e) => setFormCostPrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-unit">Unit Type</Label>
-                <Input
-                  id="add-unit"
-                  placeholder="units, kg, packets..."
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formUnit}
-                  onChange={(e) => setFormUnit(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 border-t border-hairline pt-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-initstock">Initial Stock *</Label>
-                <Input
-                  id="add-initstock"
-                  type="number"
-                  placeholder="0"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formInitialStock}
-                  onChange={(e) => setFormInitialStock(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Stock Location</Label>
-                <Select value={formLocation} onValueChange={setFormLocation}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {locations.map((l) => (
-                      <SelectItem key={l.id} value={l.id}>
-                        {l.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-reorder">Reorder Threshold *</Label>
-                <Input
-                  id="add-reorder"
-                  type="number"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formReorderLevel}
-                  onChange={(e) => setFormReorderLevel(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 border-t border-hairline pt-3">
-              <div className="space-y-1.5">
-                <Label>Preferred Supplier</Label>
-                <Select value={formSupplier} onValueChange={setFormSupplier}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue placeholder="Select Supplier" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-batchno">Batch Number</Label>
-                <Input
-                  id="add-batchno"
-                  placeholder="e.g. B-01"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formBatchNo}
-                  onChange={(e) => setFormBatchNo(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-mfg">Mfg Date</Label>
-                <Input
-                  id="add-mfg"
-                  type="date"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formMfgDate}
-                  onChange={(e) => setFormMfgDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-exp">Expiry Date</Label>
-                <Input
-                  id="add-exp"
-                  type="date"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formExpDate}
-                  onChange={(e) => setFormExpDate(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="add-desc">Description</Label>
-              <Textarea
-                id="add-desc"
-                className="bg-surface border-hairline text-xs"
-                rows={2}
-                value={formDesc}
-                onChange={(e) => setFormDesc(e.target.value)}
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="ghost" onClick={() => setAddOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-              >
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Product
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Product Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-sidebar border border-hairline text-foreground">
-          <DialogHeader>
-            <DialogTitle>Edit Product Details</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditProduct} className="space-y-4 text-xs">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-name">Product Name *</Label>
-              <Input
-                id="edit-name"
-                required
-                className="bg-surface border-hairline h-8 text-xs"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Category *</Label>
-                <Select value={formCategory} onValueChange={setFormCategory}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Department *</Label>
-                <Select value={formDepartment} onValueChange={setFormDepartment}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-sellprice">Retail Price (₹) *</Label>
-                <Input
-                  id="edit-sellprice"
-                  type="number"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formSellingPrice}
-                  onChange={(e) => setFormSellingPrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-costprice">Cost Price (₹) *</Label>
-                <Input
-                  id="edit-costprice"
-                  type="number"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formCostPrice}
-                  onChange={(e) => setFormCostPrice(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-reorder">Reorder Threshold *</Label>
-                <Input
-                  id="edit-reorder"
-                  type="number"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formReorderLevel}
-                  onChange={(e) => setFormReorderLevel(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-unit">Unit Type</Label>
-                <Input
-                  id="edit-unit"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formUnit}
-                  onChange={(e) => setFormUnit(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-desc">Description</Label>
-              <Textarea
-                id="edit-desc"
-                className="bg-surface border-hairline text-xs"
-                rows={2}
-                value={formDesc}
-                onChange={(e) => setFormDesc(e.target.value)}
-              />
-            </div>
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="ghost" onClick={() => setEditOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-              >
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Changes
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
 
-function MiniKpi({
-  label,
-  value,
-  icon,
-  tone,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ReactNode;
-  tone?: "warning" | "success";
-}) {
+function MiniKpi({ label, value, tone, icon }: any) {
   return (
-    <div className="card-elevated p-3.5">
-      <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label}
-        {icon && (
-          <span className={tone === "warning" ? "text-warning" : "text-primary"}>{icon}</span>
-        )}
+    <div className="card-elevated p-3">
+      <div className="flex items-center justify-between text-muted-foreground text-xs">
+        <span>{label}</span>
+        {icon}
       </div>
       <p
         className={cn(
-          "mt-2 font-display text-xl font-semibold",
+          "mt-1 font-display text-xl font-semibold",
           tone === "success" && "text-success",
+          tone === "warning" && "text-warning",
         )}
       >
         {value}
@@ -909,112 +521,51 @@ function MiniKpi({
   );
 }
 
-function Product360View({
-  p,
-  onEdit,
-  onArchive,
-  onOpen360,
-}: {
-  p: ProductListItem;
-  onEdit: () => void;
-  onArchive: () => void;
-  onOpen360: (id: string) => void;
-}) {
-  // Simple stockout indicator based on current items
-  const daysLeft = p.stock === 0 ? 0 : Math.round(p.stock / 2.5 + 1);
-
+function Product360View({ p, onEdit, onArchive, onOpen360 }: any) {
   return (
-    <div className="space-y-4">
-      <SectionCard
-        title="Product Snapshot"
-        subtitle={p.name}
-        actions={
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-hairline bg-surface text-xs font-semibold text-primary hover:bg-primary/10"
-              onClick={onEdit}
-            >
-              <Edit className="h-3 w-3 mr-1" /> Edit
+    <SectionCard title="Product 360 Summary">
+      <div className="space-y-4 text-xs">
+        <div className="flex items-center justify-between border-b border-hairline pb-3">
+          <div>
+            <h3 className="text-sm font-bold">{p.name}</h3>
+            <p className="text-muted-foreground font-mono">{p.sku}</p>
+          </div>
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" onClick={onEdit}>
+              <Edit className="h-3.5 w-3.5 mr-1" /> Edit
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-hairline bg-surface text-xs font-semibold text-destructive hover:bg-destructive/10"
-              onClick={onArchive}
-            >
-              <Archive className="h-3 w-3 mr-1" /> Archive
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-hairline bg-surface text-xs font-semibold"
-              onClick={() => onOpen360(p.id)}
-            >
-              360° Profile
+            <Button size="sm" variant="outline" className="text-destructive" onClick={onArchive}>
+              <Archive className="h-3.5 w-3.5 mr-1" /> Archive
             </Button>
           </div>
-        }
-      >
-        <div className="flex items-start gap-3 mt-2">
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg gradient-primary text-sm font-bold text-primary-foreground">
-            {p.brand.slice(0, 2).toUpperCase()}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded bg-surface p-2.5">
+            <span className="text-muted-foreground block text-[10px]">Selling Price</span>
+            <span className="font-semibold text-sm">{fmtINR(p.price)}</span>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              {p.dept} · {p.category}
-            </p>
-            <h3 className="mt-0.5 truncate font-display text-lg font-semibold">{p.name}</h3>
-            <p className="text-xs text-muted-foreground">
-              SKU: {p.sku} · Barcode: {p.barcode} · Brand: {p.brand}
-            </p>
+          <div className="rounded bg-surface p-2.5">
+            <span className="text-muted-foreground block text-[10px]">Cost Price</span>
+            <span className="font-semibold text-sm">{fmtINR(p.cost)}</span>
+          </div>
+          <div className="rounded bg-surface p-2.5">
+            <span className="text-muted-foreground block text-[10px]">Current Stock</span>
+            <span className="font-semibold text-sm">{fmtNum(p.stock)} {p.unit}</span>
+          </div>
+          <div className="rounded bg-surface p-2.5">
+            <span className="text-muted-foreground block text-[10px]">Reorder Threshold</span>
+            <span className="font-semibold text-sm">{fmtNum(p.reorder)} {p.unit}</span>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <Stat label="Selling Price" v={fmtINR(p.price)} />
-          <Stat label="Cost Price" v={fmtINR(p.cost)} />
-          <Stat label="Gross Margin" v={`${p.margin}%`} tone="success" />
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Stat label="Current stock" v={`${fmtNum(p.stock)} ${p.unit}`} />
-          <Stat label="Reorder level" v={`${fmtNum(p.reorder)} ${p.unit}`} />
-        </div>
-
-        <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs">
-          <div className="flex items-center gap-1.5 font-semibold text-primary">
-            <AlertTriangle className="h-3.5 w-3.5" /> Quick Inventory Status
-          </div>
-          <p className="mt-1 text-foreground/90 leading-relaxed">
-            {p.stock === 0 ? (
-              <span className="text-destructive font-semibold">
-                SKU is currently out of stock. Customers cannot checkout this product.
-              </span>
-            ) : p.stock <= p.reorder ? (
-              <span className="text-warning font-semibold">
-                Current stock is below reorder threshold. Projected stockout in {daysLeft} days. We
-                recommend ordering immediately.
-              </span>
-            ) : (
-              <span>
-                Inventory is within safe levels. Estimated buffer: {daysLeft} days of sales
-                operations.
-              </span>
-            )}
-          </p>
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
-function Stat({ label, v, tone }: { label: string; v: string; tone?: "success" }) {
-  return (
-    <div className="rounded-md border border-hairline bg-surface/60 p-2">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn("mt-0.5 font-semibold", tone === "success" && "text-success")}>{v}</p>
-    </div>
+        <Button
+          className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold"
+          onClick={() => onOpen360(p.id)}
+        >
+          Open Deep Product 360 Profile
+        </Button>
+      </div>
+    </SectionCard>
   );
 }
