@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { MapPin, Navigation, Loader2, Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { MapPin, Navigation, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface GoogleMapsPickerProps {
@@ -7,6 +7,7 @@ interface GoogleMapsPickerProps {
   onAddressChange: (newAddress: string, coords?: { lat: number; lng: number; city?: string; state?: string }) => void;
   label?: string;
   placeholder?: string;
+  autoPromptOnMount?: boolean;
 }
 
 export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
@@ -14,9 +15,12 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
   onAddressChange,
   label = "Delivery Address (Google Maps GPS Auto-Fill)",
   placeholder = "Enter street address or click Auto-Detect GPS...",
+  autoPromptOnMount = true,
 }) => {
   const [detecting, setDetecting] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 19.0596, lng: 72.8295 }); // Default Bandra West
+
+  const googleApiKey = (typeof process !== "undefined" && process.env.VITE_GOOGLE_MAPS_API_KEY) || (typeof window !== "undefined" && (window as any).GOOGLE_MAPS_API_KEY);
 
   const handleDetectGPS = () => {
     if (!navigator.geolocation) {
@@ -25,7 +29,7 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
     }
 
     setDetecting(true);
-    toast.info("📍 Fetching live GPS coordinates from your device...");
+    toast.info("📍 Requesting browser location permission & GPS coordinates...");
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -34,7 +38,22 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
         setCoords({ lat, lng });
 
         try {
-          // OpenStreetMap / Nominatim Reverse Geocoding API for exact street address
+          // If Google Maps API Key is provided in Render env
+          if (googleApiKey) {
+            const googleRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}`);
+            if (googleRes.ok) {
+              const gData = await googleRes.json();
+              if (gData.results?.[0]) {
+                const fullAddr = gData.results[0].formatted_address;
+                onAddressChange(fullAddr, { lat, lng });
+                toast.success("📍 Address Auto-Filled via Official Google Maps API!");
+                setDetecting(false);
+                return;
+              }
+            }
+          }
+
+          // Fallback Reverse Geocoding
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
           if (res.ok) {
             const data = await res.json();
@@ -43,7 +62,7 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
             const state = data.address?.state || "Maharashtra";
 
             onAddressChange(fullAddr, { lat, lng, city, state });
-            toast.success("📍 GPS Address Auto-Filled via Google Maps!");
+            toast.success("📍 Browser GPS Address Auto-Filled!");
           } else {
             const fallbackAddr = `GPS Location (${lat.toFixed(4)}, ${lng.toFixed(4)}), Bandra West, Mumbai 400050`;
             onAddressChange(fallbackAddr, { lat, lng });
@@ -52,7 +71,6 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
         } catch (err) {
           const fallbackAddr = `GPS Location (${lat.toFixed(4)}, ${lng.toFixed(4)}), Mumbai 400050`;
           onAddressChange(fallbackAddr, { lat, lng });
-          toast.success("📍 GPS Coordinates Captured!");
         } finally {
           setDetecting(false);
         }
@@ -60,11 +78,21 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
       (error) => {
         setDetecting(false);
         console.warn("Geolocation error:", error);
-        toast.error("Could not fetch GPS position. Please type your address manually.");
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Location permission was denied. Click '📍 Auto-Detect GPS' to retry or type address manually.");
+        } else {
+          toast.error("Could not fetch GPS position. Please type your address manually.");
+        }
       },
       { timeout: 10000, enableHighAccuracy: true }
     );
   };
+
+  useEffect(() => {
+    if (autoPromptOnMount && (!address || address.includes("Bandra West"))) {
+      handleDetectGPS();
+    }
+  }, [autoPromptOnMount]);
 
   return (
     <div className="space-y-2">
@@ -81,7 +109,7 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
         >
           {detecting ? (
             <>
-              <Loader2 className="h-3 w-3 animate-spin" /> Detecting GPS...
+              <Loader2 className="h-3 w-3 animate-spin" /> Requesting GPS...
             </>
           ) : (
             <>
@@ -110,7 +138,7 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
           src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`}
         />
         <div className="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-md px-2 py-1 rounded text-[10px] text-white font-mono flex items-center gap-1">
-          <MapPin className="h-3 w-3 text-amber-400" /> Lat: {coords.lat.toFixed(4)}, Lng: {coords.lng.toFixed(4)}
+          <MapPin className="h-3 w-3 text-amber-400" /> GPS: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
         </div>
       </div>
     </div>
