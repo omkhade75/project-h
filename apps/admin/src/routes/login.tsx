@@ -1,10 +1,9 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Eye, EyeOff, ShieldCheck, ShieldAlert, Zap, Loader2, ArrowLeft, Building2, Lock, UserCheck } from "lucide-react";
+import { Eye, EyeOff, ShieldAlert, Loader2, Building2, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -32,20 +31,15 @@ function AdminLoginPage() {
   const [email, setEmail] = useState("khade8915@gmail.com");
   const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
-  const { user, login } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
-
-  const getRedirectTarget = (u?: any) => {
-    return "/system-admin";
-  };
 
   const handleFormLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return toast.error("Enter your admin email");
     setSubmitting(true);
     try {
-      const loggedIn = await login(email, pass);
+      await login(email, pass);
       toast.success("Authorized Super Admin Console");
       navigate({ to: "/system-admin", replace: true });
     } catch (err: any) {
@@ -58,7 +52,7 @@ function AdminLoginPage() {
   const fillDemoAdmin = () => {
     setEmail("khade8915@gmail.com");
     setPass("123456789");
-    toast.info("Loaded Super Admin credentials (khade8915@gmail.com)");
+    toast.info("Loaded Super Admin credentials");
   };
 
   return (
@@ -93,19 +87,6 @@ function AdminLoginPage() {
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               Sign in to review newly registered shopkeepers, approve or reject company onboarding requests, adjust store branch limits, and monitor platform health.
             </p>
-
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {[
-                { icon: Building2, label: "Shopkeeper Approvals" },
-                { icon: ShieldCheck, label: "Tenant Auditing" },
-                { icon: Zap, label: "Live System Health" },
-              ].map((f) => (
-                <div key={f.label} className="glass rounded-xl p-3.5 border border-rose-500/20 bg-rose-500/5">
-                  <f.icon className="h-4 w-4 text-rose-400" />
-                  <p className="mt-2 text-xs font-semibold text-foreground">{f.label}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
@@ -117,16 +98,6 @@ function AdminLoginPage() {
         {/* Right: Sign In Form */}
         <div className="flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md">
-            <div className="lg:hidden mb-8 flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-rose-600 text-white">
-                <ShieldAlert className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Bizora OS</p>
-                <p className="text-xs text-rose-400">Super Admin Console</p>
-              </div>
-            </div>
-
             <div className="card-elevated p-6 sm:p-8 border border-rose-500/20 shadow-2xl">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">Super Admin Sign In</h2>
