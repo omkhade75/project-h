@@ -6,41 +6,23 @@ import {
   useRouterState,
   redirect,
 } from "@tanstack/react-router";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
-  LayoutDashboard,
   ShieldAlert,
-  Receipt,
-  Users,
-  Package,
-  Warehouse,
-  Truck,
-  FileBarChart,
+  Building,
+  HardDrive,
+  MapPin,
+  Database,
   LogOut,
   ChevronsLeft,
-  ChevronRight,
-  Menu,
   X,
   AlertTriangle,
-  ArrowLeft,
-  Search,
-  Bell,
-  CalendarDays,
-  Circle,
-  Building,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { stopImpersonatingServer } from "@/lib/server-auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useBusinessData } from "@/lib/business-context";
-import {
-  Product360Drawer,
-  Customer360Drawer,
-  Supplier360Drawer,
-  RecommendationInvestigateDrawer,
-} from "@/components/details-drawers";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }: { location: any }) => {
@@ -58,25 +40,18 @@ export const Route = createFileRoute("/_app")({
   component: AppShell,
 });
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard };
+type NavItem = { to: string; label: string; icon: typeof ShieldAlert; search?: Record<string, string> };
 type NavSection = { section: string; items: NavItem[] };
 
 const NAV: NavSection[] = [
   {
-    section: "Super Admin Control",
+    section: "Super Admin Platform Control",
     items: [
-      { to: "/system-admin", label: "Shopkeeper & Company Approvals", icon: ShieldAlert },
-    ],
-  },
-  {
-    section: "Store & Order Operations",
-    items: [
-      { to: "/products", label: "Store Inventory & Products", icon: Package },
-      { to: "/logistics", label: "Live Dispatches & Logistics", icon: Truck },
-      { to: "/transactions", label: "Sales & Order Transactions", icon: Receipt },
-      { to: "/customers", label: "Customers & CRM 360", icon: Users },
-      { to: "/suppliers", label: "Suppliers & Purchase Orders", icon: Warehouse },
-      { to: "/reports", label: "Financial Reports & Analytics", icon: FileBarChart },
+      { to: "/system-admin", label: "Shopkeeper Approvals & Queue", icon: ShieldAlert, search: { tab: "onboarding" } },
+      { to: "/system-admin", label: "Store Workspaces & Users", icon: Building, search: { tab: "workspaces" } },
+      { to: "/system-admin", label: "Storage Space & Subscriptions", icon: HardDrive, search: { tab: "subscriptions" } },
+      { to: "/system-admin", label: "Store Locations & Map Directory", icon: MapPin, search: { tab: "locations" } },
+      { to: "/system-admin", label: "System Audit Logs & Security", icon: Database, search: { tab: "audits" } },
     ],
   },
 ];
@@ -86,18 +61,9 @@ function AppShell() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = useRouterState({ select: (s: any) => s.location.pathname });
-
-  const {
-    activeProductId,
-    activeCustomerId,
-    activeSupplierId,
-    activeRecId,
-    openProduct360,
-    openCustomer360,
-    openSupplier360,
-    openRecommendation,
-  } = useBusinessData();
+  const routerState = useRouterState();
+  const pathname = routerState.location.pathname;
+  const currentTab = new URLSearchParams(routerState.location.search).get("tab") || "onboarding";
 
   useEffect(() => {
     if (loading) return;
@@ -117,9 +83,6 @@ function AppShell() {
   if (!user) {
     return null;
   }
-
-  const currentLabel =
-    NAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label ?? "System Admin";
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -158,7 +121,7 @@ function AppShell() {
             "fixed top-0 left-0 z-50 flex h-screen shrink-0 flex-col bg-sidebar transition-all duration-300",
             "border-r-2 border-r-rose-500/30",
             "lg:sticky lg:translate-x-0",
-            collapsed ? "lg:w-[68px]" : "lg:w-[260px]",
+            collapsed ? "lg:w-[68px]" : "lg:w-[280px]",
             mobileOpen
               ? "w-[280px] translate-x-0 shadow-2xl shadow-primary/10"
               : "-translate-x-full lg:translate-x-0",
@@ -202,18 +165,20 @@ function AppShell() {
                     {section.section}
                   </p>
                 )}
-                <ul className="space-y-0.5">
+                <ul className="space-y-1">
                   {section.items.map((item) => {
-                    const active = pathname === item.to;
+                    const itemTab = item.search?.tab || "onboarding";
+                    const active = pathname === item.to && currentTab === itemTab;
                     return (
-                      <li key={item.to}>
+                      <li key={item.label}>
                         <Link
                           to={item.to as never}
+                          search={item.search as never}
                           onClick={() => setMobileOpen(false)}
                           className={cn(
-                            "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                            "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all",
                             active
-                              ? "bg-rose-500/15 text-foreground shadow-sm font-bold"
+                              ? "bg-rose-600/20 text-rose-400 font-bold shadow-sm"
                               : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
                           )}
                         >
@@ -222,7 +187,7 @@ function AppShell() {
                           )}
                           <item.icon
                             className={cn(
-                              "h-[18px] w-[18px] shrink-0",
+                              "h-4 w-4 shrink-0",
                               active
                                 ? "text-rose-500"
                                 : "text-muted-foreground group-hover:text-foreground",
@@ -245,8 +210,8 @@ function AppShell() {
               </div>
               {!collapsed && (
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold">System Super Admin</p>
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-rose-400">
+                  <p className="truncate text-xs font-bold">System Super Admin</p>
+                  <p className="truncate text-[10px] font-bold uppercase tracking-wider text-rose-400">
                     Super Admin
                   </p>
                 </div>
@@ -272,12 +237,6 @@ function AppShell() {
           <Outlet />
         </div>
       </div>
-
-      {/* Detail Drawers */}
-      <Product360Drawer productId={activeProductId} onClose={() => openProduct360(null)} />
-      <Customer360Drawer customerId={activeCustomerId} onClose={() => openCustomer360(null)} />
-      <Supplier360Drawer supplierId={activeSupplierId} onClose={() => openSupplier360(null)} />
-      <RecommendationInvestigateDrawer recId={activeRecId} onClose={() => openRecommendation(null)} />
     </div>
   );
 }
