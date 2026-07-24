@@ -14,6 +14,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppWorkspacesRouteImport } from './routes/_app.workspaces'
 import { Route as AppUtilitiesRouteImport } from './routes/_app.utilities'
 import { Route as AppTransactionsRouteImport } from './routes/_app.transactions'
 import { Route as AppTime_machineRouteImport } from './routes/_app.time_machine'
@@ -22,6 +23,7 @@ import { Route as AppTaxRouteImport } from './routes/_app.tax'
 import { Route as AppSystemAdminRouteImport } from './routes/_app.system-admin'
 import { Route as AppSuppliersRouteImport } from './routes/_app.suppliers'
 import { Route as AppSupplierPortalRouteImport } from './routes/_app.supplier-portal'
+import { Route as AppSubscriptionsRouteImport } from './routes/_app.subscriptions'
 import { Route as AppStaffRouteImport } from './routes/_app.staff'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSalesRouteImport } from './routes/_app.sales'
@@ -30,6 +32,7 @@ import { Route as AppPurchaseOrdersRouteImport } from './routes/_app.purchase-or
 import { Route as AppProductsRouteImport } from './routes/_app.products'
 import { Route as AppMarketIntelligenceRouteImport } from './routes/_app.market-intelligence'
 import { Route as AppLogisticsRouteImport } from './routes/_app.logistics'
+import { Route as AppLocationsRouteImport } from './routes/_app.locations'
 import { Route as AppLive_opsRouteImport } from './routes/_app.live_ops'
 import { Route as AppLiveOpsRouteImport } from './routes/_app.live-ops'
 import { Route as AppInventoryRouteImport } from './routes/_app.inventory'
@@ -44,6 +47,7 @@ import { Route as AppCustomerPortalRouteImport } from './routes/_app.customer-po
 import { Route as AppCommand_centerRouteImport } from './routes/_app.command_center'
 import { Route as AppCommandCenterRouteImport } from './routes/_app.command-center'
 import { Route as AppBillingRouteImport } from './routes/_app.billing'
+import { Route as AppAuditsRouteImport } from './routes/_app.audits'
 import { Route as AppAnomaliesRouteImport } from './routes/_app.anomalies'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAi_decisionsRouteImport } from './routes/_app.ai_decisions'
@@ -73,6 +77,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppWorkspacesRoute = AppWorkspacesRouteImport.update({
+  id: '/workspaces',
+  path: '/workspaces',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppUtilitiesRoute = AppUtilitiesRouteImport.update({
   id: '/utilities',
@@ -114,6 +123,11 @@ const AppSupplierPortalRoute = AppSupplierPortalRouteImport.update({
   path: '/supplier-portal',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSubscriptionsRoute = AppSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppStaffRoute = AppStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -152,6 +166,11 @@ const AppMarketIntelligenceRoute = AppMarketIntelligenceRouteImport.update({
 const AppLogisticsRoute = AppLogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLocationsRoute = AppLocationsRouteImport.update({
+  id: '/locations',
+  path: '/locations',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLive_opsRoute = AppLive_opsRouteImport.update({
@@ -224,6 +243,11 @@ const AppBillingRoute = AppBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAuditsRoute = AppAuditsRouteImport.update({
+  id: '/audits',
+  path: '/audits',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAnomaliesRoute = AppAnomaliesRouteImport.update({
   id: '/anomalies',
   path: '/anomalies',
@@ -260,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/ai_decisions': typeof AppAi_decisionsRoute
   '/analytics': typeof AppAnalyticsRoute
   '/anomalies': typeof AppAnomaliesRoute
+  '/audits': typeof AppAuditsRoute
   '/billing': typeof AppBillingRoute
   '/command-center': typeof AppCommandCenterRoute
   '/command_center': typeof AppCommand_centerRoute
@@ -274,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/inventory': typeof AppInventoryRoute
   '/live-ops': typeof AppLiveOpsRoute
   '/live_ops': typeof AppLive_opsRoute
+  '/locations': typeof AppLocationsRoute
   '/logistics': typeof AppLogisticsRoute
   '/market-intelligence': typeof AppMarketIntelligenceRoute
   '/products': typeof AppProductsRoute
@@ -282,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/sales': typeof AppSalesRoute
   '/settings': typeof AppSettingsRoute
   '/staff': typeof AppStaffRoute
+  '/subscriptions': typeof AppSubscriptionsRoute
   '/supplier-portal': typeof AppSupplierPortalRoute
   '/suppliers': typeof AppSuppliersRoute
   '/system-admin': typeof AppSystemAdminRoute
@@ -290,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/time_machine': typeof AppTime_machineRoute
   '/transactions': typeof AppTransactionsRoute
   '/utilities': typeof AppUtilitiesRoute
+  '/workspaces': typeof AppWorkspacesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -301,6 +329,7 @@ export interface FileRoutesByTo {
   '/ai_decisions': typeof AppAi_decisionsRoute
   '/analytics': typeof AppAnalyticsRoute
   '/anomalies': typeof AppAnomaliesRoute
+  '/audits': typeof AppAuditsRoute
   '/billing': typeof AppBillingRoute
   '/command-center': typeof AppCommandCenterRoute
   '/command_center': typeof AppCommand_centerRoute
@@ -315,6 +344,7 @@ export interface FileRoutesByTo {
   '/inventory': typeof AppInventoryRoute
   '/live-ops': typeof AppLiveOpsRoute
   '/live_ops': typeof AppLive_opsRoute
+  '/locations': typeof AppLocationsRoute
   '/logistics': typeof AppLogisticsRoute
   '/market-intelligence': typeof AppMarketIntelligenceRoute
   '/products': typeof AppProductsRoute
@@ -323,6 +353,7 @@ export interface FileRoutesByTo {
   '/sales': typeof AppSalesRoute
   '/settings': typeof AppSettingsRoute
   '/staff': typeof AppStaffRoute
+  '/subscriptions': typeof AppSubscriptionsRoute
   '/supplier-portal': typeof AppSupplierPortalRoute
   '/suppliers': typeof AppSuppliersRoute
   '/system-admin': typeof AppSystemAdminRoute
@@ -331,6 +362,7 @@ export interface FileRoutesByTo {
   '/time_machine': typeof AppTime_machineRoute
   '/transactions': typeof AppTransactionsRoute
   '/utilities': typeof AppUtilitiesRoute
+  '/workspaces': typeof AppWorkspacesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -344,6 +376,7 @@ export interface FileRoutesById {
   '/_app/ai_decisions': typeof AppAi_decisionsRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/anomalies': typeof AppAnomaliesRoute
+  '/_app/audits': typeof AppAuditsRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/command-center': typeof AppCommandCenterRoute
   '/_app/command_center': typeof AppCommand_centerRoute
@@ -358,6 +391,7 @@ export interface FileRoutesById {
   '/_app/inventory': typeof AppInventoryRoute
   '/_app/live-ops': typeof AppLiveOpsRoute
   '/_app/live_ops': typeof AppLive_opsRoute
+  '/_app/locations': typeof AppLocationsRoute
   '/_app/logistics': typeof AppLogisticsRoute
   '/_app/market-intelligence': typeof AppMarketIntelligenceRoute
   '/_app/products': typeof AppProductsRoute
@@ -366,6 +400,7 @@ export interface FileRoutesById {
   '/_app/sales': typeof AppSalesRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/staff': typeof AppStaffRoute
+  '/_app/subscriptions': typeof AppSubscriptionsRoute
   '/_app/supplier-portal': typeof AppSupplierPortalRoute
   '/_app/suppliers': typeof AppSuppliersRoute
   '/_app/system-admin': typeof AppSystemAdminRoute
@@ -374,6 +409,7 @@ export interface FileRoutesById {
   '/_app/time_machine': typeof AppTime_machineRoute
   '/_app/transactions': typeof AppTransactionsRoute
   '/_app/utilities': typeof AppUtilitiesRoute
+  '/_app/workspaces': typeof AppWorkspacesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -387,6 +423,7 @@ export interface FileRouteTypes {
     | '/ai_decisions'
     | '/analytics'
     | '/anomalies'
+    | '/audits'
     | '/billing'
     | '/command-center'
     | '/command_center'
@@ -401,6 +438,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/live-ops'
     | '/live_ops'
+    | '/locations'
     | '/logistics'
     | '/market-intelligence'
     | '/products'
@@ -409,6 +447,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/staff'
+    | '/subscriptions'
     | '/supplier-portal'
     | '/suppliers'
     | '/system-admin'
@@ -417,6 +456,7 @@ export interface FileRouteTypes {
     | '/time_machine'
     | '/transactions'
     | '/utilities'
+    | '/workspaces'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -428,6 +468,7 @@ export interface FileRouteTypes {
     | '/ai_decisions'
     | '/analytics'
     | '/anomalies'
+    | '/audits'
     | '/billing'
     | '/command-center'
     | '/command_center'
@@ -442,6 +483,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/live-ops'
     | '/live_ops'
+    | '/locations'
     | '/logistics'
     | '/market-intelligence'
     | '/products'
@@ -450,6 +492,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/staff'
+    | '/subscriptions'
     | '/supplier-portal'
     | '/suppliers'
     | '/system-admin'
@@ -458,6 +501,7 @@ export interface FileRouteTypes {
     | '/time_machine'
     | '/transactions'
     | '/utilities'
+    | '/workspaces'
   id:
     | '__root__'
     | '/'
@@ -470,6 +514,7 @@ export interface FileRouteTypes {
     | '/_app/ai_decisions'
     | '/_app/analytics'
     | '/_app/anomalies'
+    | '/_app/audits'
     | '/_app/billing'
     | '/_app/command-center'
     | '/_app/command_center'
@@ -484,6 +529,7 @@ export interface FileRouteTypes {
     | '/_app/inventory'
     | '/_app/live-ops'
     | '/_app/live_ops'
+    | '/_app/locations'
     | '/_app/logistics'
     | '/_app/market-intelligence'
     | '/_app/products'
@@ -492,6 +538,7 @@ export interface FileRouteTypes {
     | '/_app/sales'
     | '/_app/settings'
     | '/_app/staff'
+    | '/_app/subscriptions'
     | '/_app/supplier-portal'
     | '/_app/suppliers'
     | '/_app/system-admin'
@@ -500,6 +547,7 @@ export interface FileRouteTypes {
     | '/_app/time_machine'
     | '/_app/transactions'
     | '/_app/utilities'
+    | '/_app/workspaces'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -546,6 +594,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/workspaces': {
+      id: '/_app/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof AppWorkspacesRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/utilities': {
       id: '/_app/utilities'
@@ -603,6 +658,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSupplierPortalRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/subscriptions': {
+      id: '/_app/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof AppSubscriptionsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/staff': {
       id: '/_app/staff'
       path: '/staff'
@@ -657,6 +719,13 @@ declare module '@tanstack/react-router' {
       path: '/logistics'
       fullPath: '/logistics'
       preLoaderRoute: typeof AppLogisticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/locations': {
+      id: '/_app/locations'
+      path: '/locations'
+      fullPath: '/locations'
+      preLoaderRoute: typeof AppLocationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/live_ops': {
@@ -757,6 +826,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBillingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/audits': {
+      id: '/_app/audits'
+      path: '/audits'
+      fullPath: '/audits'
+      preLoaderRoute: typeof AppAuditsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/anomalies': {
       id: '/_app/anomalies'
       path: '/anomalies'
@@ -801,6 +877,7 @@ interface AppRouteChildren {
   AppAi_decisionsRoute: typeof AppAi_decisionsRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppAnomaliesRoute: typeof AppAnomaliesRoute
+  AppAuditsRoute: typeof AppAuditsRoute
   AppBillingRoute: typeof AppBillingRoute
   AppCommandCenterRoute: typeof AppCommandCenterRoute
   AppCommand_centerRoute: typeof AppCommand_centerRoute
@@ -815,6 +892,7 @@ interface AppRouteChildren {
   AppInventoryRoute: typeof AppInventoryRoute
   AppLiveOpsRoute: typeof AppLiveOpsRoute
   AppLive_opsRoute: typeof AppLive_opsRoute
+  AppLocationsRoute: typeof AppLocationsRoute
   AppLogisticsRoute: typeof AppLogisticsRoute
   AppMarketIntelligenceRoute: typeof AppMarketIntelligenceRoute
   AppProductsRoute: typeof AppProductsRoute
@@ -823,6 +901,7 @@ interface AppRouteChildren {
   AppSalesRoute: typeof AppSalesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStaffRoute: typeof AppStaffRoute
+  AppSubscriptionsRoute: typeof AppSubscriptionsRoute
   AppSupplierPortalRoute: typeof AppSupplierPortalRoute
   AppSuppliersRoute: typeof AppSuppliersRoute
   AppSystemAdminRoute: typeof AppSystemAdminRoute
@@ -831,6 +910,7 @@ interface AppRouteChildren {
   AppTime_machineRoute: typeof AppTime_machineRoute
   AppTransactionsRoute: typeof AppTransactionsRoute
   AppUtilitiesRoute: typeof AppUtilitiesRoute
+  AppWorkspacesRoute: typeof AppWorkspacesRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -839,6 +919,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAi_decisionsRoute: AppAi_decisionsRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppAnomaliesRoute: AppAnomaliesRoute,
+  AppAuditsRoute: AppAuditsRoute,
   AppBillingRoute: AppBillingRoute,
   AppCommandCenterRoute: AppCommandCenterRoute,
   AppCommand_centerRoute: AppCommand_centerRoute,
@@ -853,6 +934,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppInventoryRoute: AppInventoryRoute,
   AppLiveOpsRoute: AppLiveOpsRoute,
   AppLive_opsRoute: AppLive_opsRoute,
+  AppLocationsRoute: AppLocationsRoute,
   AppLogisticsRoute: AppLogisticsRoute,
   AppMarketIntelligenceRoute: AppMarketIntelligenceRoute,
   AppProductsRoute: AppProductsRoute,
@@ -861,6 +943,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSalesRoute: AppSalesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStaffRoute: AppStaffRoute,
+  AppSubscriptionsRoute: AppSubscriptionsRoute,
   AppSupplierPortalRoute: AppSupplierPortalRoute,
   AppSuppliersRoute: AppSuppliersRoute,
   AppSystemAdminRoute: AppSystemAdminRoute,
@@ -869,6 +952,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppTime_machineRoute: AppTime_machineRoute,
   AppTransactionsRoute: AppTransactionsRoute,
   AppUtilitiesRoute: AppUtilitiesRoute,
+  AppWorkspacesRoute: AppWorkspacesRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

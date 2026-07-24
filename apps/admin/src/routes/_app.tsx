@@ -40,18 +40,18 @@ export const Route = createFileRoute("/_app")({
   component: AppShell,
 });
 
-type NavItem = { to: string; label: string; icon: typeof ShieldAlert; search?: Record<string, string> };
+type NavItem = { to: string; label: string; icon: typeof ShieldAlert };
 type NavSection = { section: string; items: NavItem[] };
 
 const NAV: NavSection[] = [
   {
     section: "Super Admin Platform Control",
     items: [
-      { to: "/system-admin", label: "Shopkeeper Approvals & Queue", icon: ShieldAlert, search: { tab: "onboarding" } },
-      { to: "/system-admin", label: "Store Workspaces & Users", icon: Building, search: { tab: "workspaces" } },
-      { to: "/system-admin", label: "Storage Space & Subscriptions", icon: HardDrive, search: { tab: "subscriptions" } },
-      { to: "/system-admin", label: "Store Locations & Map Directory", icon: MapPin, search: { tab: "locations" } },
-      { to: "/system-admin", label: "System Audit Logs & Security", icon: Database, search: { tab: "audits" } },
+      { to: "/system-admin", label: "Shopkeeper Approvals & Queue", icon: ShieldAlert },
+      { to: "/workspaces", label: "Store Workspaces & Users", icon: Building },
+      { to: "/subscriptions", label: "Storage Space & Subscriptions", icon: HardDrive },
+      { to: "/locations", label: "Store Locations & Map Directory", icon: MapPin },
+      { to: "/audits", label: "System Audit Logs & Security", icon: Database },
     ],
   },
 ];
@@ -61,9 +61,7 @@ function AppShell() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const routerState = useRouterState();
-  const pathname = routerState.location.pathname;
-  const currentTab = new URLSearchParams(routerState.location.search).get("tab") || "onboarding";
+  const pathname = useRouterState({ select: (s: any) => s.location.pathname });
 
   useEffect(() => {
     if (loading) return;
@@ -167,13 +165,11 @@ function AppShell() {
                 )}
                 <ul className="space-y-1">
                   {section.items.map((item) => {
-                    const itemTab = item.search?.tab || "onboarding";
-                    const active = pathname === item.to && currentTab === itemTab;
+                    const active = pathname === item.to;
                     return (
                       <li key={item.label}>
                         <Link
                           to={item.to as never}
-                          search={item.search as never}
                           onClick={() => setMobileOpen(false)}
                           className={cn(
                             "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all",
