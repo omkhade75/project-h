@@ -24,10 +24,12 @@ import {
   Filter,
   Check,
   ChevronDown,
+  Navigation,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { useBusinessData } from "@/lib/business-context";
+import { GoogleMapsPicker } from "@/components/google-maps-picker";
 
 export const Route = createFileRoute("/_app/customer-portal")({
   head: () => ({
@@ -82,7 +84,7 @@ export function CustomerPortal() {
   const [searchQuery, setSearchQuery] = useState("");
   const [inStockOnly, setInStockOnly] = useState(true); // Default to showing only products in stock at nearest shop
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [address, setAddress] = useState("Flat 402, Sunshine Heights, Bandra West, Mumbai 400050");
+  const [address, setAddress] = useState("18th Road, Near Turner Road, Bandra West, Mumbai 400050");
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "COD" | "Wallet">("UPI");
 
   // Hyperlocal Orders
@@ -105,7 +107,7 @@ export function CustomerPortal() {
         { id: "prod-002", name: "Amul Butter 500g", category: "Grocery", price: 265, mrp: 285, imageUrl: PRODUCT_IMAGE_MAP["Amul Butter 500g"], unit: "500g", quantity: 1, storeStock: 45 }
       ],
       total: 401,
-      address: "Bandra West, Mumbai 400050",
+      address: "18th Road, Bandra West, Mumbai 400050",
       status: "ACCEPTED_BY_STORE",
       acceptedStore: "GrandSquare Supermart (Store ID: #STR-104)",
       storePhone: "+91 98765 43210",
@@ -119,7 +121,6 @@ export function CustomerPortal() {
 
   // Transform Database Products into Amazon UI Items
   const catalogProducts = useMemo(() => {
-    // Fallback items if DB loading
     const baseItems = dbProducts && dbProducts.length > 0 ? dbProducts : [
       { id: "SKU-10021", name: "Amul Taaza Milk 1L", category: "Grocery", dept: "Grocery", price: 68, cost: 54, stock: 128, reorder: 200, status: "ok" },
       { id: "SKU-10022", name: "Amul Butter 500g", category: "Grocery", dept: "Grocery", price: 265, cost: 210, stock: 45, reorder: 50, status: "low" },
@@ -266,13 +267,13 @@ export function CustomerPortal() {
 
           {/* Delivery Location Pill */}
           <div
-            onClick={() => setAddress(prompt("Enter delivery address:", address) || address)}
+            onClick={() => setIsCheckoutOpen(true)}
             className="hidden lg:flex items-center gap-1.5 rounded border border-transparent p-1.5 text-xs hover:border-white cursor-pointer"
           >
             <MapPin className="h-4 w-4 text-amber-400 shrink-0" />
             <div>
               <p className="text-[10px] text-slate-300">Deliver to Aditi</p>
-              <p className="font-bold line-clamp-1 text-white">Bandra West, Mumbai 400050</p>
+              <p className="font-bold line-clamp-1 text-white max-w-[200px] truncate">{address}</p>
             </div>
           </div>
 
@@ -532,10 +533,10 @@ export function CustomerPortal() {
         </div>
       )}
 
-      {/* Amazon Checkout Drawer */}
+      {/* Amazon Checkout Drawer with Google Maps Live Geolocation */}
       {isCheckoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl space-y-4 text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl space-y-4 text-slate-900 my-8">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-[#131921]">Amazon Fresh Checkout</h3>
               <button onClick={() => setIsCheckoutOpen(false)} className="text-slate-400 hover:text-slate-700">
@@ -543,7 +544,14 @@ export function CustomerPortal() {
               </button>
             </div>
 
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            {/* Google Maps Live Geolocation Auto-Fill Component */}
+            <GoogleMapsPicker
+              address={address}
+              onAddressChange={(newAddr) => setAddress(newAddr)}
+              label="Delivery Address (Google Maps Live GPS)"
+            />
+
+            <div className="space-y-2 max-h-40 overflow-y-auto">
               {cart.map((item) => (
                 <div key={item.id} className="flex items-center justify-between text-xs border-b pb-2">
                   <div className="flex items-center gap-2">

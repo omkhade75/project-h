@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { registerCompanyServer } from "@/lib/server-registration";
+import { GoogleMapsPicker } from "@/components/google-maps-picker";
 
 export const Route = createFileRoute("/register")({
   head: () => ({
@@ -68,7 +69,6 @@ function RegisterPage() {
   };
 
   const nextStep = () => {
-    // Basic validation before moving to next step
     if (step === 1 && !formData.companyName) return toast.error("Company Name is required");
     if (step === 2 && (!formData.ownerName || !formData.ownerEmail)) return toast.error("Owner Name and Email are required");
     if (step === 3 && (!formData.city || !formData.state)) return toast.error("City and State are required");
@@ -234,14 +234,22 @@ function RegisterPage() {
               </div>
             )}
 
-            {/* STEP 3: ADDRESS */}
+            {/* STEP 3: ADDRESS WITH GOOGLE MAPS GPS AUTO-FILL */}
             {step === 3 && (
               <div className="animate-in fade-in slide-in-from-right-4 space-y-4">
-                <h3 className="mb-4 text-lg font-semibold">Business Address</h3>
-                <div className="space-y-1.5">
-                  <Label htmlFor="address">Full Address *</Label>
-                  <Input id="address" name="address" value={formData.address} onChange={handleChange} required />
-                </div>
+                <h3 className="mb-4 text-lg font-semibold">Business Address & Location</h3>
+                <GoogleMapsPicker
+                  address={formData.address}
+                  onAddressChange={(newAddr, details) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      address: newAddr,
+                      city: details?.city || prev.city || "Mumbai",
+                      state: details?.state || prev.state || "Maharashtra",
+                      country: details?.country || prev.country || "India",
+                    }));
+                  }}
+                />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="city">City *</Label>
