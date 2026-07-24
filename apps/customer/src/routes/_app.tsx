@@ -91,73 +91,17 @@ type NavSection = { section: string; items: NavItem[] };
 
 const NAV: NavSection[] = [
   {
-    section: "Overview",
+    section: "My Account",
     items: [
-      { to: "/command-center", label: "Command Center", icon: LayoutDashboard },
-      { to: "/live-ops", label: "Live Operations", icon: Activity },
-      { to: "/time-machine", label: "Business Time Machine", icon: CalendarDays },
+      { to: "/customer-portal", label: "Customer Dashboard", icon: ShoppingBagIcon },
+      { to: "/transactions", label: "My Orders & Receipts", icon: Receipt },
     ],
   },
   {
-    section: "Portals",
+    section: "Shopping & Support",
     items: [
-      { to: "/customer-portal", label: "Customer Portal", icon: ShoppingBagIcon },
-      { to: "/supplier-portal", label: "Supplier Portal", icon: Truck },
-    ],
-  },
-  {
-    section: "Intelligence",
-    items: [
-      { to: "/analytics", label: "Analytics", icon: BarChart3 },
-      { to: "/ai-decisions", label: "AI Decision Center", icon: Brain },
-      { to: "/market-intelligence", label: "Market Intelligence", icon: Globe },
-      { to: "/forecasting", label: "Forecasting", icon: LineChart },
-      { to: "/anomalies", label: "Anomaly & Risk", icon: ShieldAlert },
-    ],
-  },
-  {
-    section: "Commerce",
-    items: [
-      { to: "/billing", label: "Billing (POS)", icon: Calculator },
-      { to: "/sales", label: "Sales", icon: ShoppingCart },
-      { to: "/transactions", label: "Transactions", icon: Receipt },
-      { to: "/customers", label: "Customers", icon: Users },
-    ],
-  },
-  {
-    section: "Operations",
-    items: [
-      { to: "/products", label: "Products", icon: Package },
-      { to: "/inventory", label: "Inventory", icon: Warehouse },
-      { to: "/expiry", label: "Expiry Intelligence", icon: Timer },
-      { to: "/suppliers", label: "Suppliers", icon: Truck },
-      { to: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
-      { to: "/logistics", label: "Logistics & Dispatch", icon: Truck },
-    ],
-  },
-  {
-    section: "Finance",
-    items: [
-      { to: "/accounts", label: "Accounts", icon: CreditCard },
-      { to: "/income", label: "Income", icon: Wallet },
-      { to: "/expenses", label: "Expenses", icon: TrendingDown },
-      { to: "/utilities", label: "Utilities", icon: Zap },
-      { to: "/tax", label: "Tax & Compliance", icon: FileBarChart },
-    ],
-  },
-  {
-    section: "Management",
-    items: [
-      { to: "/departments", label: "Departments", icon: Building2 },
-      { to: "/staff", label: "Staff & Managers", icon: UserCog },
-    ],
-  },
-  {
-    section: "System",
-    items: [
-      { to: "/reports", label: "Reports", icon: FileText },
-      { to: "/data-import", label: "Data Import", icon: Upload },
-      { to: "/settings", label: "Settings", icon: Settings },
+      { to: "/products", label: "Product Catalog", icon: Package },
+      { to: "/logistics", label: "Delivery Status", icon: Truck },
     ],
   },
 ];
