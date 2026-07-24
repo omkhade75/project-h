@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { Eye, EyeOff, ShieldCheck, Sparkles, TrendingUp, Zap, Loader2, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { Eye, EyeOff, ShieldCheck, Sparkles, TrendingUp, Zap, Loader2, ArrowLeft, Building2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-
 import { z } from "zod";
 
 const loginSearchSchema = z.object({
@@ -19,17 +18,17 @@ export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => loginSearchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "Sign in — OmniMind AI" },
+      { title: "Admin Portal Sign In — Bizora OS" },
       {
         name: "description",
-        content: "Sign in to OmniMind AI, the mall intelligence and decision operating system.",
+        content: "Sign in to the Bizora Admin Portal for system administration and mall operations.",
       },
     ],
   }),
-  component: LoginPage,
+  component: AdminLoginPage,
 });
 
-function LoginPage() {
+function AdminLoginPage() {
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -38,7 +37,7 @@ function LoginPage() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminSubmitting, setAdminSubmitting] = useState(false);
-  const { user, loading, login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
 
@@ -58,26 +57,31 @@ function LoginPage() {
     }
   };
 
-
-
   const handleFormLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return toast.error("Enter your email");
     setSubmitting(true);
     try {
       const loggedIn = await login(email, pass);
+      toast.success("Welcome back to Admin Portal");
       navigate({ to: getRedirectTarget(loggedIn) });
     } catch (err: any) {
-      toast.error(err.message || "Login failed");
+      toast.error(err.message || "Admin login failed");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const fillDemoAdmin = () => {
+    setEmail("khade8915@gmail.com");
+    setPass("123456789");
+    toast.info("Loaded System Admin demo credentials");
+  };
+
   const handleAdminLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (adminEmail !== "khade8915@gmail.com" || adminPassword !== "123456789") {
-      toast.error("Incorrect admin credentials. Please enter khade8915@gmail.com and 123456789.");
+      toast.error("Incorrect credentials. Please enter khade8915@gmail.com and 123456789.");
       return;
     }
     setAdminSubmitting(true);
@@ -86,7 +90,7 @@ function LoginPage() {
       setShowAdminModal(false);
       setAdminEmail("");
       setAdminPassword("");
-      toast.success("Authorized successfully.");
+      toast.success("System Admin authorized");
       navigate({ to: getRedirectTarget(loggedIn) });
     } catch (err: any) {
       toast.error(err.message || "Admin login failed");
@@ -94,8 +98,6 @@ function LoginPage() {
       setAdminSubmitting(false);
     }
   };
-
-
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -112,78 +114,101 @@ function LoginPage() {
 
       {/* Backdrop */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-primary/15 blur-[120px]" />
-        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] rounded-full bg-violet/15 blur-[120px]" />
+        <div className="absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-purple-600/15 blur-[120px]" />
+        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] rounded-full bg-indigo-600/15 blur-[120px]" />
         <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(var(--color-foreground)_1px,transparent_1px),linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)] [background-size:44px_44px]" />
       </div>
 
       <div className="relative grid min-h-screen grid-cols-1 lg:grid-cols-2">
         {/* Left: brand story */}
-        <div className="hidden flex-col justify-between p-10 lg:flex xl:p-14">
-          <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-transparent overflow-hidden">
-              <img src="/logo.png" className="h-full w-full object-contain" alt="OmniMind AI" />
+        <div className="hidden flex-col justify-between p-10 lg:flex xl:p-14 border-r border-border/40 bg-purple-950/10">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400">
+              <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-tight">OmniMind AI</p>
-              <p className="text-[11px] text-muted-foreground">Enterprise Intelligence OS</p>
+              <p className="text-base font-bold tracking-tight text-foreground">Bizora OS</p>
+              <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Admin Control Portal</p>
             </div>
           </div>
 
           <div className="max-w-lg">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
-              Decision Intelligence for Modern Businesses
-            </p>
-            <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.1] tracking-tight xl:text-5xl">
-              From business data to <span className="gradient-text">intelligent decisions</span>.
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold uppercase tracking-wider mb-4">
+              <Building2 className="h-3.5 w-3.5" /> Mall & Tenant Administration
+            </div>
+            <h1 className="font-display text-4xl font-extrabold leading-[1.1] tracking-tight xl:text-5xl">
+              Central Operations <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">& Admin Control</span>.
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              OmniMind AI unifies sales, inventory, customers, suppliers, and utilities into a
-              single decision surface — with predictive analytics and evidence-backed AI
-              recommendations designed for owners, admins, and store managers.
+              Welcome to the Administrative Management Console. Oversee tenant onboarding, workspace permissions, System Admin audit logs, and mall operations in real-time.
             </p>
 
             <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
-                { icon: TrendingUp, label: "Real-time analytics" },
-                { icon: Zap, label: "AI recommendations" },
-                { icon: ShieldCheck, label: "Anomaly detection" },
+                { icon: ShieldCheck, label: "System Admin Tools" },
+                { icon: TrendingUp, label: "Tenant Auditing" },
+                { icon: Zap, label: "Mall Analytics" },
               ].map((f) => (
-                <div key={f.label} className="glass rounded-lg p-3">
-                  <f.icon className="h-4 w-4 text-primary" />
-                  <p className="mt-2 text-xs font-medium">{f.label}</p>
+                <div key={f.label} className="glass rounded-xl p-3.5 border border-purple-500/20 bg-purple-500/5">
+                  <f.icon className="h-4 w-4 text-purple-400" />
+                  <p className="mt-2 text-xs font-semibold text-foreground">{f.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
-            <p className="text-xs text-muted-foreground">
-              Enterprise Grade • Multi-Tenant • Secure
-            </p>
+          <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
+            <span>Enterprise Admin Portal</span>
+            <span className="font-medium text-purple-400">v2.4 Secured</span>
+          </div>
         </div>
 
         {/* Right: form */}
         <div className="flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md">
             <div className="lg:hidden mb-8 flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-lg gradient-primary">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              <div className="grid h-9 w-9 place-items-center rounded-lg bg-purple-600 text-white">
+                <ShieldCheck className="h-4 w-4" />
               </div>
-              <p className="text-sm font-semibold">OmniMind AI</p>
+              <div>
+                <p className="text-sm font-semibold">Bizora OS</p>
+                <p className="text-xs text-purple-400">Admin Portal</p>
+              </div>
             </div>
 
-            <div className="card-elevated p-6 sm:p-8">
-              <h2 className="font-display text-xl font-semibold tracking-tight">Sign in</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Welcome back. Access the intelligence layer.
+            <div className="card-elevated p-6 sm:p-8 border border-purple-500/20 shadow-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">Admin Sign In</h2>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  Admin Portal
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Enter your administrative credentials to manage operations.
               </p>
+
+              {/* Demo quick fill button */}
+              <button
+                type="button"
+                onClick={fillDemoAdmin}
+                className="mt-4 w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 transition-all"
+              >
+                <span className="flex items-center gap-2">
+                  <Lock className="h-3.5 w-3.5 text-purple-400" />
+                  Quick Fill Demo Admin Credentials
+                </span>
+                <span className="font-mono text-[10px] bg-purple-950/60 px-2 py-0.5 rounded text-purple-200">
+                  khade8915@gmail.com
+                </span>
+              </button>
 
               <form className="mt-6 space-y-4" onSubmit={handleFormLogin}>
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Admin Email</Label>
                   <Input
                     id="email"
                     type="email"
+                    placeholder="admin@bizora.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"
@@ -192,9 +217,6 @@ function LoginPage() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <button type="button" className="text-xs text-primary hover:underline">
-                      Forgot password?
-                    </button>
                   </div>
                   <div className="relative">
                     <Input
@@ -216,38 +238,27 @@ function LoginPage() {
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember" defaultChecked />
                   <Label htmlFor="remember" className="text-xs text-muted-foreground">
-                    Remember me for 30 days
+                    Remember session for 30 days
                   </Label>
                 </div>
 
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full gradient-primary text-primary-foreground"
+                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium shadow-lg shadow-purple-600/20"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Sign in
+                  Sign In to Admin Portal
                 </Button>
               </form>
 
-              <div className="mt-4 text-center text-xs text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-primary hover:underline font-semibold">
-                  Register your company
-                </Link>
-              </div>
-
-              <p className="mt-6 text-center text-[11px] text-muted-foreground">
-                Protected by Enterprise Grade Security
-              </p>
-
-              <div className="mt-6 text-center border-t border-hairline pt-4">
+              <div className="mt-6 text-center border-t border-border/40 pt-4">
                 <button
                   type="button"
                   onClick={() => setShowAdminModal(true)}
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors hover:underline"
+                  className="text-xs text-muted-foreground hover:text-purple-400 transition-colors font-medium hover:underline"
                 >
-                  System Administrator Login
+                  Authorize System Super Admin Mode
                 </button>
               </div>
             </div>
@@ -259,9 +270,9 @@ function LoginPage() {
       <Dialog open={showAdminModal} onOpenChange={(open) => !open && setShowAdminModal(false)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>System Admin Login</DialogTitle>
+            <DialogTitle>System Super Admin Authorization</DialogTitle>
             <DialogDescription>
-              Please enter username as <span className="font-semibold text-primary">khade8915@gmail.com</span> and password <span className="font-semibold text-primary">123456789</span>.
+              Super Admin override for <span className="font-semibold text-purple-400">khade8915@gmail.com</span>
             </DialogDescription>
           </DialogHeader>
 
@@ -293,9 +304,9 @@ function LoginPage() {
               <Button type="button" variant="outline" onClick={() => { setShowAdminModal(false); setAdminEmail(""); setAdminPassword(""); }}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={adminSubmitting}>
+              <Button type="submit" disabled={adminSubmitting} className="bg-purple-600 text-white">
                 {adminSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Authorize Admin
+                Authorize Super Admin
               </Button>
             </DialogFooter>
           </form>

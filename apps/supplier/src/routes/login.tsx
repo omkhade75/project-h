@@ -1,14 +1,12 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { Eye, EyeOff, ShieldCheck, Sparkles, TrendingUp, Zap, Loader2, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { Eye, EyeOff, Truck, PackageCheck, FileSpreadsheet, Loader2, ArrowLeft, Building2, ClipboardList, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-
 import { z } from "zod";
 
 const loginSearchSchema = z.object({
@@ -19,26 +17,22 @@ export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => loginSearchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "Sign in — OmniMind AI" },
+      { title: "Supplier Portal Sign In — Bizora OS" },
       {
         name: "description",
-        content: "Sign in to OmniMind AI, the mall intelligence and decision operating system.",
+        content: "Sign in to the Bizora Supplier & Vendor Portal to manage purchase orders and delivery dispatches.",
       },
     ],
   }),
-  component: LoginPage,
+  component: SupplierLoginPage,
 });
 
-function LoginPage() {
+function SupplierLoginPage() {
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-  const [adminSubmitting, setAdminSubmitting] = useState(false);
-  const { user, loading, login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
 
@@ -48,7 +42,7 @@ function LoginPage() {
       if (activeUser?.isSystemAdmin) {
         return "/system-admin";
       }
-      return "/command-center";
+      return "/supplier-portal";
     }
     try {
       const url = new URL(redirect);
@@ -58,44 +52,26 @@ function LoginPage() {
     }
   };
 
-
-
   const handleFormLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return toast.error("Enter your email");
     setSubmitting(true);
     try {
       const loggedIn = await login(email, pass);
+      toast.success("Welcome to Supplier Portal");
       navigate({ to: getRedirectTarget(loggedIn) });
     } catch (err: any) {
-      toast.error(err.message || "Login failed");
+      toast.error(err.message || "Supplier login failed");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminEmail !== "khade8915@gmail.com" || adminPassword !== "123456789") {
-      toast.error("Incorrect admin credentials. Please enter khade8915@gmail.com and 123456789.");
-      return;
-    }
-    setAdminSubmitting(true);
-    try {
-      const loggedIn = await login(adminEmail, adminPassword);
-      setShowAdminModal(false);
-      setAdminEmail("");
-      setAdminPassword("");
-      toast.success("Authorized successfully.");
-      navigate({ to: getRedirectTarget(loggedIn) });
-    } catch (err: any) {
-      toast.error(err.message || "Admin login failed");
-    } finally {
-      setAdminSubmitting(false);
-    }
+  const fillDemoSupplier = () => {
+    setEmail("khade8915@gmail.com");
+    setPass("123456789");
+    toast.info("Loaded Supplier demo credentials");
   };
-
-
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -112,78 +88,101 @@ function LoginPage() {
 
       {/* Backdrop */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-primary/15 blur-[120px]" />
-        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] rounded-full bg-violet/15 blur-[120px]" />
+        <div className="absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-emerald-600/15 blur-[120px]" />
+        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] rounded-full bg-teal-600/15 blur-[120px]" />
         <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(var(--color-foreground)_1px,transparent_1px),linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)] [background-size:44px_44px]" />
       </div>
 
       <div className="relative grid min-h-screen grid-cols-1 lg:grid-cols-2">
         {/* Left: brand story */}
-        <div className="hidden flex-col justify-between p-10 lg:flex xl:p-14">
-          <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-transparent overflow-hidden">
-              <img src="/logo.png" className="h-full w-full object-contain" alt="OmniMind AI" />
+        <div className="hidden flex-col justify-between p-10 lg:flex xl:p-14 border-r border-border/40 bg-emerald-950/10">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400">
+              <Truck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-tight">OmniMind AI</p>
-              <p className="text-[11px] text-muted-foreground">Enterprise Intelligence OS</p>
+              <p className="text-base font-bold tracking-tight text-foreground">Bizora Supply</p>
+              <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Vendor Portal</p>
             </div>
           </div>
 
           <div className="max-w-lg">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
-              Decision Intelligence for Modern Businesses
-            </p>
-            <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.1] tracking-tight xl:text-5xl">
-              From business data to <span className="gradient-text">intelligent decisions</span>.
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-4">
+              <Building2 className="h-3.5 w-3.5" /> Supply Chain & Procurement Network
+            </div>
+            <h1 className="font-display text-4xl font-extrabold leading-[1.1] tracking-tight xl:text-5xl">
+              Manage Purchase Orders & <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Delivery Dispatches</span>.
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              OmniMind AI unifies sales, inventory, customers, suppliers, and utilities into a
-              single decision surface — with predictive analytics and evidence-backed AI
-              recommendations designed for owners, admins, and store managers.
+              Dedicated portal for registered suppliers and logistics partners. Review incoming purchase orders, update shipment tracking status, and request PO payments directly.
             </p>
 
             <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
-                { icon: TrendingUp, label: "Real-time analytics" },
-                { icon: Zap, label: "AI recommendations" },
-                { icon: ShieldCheck, label: "Anomaly detection" },
+                { icon: ClipboardList, label: "Purchase Orders" },
+                { icon: Truck, label: "Logistics Tracker" },
+                { icon: PackageCheck, label: "Goods Receipt" },
               ].map((f) => (
-                <div key={f.label} className="glass rounded-lg p-3">
-                  <f.icon className="h-4 w-4 text-primary" />
-                  <p className="mt-2 text-xs font-medium">{f.label}</p>
+                <div key={f.label} className="glass rounded-xl p-3.5 border border-emerald-500/20 bg-emerald-500/5">
+                  <f.icon className="h-4 w-4 text-emerald-400" />
+                  <p className="mt-2 text-xs font-semibold text-foreground">{f.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
-            <p className="text-xs text-muted-foreground">
-              Enterprise Grade • Multi-Tenant • Secure
-            </p>
+          <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
+            <span>Supplier & Logistics Portal</span>
+            <span className="font-medium text-emerald-400">Vendor Verified</span>
+          </div>
         </div>
 
         {/* Right: form */}
         <div className="flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md">
             <div className="lg:hidden mb-8 flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-lg gradient-primary">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-600 text-white">
+                <Truck className="h-4 w-4" />
               </div>
-              <p className="text-sm font-semibold">OmniMind AI</p>
+              <div>
+                <p className="text-sm font-semibold">Bizora OS</p>
+                <p className="text-xs text-emerald-400">Supplier Portal</p>
+              </div>
             </div>
 
-            <div className="card-elevated p-6 sm:p-8">
-              <h2 className="font-display text-xl font-semibold tracking-tight">Sign in</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Welcome back. Access the intelligence layer.
+            <div className="card-elevated p-6 sm:p-8 border border-emerald-500/20 shadow-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">Supplier Sign In</h2>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Vendor Portal
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Sign in to manage purchase orders and delivery fulfillment.
               </p>
+
+              {/* Demo quick fill button */}
+              <button
+                type="button"
+                onClick={fillDemoSupplier}
+                className="mt-4 w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 transition-all"
+              >
+                <span className="flex items-center gap-2">
+                  <Truck className="h-3.5 w-3.5 text-emerald-400" />
+                  Quick Fill Supplier Credentials
+                </span>
+                <span className="font-mono text-[10px] bg-emerald-950/60 px-2 py-0.5 rounded text-emerald-200">
+                  khade8915@gmail.com
+                </span>
+              </button>
 
               <form className="mt-6 space-y-4" onSubmit={handleFormLogin}>
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Vendor Email</Label>
                   <Input
                     id="email"
                     type="email"
+                    placeholder="supplier@vendor.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"
@@ -192,9 +191,6 @@ function LoginPage() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <button type="button" className="text-xs text-primary hover:underline">
-                      Forgot password?
-                    </button>
                   </div>
                   <div className="relative">
                     <Input
@@ -216,91 +212,30 @@ function LoginPage() {
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember" defaultChecked />
                   <Label htmlFor="remember" className="text-xs text-muted-foreground">
-                    Remember me for 30 days
+                    Keep vendor session active
                   </Label>
                 </div>
 
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full gradient-primary text-primary-foreground"
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium shadow-lg shadow-emerald-600/20"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Sign in
+                  Sign In to Vendor Portal
                 </Button>
               </form>
 
-              <div className="mt-4 text-center text-xs text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-primary hover:underline font-semibold">
-                  Register your company
+              <div className="mt-6 text-center text-xs text-muted-foreground">
+                Want to become a registered supplier?{" "}
+                <Link to="/register" className="text-emerald-400 hover:underline font-semibold">
+                  Register Supplier Account
                 </Link>
-              </div>
-
-              <p className="mt-6 text-center text-[11px] text-muted-foreground">
-                Protected by Enterprise Grade Security
-              </p>
-
-              <div className="mt-6 text-center border-t border-hairline pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAdminModal(true)}
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors hover:underline"
-                >
-                  System Administrator Login
-                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* ADMIN LOGIN DIALOG */}
-      <Dialog open={showAdminModal} onOpenChange={(open) => !open && setShowAdminModal(false)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>System Admin Login</DialogTitle>
-            <DialogDescription>
-              Please enter username as <span className="font-semibold text-primary">khade8915@gmail.com</span> and password <span className="font-semibold text-primary">123456789</span>.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleAdminLoginSubmit} className="space-y-4 my-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="adminEmail">Admin Email</Label>
-              <Input
-                id="adminEmail"
-                type="email"
-                value={adminEmail}
-                onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="khade8915@gmail.com"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="adminPassword">Password</Label>
-              <Input
-                id="adminPassword"
-                type="password"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => { setShowAdminModal(false); setAdminEmail(""); setAdminPassword(""); }}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={adminSubmitting}>
-                {adminSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Authorize Admin
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
