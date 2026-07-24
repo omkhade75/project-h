@@ -6,8 +6,9 @@ export class AiController {
   constructor(private readonly aiService: AiService) {}
 
   @Post('ask')
-  async askAi(@Req() req, @Body('query') query: string) {
+  async askAi(@Req() req, @Body() body: any) {
     const user = req.user;
-    return await this.aiService.askAi(user?.workspaceId || 'grandsquare-mall', query);
+    const query = typeof body === 'string' ? body : (body?.query || '');
+    return await this.aiService.askAi(user?.workspaceId || 'grandsquare-mall', query, body);
   }
 }
