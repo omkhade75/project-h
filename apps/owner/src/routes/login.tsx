@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Eye, EyeOff, Building, TrendingUp, Zap, Loader2, ArrowLeft, Crown, DollarSign, PieChart } from "lucide-react";
+import { Eye, EyeOff, Building, TrendingUp, Loader2, ArrowLeft, Crown, DollarSign, PieChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,8 +29,8 @@ export const Route = createFileRoute("/login")({
 
 function OwnerLoginPage() {
   const [show, setShow] = useState(false);
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
+  const [email, setEmail] = useState("owner@gmail.com");
+  const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
   const { user, login } = useAuth();
   const navigate = useNavigate();
@@ -68,9 +68,9 @@ function OwnerLoginPage() {
   };
 
   const fillDemoOwner = () => {
-    setEmail("khade8915@gmail.com");
+    setEmail("owner@gmail.com");
     setPass("123456789");
-    toast.info("Loaded Business Owner demo credentials");
+    toast.info("Loaded Owner demo credentials");
   };
 
   return (
@@ -133,7 +133,7 @@ function OwnerLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Executive Business Suite</span>
-            <span className="font-medium text-amber-400">Owner Access Only</span>
+            <span className="font-medium text-amber-400">owner@gmail.com</span>
           </div>
         </div>
 
@@ -169,10 +169,10 @@ function OwnerLoginPage() {
               >
                 <span className="flex items-center gap-2">
                   <Crown className="h-3.5 w-3.5 text-amber-400" />
-                  Quick Fill Demo Owner Credentials
+                  Quick Fill Owner Credentials
                 </span>
                 <span className="font-mono text-[10px] bg-amber-950/60 px-2 py-0.5 rounded text-amber-200">
-                  khade8915@gmail.com
+                  owner@gmail.com / 123456789
                 </span>
               </button>
 
@@ -182,7 +182,7 @@ function OwnerLoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="owner@bizora.com"
+                    placeholder="owner@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"

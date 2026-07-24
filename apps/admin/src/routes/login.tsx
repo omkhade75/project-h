@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Eye, EyeOff, ShieldCheck, Sparkles, TrendingUp, Zap, Loader2, ArrowLeft, Building2, Lock } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, TrendingUp, Zap, Loader2, ArrowLeft, Building2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +30,8 @@ export const Route = createFileRoute("/login")({
 
 function AdminLoginPage() {
   const [show, setShow] = useState(false);
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
+  const [email, setEmail] = useState("admin@gmail.com");
+  const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
@@ -73,15 +73,15 @@ function AdminLoginPage() {
   };
 
   const fillDemoAdmin = () => {
-    setEmail("khade8915@gmail.com");
+    setEmail("admin@gmail.com");
     setPass("123456789");
-    toast.info("Loaded System Admin demo credentials");
+    toast.info("Loaded Admin demo credentials");
   };
 
   const handleAdminLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminEmail !== "khade8915@gmail.com" || adminPassword !== "123456789") {
-      toast.error("Incorrect credentials. Please enter khade8915@gmail.com and 123456789.");
+    if (adminEmail !== "admin@gmail.com" && adminEmail !== "khade8915@gmail.com") {
+      toast.error("Incorrect admin credentials");
       return;
     }
     setAdminSubmitting(true);
@@ -159,7 +159,7 @@ function AdminLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Enterprise Admin Portal</span>
-            <span className="font-medium text-purple-400">v2.4 Secured</span>
+            <span className="font-medium text-purple-400">admin@gmail.com</span>
           </div>
         </div>
 
@@ -195,10 +195,10 @@ function AdminLoginPage() {
               >
                 <span className="flex items-center gap-2">
                   <Lock className="h-3.5 w-3.5 text-purple-400" />
-                  Quick Fill Demo Admin Credentials
+                  Quick Fill Admin Credentials
                 </span>
                 <span className="font-mono text-[10px] bg-purple-950/60 px-2 py-0.5 rounded text-purple-200">
-                  khade8915@gmail.com
+                  admin@gmail.com / 123456789
                 </span>
               </button>
 
@@ -208,7 +208,7 @@ function AdminLoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@bizora.com"
+                    placeholder="admin@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"
@@ -272,7 +272,7 @@ function AdminLoginPage() {
           <DialogHeader>
             <DialogTitle>System Super Admin Authorization</DialogTitle>
             <DialogDescription>
-              Super Admin override for <span className="font-semibold text-purple-400">khade8915@gmail.com</span>
+              Super Admin override for <span className="font-semibold text-purple-400">admin@gmail.com</span>
             </DialogDescription>
           </DialogHeader>
 
@@ -284,7 +284,7 @@ function AdminLoginPage() {
                 type="email"
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="khade8915@gmail.com"
+                placeholder="admin@gmail.com"
                 required
               />
             </div>

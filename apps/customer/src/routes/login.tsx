@@ -29,8 +29,8 @@ export const Route = createFileRoute("/login")({
 
 function CustomerLoginPage() {
   const [show, setShow] = useState(false);
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
+  const [email, setEmail] = useState("customer@gmail.com");
+  const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
   const { user, login } = useAuth();
   const navigate = useNavigate();
@@ -68,7 +68,7 @@ function CustomerLoginPage() {
   };
 
   const fillDemoCustomer = () => {
-    setEmail("khade8915@gmail.com");
+    setEmail("customer@gmail.com");
     setPass("123456789");
     toast.info("Loaded Customer demo credentials");
   };
@@ -133,7 +133,7 @@ function CustomerLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Customer Loyalty Hub</span>
-            <span className="font-medium text-cyan-400">Instant Receipts</span>
+            <span className="font-medium text-cyan-400">customer@gmail.com</span>
           </div>
         </div>
 
@@ -172,7 +172,7 @@ function CustomerLoginPage() {
                   Quick Fill Customer Credentials
                 </span>
                 <span className="font-mono text-[10px] bg-cyan-950/60 px-2 py-0.5 rounded text-cyan-200">
-                  khade8915@gmail.com
+                  customer@gmail.com / 123456789
                 </span>
               </button>
 
@@ -182,7 +182,7 @@ function CustomerLoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="customer@example.com"
+                    placeholder="customer@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"

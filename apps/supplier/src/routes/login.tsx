@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Eye, EyeOff, Truck, PackageCheck, FileSpreadsheet, Loader2, ArrowLeft, Building2, ClipboardList, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Truck, PackageCheck, Loader2, ArrowLeft, Building2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,8 +29,8 @@ export const Route = createFileRoute("/login")({
 
 function SupplierLoginPage() {
   const [show, setShow] = useState(false);
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
+  const [email, setEmail] = useState("supplier@gmail.com");
+  const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
   const { user, login } = useAuth();
   const navigate = useNavigate();
@@ -68,7 +68,7 @@ function SupplierLoginPage() {
   };
 
   const fillDemoSupplier = () => {
-    setEmail("khade8915@gmail.com");
+    setEmail("supplier@gmail.com");
     setPass("123456789");
     toast.info("Loaded Supplier demo credentials");
   };
@@ -133,7 +133,7 @@ function SupplierLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Supplier & Logistics Portal</span>
-            <span className="font-medium text-emerald-400">Vendor Verified</span>
+            <span className="font-medium text-emerald-400">supplier@gmail.com</span>
           </div>
         </div>
 
@@ -172,7 +172,7 @@ function SupplierLoginPage() {
                   Quick Fill Supplier Credentials
                 </span>
                 <span className="font-mono text-[10px] bg-emerald-950/60 px-2 py-0.5 rounded text-emerald-200">
-                  khade8915@gmail.com
+                  supplier@gmail.com / 123456789
                 </span>
               </button>
 
@@ -182,7 +182,7 @@ function SupplierLoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="supplier@vendor.com"
+                    placeholder="supplier@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"

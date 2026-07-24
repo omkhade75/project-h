@@ -57,14 +57,56 @@ export class AuthService {
   }
 
   async login(data: { email: string; password: string }) {
-    const user = await UserModel.findOne({ email: data.email.toLowerCase() });
+    const emailLower = data.email.toLowerCase().trim();
+
+    // Default accounts for demo & static portal logins with password "123456789"
+    const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
+      'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
+      'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
+      'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
+      'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
+      'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
+    };
+
+    if (data.password === '123456789' && DEMO_ACCOUNTS[emailLower]) {
+      const demoConfig = DEMO_ACCOUNTS[emailLower];
+      const payload = {
+        userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
+        email: emailLower,
+        role: demoConfig.role,
+        workspaceId: 'grandsquare-mall',
+        companyId: 'grandsquare-mall',
+        isSystemAdmin: !!demoConfig.isSystemAdmin,
+      };
+
+      const token = JwtUtil.generateAccessToken(payload);
+      const refreshToken = JwtUtil.generateRefreshToken(payload);
+
+      return {
+        user: {
+          id: payload.userId,
+          email: emailLower,
+          name: demoConfig.name,
+          role: demoConfig.role,
+          departmentId: null,
+          workspaceId: 'grandsquare-mall',
+          isSystemAdmin: !!demoConfig.isSystemAdmin,
+          setupCompleted: true,
+        },
+        token,
+        accessToken: token,
+        refreshToken,
+      };
+    }
+
+    const user = await UserModel.findOne({ email: emailLower });
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const isMatch = await PasswordUtil.comparePassword(data.password, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const payload = {
@@ -72,6 +114,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       companyId: user.companyId?.toString(),
+      workspaceId: 'grandsquare-mall',
     };
 
     const accessToken = JwtUtil.generateAccessToken(payload);
@@ -87,8 +130,10 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        workspaceId: 'grandsquare-mall',
         companyId: user.companyId,
       },
+      token: accessToken,
       accessToken,
       refreshToken,
     };
