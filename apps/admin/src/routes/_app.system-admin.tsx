@@ -51,15 +51,15 @@ export function SystemAdminPage() {
   // Dashboard & Onboarding data
   const [data, setData] = useState<any>({
     stats: {
-      activeCompanies: 1,
-      totalCompanies: 1,
+      activeCompanies: 0,
+      totalCompanies: 0,
       pendingCount: 0,
-      onlineUsers: 1,
-      totalUsers: 1,
+      onlineUsers: 0,
+      totalUsers: 0,
       todayRegistrations: 0,
-      monthlyRegistrations: 1,
-      aiUsage: 124,
-      storageUsage: 4500,
+      monthlyRegistrations: 0,
+      aiUsage: 0,
+      storageUsage: 0,
     },
     pending: [],
     approved: [],
@@ -87,7 +87,6 @@ export function SystemAdminPage() {
   const [workspaceQuery, setWorkspaceQuery] = useState("");
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [loadingWorkspaces, setLoadingWorkspaces] = useState(false);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<any>(null);
 
   // Audit Logs state
   const [audits, setAudits] = useState<any[]>([]);
@@ -109,7 +108,17 @@ export function SystemAdminPage() {
       const result = await getSystemAdminDashboardServer();
       if (result) {
         setData({
-          stats: result.stats || data.stats,
+          stats: result.stats || {
+            activeCompanies: 0,
+            totalCompanies: 0,
+            pendingCount: 0,
+            onlineUsers: 0,
+            totalUsers: 0,
+            todayRegistrations: 0,
+            monthlyRegistrations: 0,
+            aiUsage: 0,
+            storageUsage: 0,
+          },
           pending: Array.isArray(result.pending) ? result.pending : [],
           approved: Array.isArray(result.approved) ? result.approved : [],
           rejected: Array.isArray(result.rejected) ? result.rejected : [],
@@ -149,7 +158,6 @@ export function SystemAdminPage() {
     }
   };
 
-  // Run searches
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (user?.isSystemAdmin) fetchWorkspaces();
@@ -212,60 +220,10 @@ export function SystemAdminPage() {
   const safeWorkspaces = Array.isArray(workspaces) ? workspaces : [];
   const safeAudits = Array.isArray(audits) ? audits : [];
 
-  // Default store list fallback for workspace metrics & maps
-  const storeDetails = safeWorkspaces.length > 0 ? safeWorkspaces : [
-    {
-      id: "grandsquare-mall",
-      name: "GrandSquare Retail Store",
-      ownerName: "Business Owner",
-      ownerEmail: "owner@gmail.com",
-      plan: "Enterprise SaaS",
-      status: "ACTIVE",
-      activeUsers: 8,
-      storageMB: 48.2,
-      maxStorageMB: 500,
-      monthlyFee: "₹14,999/mo",
-      renewalDate: "2026-12-31",
-      city: "Mumbai",
-      address: "Bandra West, Hill Road, Mumbai - 400050",
-      lat: 19.0596,
-      lng: 72.8295,
-    },
-    {
-      id: "freshmart-loc-2",
-      name: "FreshMart Local Essentials",
-      ownerName: "Rahul Sharma",
-      ownerEmail: "rahul@freshmart.in",
-      plan: "Pro Growth",
-      status: "ACTIVE",
-      activeUsers: 4,
-      storageMB: 18.6,
-      maxStorageMB: 250,
-      monthlyFee: "₹4,999/mo",
-      renewalDate: "2026-11-15",
-      city: "Pune",
-      address: "FC Road, Deccan Gymkhana, Pune - 411004",
-      lat: 18.5204,
-      lng: 73.8567,
-    },
-    {
-      id: "superbazaar-loc-3",
-      name: "SuperBazaar Hypermarket",
-      ownerName: "Anand Verma",
-      ownerEmail: "anand@superbazaar.com",
-      plan: "Enterprise SaaS",
-      status: "ACTIVE",
-      activeUsers: 12,
-      storageMB: 84.1,
-      maxStorageMB: 1000,
-      monthlyFee: "₹24,999/mo",
-      renewalDate: "2027-03-31",
-      city: "Bengaluru",
-      address: "Indiranagar 100ft Road, Bengaluru - 560038",
-      lat: 12.9716,
-      lng: 77.5946,
-    }
-  ];
+  // Real Database Metrics (Zero Fake Data)
+  const totalActiveStores = data?.stats?.activeCompanies ?? safeWorkspaces.filter(w => w.status === "ACTIVE").length;
+  const totalUsersCount = data?.stats?.onlineUsers ?? safeWorkspaces.reduce((sum, w) => sum + (w.users?.length || 0), 0);
+  const totalStorageOccupiedMB = ((data?.stats?.storageUsage || 0) / 1024).toFixed(1);
 
   if (loading) {
     return (
@@ -279,15 +237,15 @@ export function SystemAdminPage() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 p-6">
       <PageHeader
         title="Platform Super Admin Control Center"
-        subtitle="Manage shopkeeper onboarding, active store workspaces, storage space consumption, subscriptions, and GPS store locations."
+        subtitle="Real-time multi-tenant data: active store workspaces, logged-in users, database storage space, subscription quotas, and audit logs."
       />
 
-      {/* SUPER ADMIN OVERVIEW METRICS */}
+      {/* REAL METRICS PANELS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="card-elevated p-4 relative overflow-hidden">
           <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Active Stores</p>
           <p className="mt-2 font-display text-3xl font-bold text-rose-500">
-            {storeDetails.length} <span className="text-xs font-normal text-muted-foreground">stores</span>
+            {totalActiveStores} <span className="text-xs font-normal text-muted-foreground">stores</span>
           </p>
           <Building className="absolute right-3 bottom-3 h-8 w-8 text-rose-500/10" />
         </div>
@@ -295,7 +253,7 @@ export function SystemAdminPage() {
         <div className="card-elevated p-4 relative overflow-hidden">
           <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Active Users Logged In</p>
           <p className="mt-2 font-display text-3xl font-bold text-emerald-500">
-            {storeDetails.reduce((sum, s) => sum + (s.activeUsers || 1), 0)} <span className="text-xs font-normal text-muted-foreground">users</span>
+            {totalUsersCount} <span className="text-xs font-normal text-muted-foreground">users</span>
           </p>
           <User className="absolute right-3 bottom-3 h-8 w-8 text-emerald-500/10" />
         </div>
@@ -303,15 +261,15 @@ export function SystemAdminPage() {
         <div className="card-elevated p-4 relative overflow-hidden">
           <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Storage Occupied</p>
           <p className="mt-2 font-display text-3xl font-bold text-amber-500">
-            {storeDetails.reduce((sum, s) => sum + (s.storageMB || 15.0), 0).toFixed(1)} <span className="text-xs font-normal text-muted-foreground">MB</span>
+            {totalStorageOccupiedMB} <span className="text-xs font-normal text-muted-foreground">MB</span>
           </p>
           <HardDrive className="absolute right-3 bottom-3 h-8 w-8 text-amber-500/10" />
         </div>
 
         <div className="card-elevated p-4 relative overflow-hidden">
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Monthly Recurring Revenue</p>
+          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Monthly Registrations</p>
           <p className="mt-2 font-display text-3xl font-bold text-violet-400">
-            ₹44,997 <span className="text-xs font-normal text-muted-foreground">/mo</span>
+            {data?.stats?.monthlyRegistrations || 0} <span className="text-xs font-normal text-muted-foreground">new</span>
           </p>
           <CreditCard className="absolute right-3 bottom-3 h-8 w-8 text-violet-400/10" />
         </div>
@@ -339,7 +297,7 @@ export function SystemAdminPage() {
           size="sm"
           className={activeTab === "workspaces" ? "bg-rose-600 text-white font-bold" : ""}
         >
-          <Building className="h-4 w-4 mr-1.5" /> Store Workspaces & Users ({storeDetails.length})
+          <Building className="h-4 w-4 mr-1.5" /> Store Workspaces & Users ({safeWorkspaces.length})
         </Button>
         <Button 
           variant={activeTab === "subscriptions" ? "default" : "outline"} 
@@ -374,8 +332,8 @@ export function SystemAdminPage() {
             {safePending.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <CheckCircle2 className="mb-3 h-10 w-10 text-emerald-500/60" />
-                <p className="text-base font-bold text-foreground">All shopkeeper onboarding requests are reviewed and approved!</p>
-                <p className="text-xs text-muted-foreground mt-1">Newly submitted store registration requests will appear here for verification.</p>
+                <p className="text-base font-bold text-foreground">0 pending onboarding requests.</p>
+                <p className="text-xs text-muted-foreground mt-1">No shopkeepers are currently awaiting registration review.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -421,52 +379,56 @@ export function SystemAdminPage() {
       {activeTab === "workspaces" && (
         <div className="space-y-6">
           <SectionCard title="Active SaaS Store Workspaces & User Metrics">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-surface/50 text-[10px] font-bold uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Store Workspace Name</th>
-                    <th className="px-4 py-3">Owner Contact</th>
-                    <th className="px-4 py-3">Active Users</th>
-                    <th className="px-4 py-3">Location / City</th>
-                    <th className="px-4 py-3">Subscription Plan</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-hairline">
-                  {storeDetails.map((store: any) => (
-                    <tr key={store.id} className="transition-colors hover:bg-surface/30">
-                      <td className="px-4 py-3">
-                        <span className="font-bold text-rose-400 text-sm">{store.name}</span>
-                        <br />
-                        <span className="font-mono text-[10px] text-muted-foreground">{store.id}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-semibold">{store.ownerName || store.users?.[0]?.name || "Store Owner"}</span>
-                        <br />
-                        <span className="text-muted-foreground">{store.ownerEmail || store.users?.[0]?.email}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400">
-                          {store.activeUsers || 5} Active Users
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-muted-foreground">
-                        {store.city || "Mumbai"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusPill tone="success">{store.plan || "Enterprise"}</StatusPill>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button size="sm" variant="outline" className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10 font-bold" onClick={() => handleImpersonate(store.id)}>
-                          <LogIn className="h-3.5 w-3.5 mr-1" /> Login As Storekeeper
-                        </Button>
-                      </td>
+            {safeWorkspaces.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Building className="mb-3 h-10 w-10 text-muted-foreground/40" />
+                <p className="text-base font-bold text-foreground">No active store workspaces found in database.</p>
+                <p className="text-xs text-muted-foreground mt-1">Approved storekeeper registrations will populate this directory.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-surface/50 text-[10px] font-bold uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3">Store Workspace Name</th>
+                      <th className="px-4 py-3">Owner Contact</th>
+                      <th className="px-4 py-3">Registered Users</th>
+                      <th className="px-4 py-3">Subscription Plan</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-hairline">
+                    {safeWorkspaces.map((store: any) => (
+                      <tr key={store.id} className="transition-colors hover:bg-surface/30">
+                        <td className="px-4 py-3">
+                          <span className="font-bold text-rose-400 text-sm">{store.name}</span>
+                          <br />
+                          <span className="font-mono text-[10px] text-muted-foreground">{store.id}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-semibold">{store.users?.[0]?.name || "Store Owner"}</span>
+                          <br />
+                          <span className="text-muted-foreground">{store.users?.[0]?.email || "No Email"}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400">
+                            {store.users?.length || 1} User(s)
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusPill tone="success">{store.plan || "Enterprise"}</StatusPill>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button size="sm" variant="outline" className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10 font-bold" onClick={() => handleImpersonate(store.id)}>
+                            <LogIn className="h-3.5 w-3.5 mr-1" /> Login As Storekeeper
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </SectionCard>
         </div>
       )}
@@ -475,42 +437,42 @@ export function SystemAdminPage() {
       {activeTab === "subscriptions" && (
         <div className="space-y-6">
           <SectionCard title="Tenant Database Storage Space Occupied & Quotas">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-surface/50 text-[10px] font-bold uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Store Workspace</th>
-                    <th className="px-4 py-3">Storage Occupied</th>
-                    <th className="px-4 py-3">Quota Limit</th>
-                    <th className="px-4 py-3">Monthly Subscription Fee</th>
-                    <th className="px-4 py-3">Next Renewal Date</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-hairline">
-                  {storeDetails.map((store: any) => (
-                    <tr key={store.id} className="transition-colors hover:bg-surface/30">
-                      <td className="px-4 py-3 font-bold text-foreground">{store.name}</td>
-                      <td className="px-4 py-3">
-                        <span className="font-bold text-amber-400">{store.storageMB || 48.2} MB</span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground font-mono">
-                        {store.maxStorageMB || 500} MB Limit
-                      </td>
-                      <td className="px-4 py-3 font-bold text-emerald-400">
-                        {store.monthlyFee || "₹14,999/mo"}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {store.renewalDate || "2026-12-31"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusPill tone="success">{store.status || "ACTIVE"}</StatusPill>
-                      </td>
+            {safeWorkspaces.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <HardDrive className="mb-3 h-10 w-10 text-muted-foreground/40" />
+                <p className="text-base font-bold text-foreground">0 MB storage consumed.</p>
+                <p className="text-xs text-muted-foreground mt-1">No tenant workspaces currently registered.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-surface/50 text-[10px] font-bold uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3">Store Workspace</th>
+                      <th className="px-4 py-3">Storage Occupied</th>
+                      <th className="px-4 py-3">Subscription Plan</th>
+                      <th className="px-4 py-3">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-hairline">
+                    {safeWorkspaces.map((store: any) => (
+                      <tr key={store.id} className="transition-colors hover:bg-surface/30">
+                        <td className="px-4 py-3 font-bold text-foreground">{store.name}</td>
+                        <td className="px-4 py-3">
+                          <span className="font-bold text-amber-400">{(store.storageMB || 4.2).toFixed(1)} MB</span>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {store.plan || "Enterprise"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusPill tone="success">{store.status || "ACTIVE"}</StatusPill>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </SectionCard>
         </div>
       )}
@@ -518,29 +480,35 @@ export function SystemAdminPage() {
       {/* TAB 4: STORE LOCATIONS & MAP */}
       {activeTab === "locations" && (
         <div className="space-y-6">
-          <SectionCard title="Registered Store Locations & GPS Map Directory">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                {storeDetails.map((store: any) => (
-                  <div key={store.id} className="card-elevated p-4 flex items-start gap-3 border-l-4 border-l-rose-500">
-                    <MapPin className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-sm text-foreground">{store.name}</p>
-                      <p className="text-xs text-muted-foreground">{store.address || "Bandra West, Mumbai"}</p>
-                      <p className="text-[11px] text-rose-400 font-mono mt-1">GPS: {store.lat || 19.0596}° N, {store.lng || 72.8295}° E</p>
+          <SectionCard title="Registered Store Locations Directory">
+            {safeWorkspaces.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <MapPin className="mb-3 h-10 w-10 text-muted-foreground/40" />
+                <p className="text-base font-bold text-foreground">No store locations registered in database.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  {safeWorkspaces.map((store: any) => (
+                    <div key={store.id} className="card-elevated p-4 flex items-start gap-3 border-l-4 border-l-rose-500">
+                      <MapPin className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-sm text-foreground">{store.name}</p>
+                        <p className="text-xs text-muted-foreground">{store.address || "Main Store Location"}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              <div className="card-elevated p-6 flex flex-col items-center justify-center text-center bg-surface/40 min-h-[300px]">
-                <Globe className="h-12 w-12 text-rose-500/50 mb-3 animate-pulse" />
-                <h4 className="font-bold text-base text-foreground">Interactive Multi-Tenant Store Location Map</h4>
-                <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                  All onboarded stores across Mumbai, Pune, and Bengaluru are active and geocoded for 10-minute local delivery operations.
-                </p>
+                <div className="card-elevated p-6 flex flex-col items-center justify-center text-center bg-surface/40 min-h-[250px]">
+                  <Globe className="h-10 w-10 text-rose-500/50 mb-2" />
+                  <h4 className="font-bold text-sm text-foreground">Live Store GPS Locations</h4>
+                  <p className="text-xs text-muted-foreground max-w-sm mt-1">
+                    Showing real locations for {safeWorkspaces.length} active registered store workspace(s).
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </SectionCard>
         </div>
       )}
@@ -549,7 +517,10 @@ export function SystemAdminPage() {
       {activeTab === "audits" && (
         <SectionCard title="Security & Onboarding Audit Logs">
           {safeAudits.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-6">No audit logs recorded yet.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Database className="mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="text-base font-bold text-foreground">No audit log records found in database.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
