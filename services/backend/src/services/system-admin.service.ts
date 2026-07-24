@@ -72,7 +72,7 @@ export class SystemAdminService {
           city,
           address: payload.address || "Address",
           employeeCount: payload.employeeCount || "1-50",
-          branchCount: payload.branchCount ? Number(payload.branchCount) : 1,
+          branchCount: String(payload.branchCount || "1"),
           revenueRange: payload.revenueRange || "Under 1Cr",
           timezone: payload.timezone || "Asia/Kolkata",
           currency: payload.currency || "INR",
