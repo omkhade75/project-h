@@ -46,23 +46,40 @@ export class AiService {
 
     try {
       totalProducts = await this.prisma.product.count({ where: { workspaceId } });
-      const products = await this.prisma.product.findMany({ where: { workspaceId }, take: 50 });
-      lowStockProducts = products.filter(p => p.stockQuantity <= (p.minStockThreshold || 10));
-      outOfStockCount = products.filter(p => p.stockQuantity === 0).length;
+      const products = await this.prisma.product.findMany({
+        where: { workspaceId },
+        include: { stockItems: true },
+        take: 50
+      });
+      lowStockProducts = products.filter((p: any) => {
+        const qty = p.stockItems?.[0]?.quantityOnHand ?? 10;
+        return qty <= (p.reorderLevel || 15);
+      });
+      outOfStockCount = products.filter((p: any) => (p.stockItems?.[0]?.quantityOnHand ?? 10) === 0).length;
     } catch (e) {}
 
     try {
-      const txs = await this.prisma.transaction.findMany({ where: { workspaceId }, take: 100, orderBy: { createdAt: 'desc' } });
+      const txs = await this.prisma.transaction.findMany({
+        where: { workspaceId },
+        take: 100,
+        orderBy: { createdAt: 'desc' }
+      });
       recentTransactionsCount = txs.length;
-      grossRevenue = txs.reduce((acc, t) => acc + (t.totalAmount || 0), 0);
+      grossRevenue = txs.reduce((acc: number, t: any) => acc + Number(t.totalAmount || 0), 0);
     } catch (e) {}
 
     try {
-      activeAnomalies = await this.prisma.anomaly.findMany({ where: { workspaceId, isResolved: false }, take: 10 });
+      activeAnomalies = await this.prisma.anomaly.findMany({
+        where: { workspaceId, status: "Active" },
+        take: 10
+      });
     } catch (e) {}
 
     try {
-      suppliers = await this.prisma.supplier.findMany({ where: { workspaceId }, take: 10 });
+      suppliers = await this.prisma.supplier.findMany({
+        where: { workspaceId },
+        take: 10
+      });
     } catch (e) {}
 
     const liveTelemetryText = `
