@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Truck,
   Package,
@@ -10,7 +10,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,14 +26,7 @@ export const Route = createFileRoute("/")({
 });
 
 function SupplierLandingPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate({ to: "/supplier-portal" });
-    }
-  }, [user, loading, navigate]);
+  const { loading } = useAuth();
 
   if (loading) {
     return (

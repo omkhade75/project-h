@@ -11,8 +11,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,14 +27,7 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate({ to: "/command-center" });
-    }
-  }, [user, loading, navigate]);
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -48,182 +39,91 @@ function LandingPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Background effects */}
+      {/* Background glow effects */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Ambient glows */}
-        <div className="absolute -left-40 top-0 h-[520px] w-[520px] animate-pulse-slow rounded-full bg-primary/25 blur-[120px]" />
-        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] animate-pulse-slow rounded-full bg-violet/25 blur-[120px]" />
-        <div className="absolute left-1/2 top-1/3 h-[400px] w-[400px] -translate-x-1/2 animate-pulse-slow rounded-full bg-cyan/20 blur-[100px]" />
-
-        {/* Grid pattern */}
+        <div className="absolute -left-40 top-0 h-[520px] w-[520px] animate-pulse-slow rounded-full bg-primary/20 blur-[120px]" />
+        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] animate-pulse-slow rounded-full bg-accent/20 blur-[120px]" />
         <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(var(--color-foreground)_1px,transparent_1px),linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)] [background-size:44px_44px]" />
-
-        {/* Floating geometric shapes (Bright & Luminous) */}
-        <div className="absolute left-[12%] top-[22%] animate-float-slow opacity-100">
-          <div
-            className="h-28 w-28 rounded-3xl border border-primary/50 bg-gradient-to-br from-primary/60 to-primary/20 backdrop-blur-3xl shadow-[0_0_40px_var(--color-primary)]/40"
-            style={{ transform: "rotate(25deg) skewX(-10deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute right-[10%] top-[12%] animate-float-medium opacity-100"
-          style={{ animationDelay: "1.5s" }}
-        >
-          <div
-            className="h-36 w-36 rounded-full border border-violet/50 bg-gradient-to-bl from-violet/50 to-violet/10 backdrop-blur-3xl shadow-[0_0_40px_var(--color-violet)]/40"
-            style={{ transform: "scaleY(0.85) rotate(-15deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute left-[8%] bottom-[22%] animate-float-medium opacity-100"
-          style={{ animationDelay: "2.5s" }}
-        >
-          <div
-            className="h-24 w-24 rounded-2xl border border-warning/50 bg-gradient-to-tr from-warning/60 to-warning/20 backdrop-blur-xl shadow-[0_0_35px_var(--color-warning)]/40"
-            style={{ transform: "rotate(40deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute right-[20%] bottom-[18%] animate-float-slow opacity-100"
-          style={{ animationDelay: "1s" }}
-        >
-          <div
-            className="h-32 w-32 rounded-full border border-success/50 bg-gradient-to-br from-success/50 to-success/10 backdrop-blur-md shadow-[0_0_40px_var(--color-success)]/30"
-            style={{ transform: "rotate(-25deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute left-[40%] top-[10%] animate-float-medium opacity-100"
-          style={{ animationDelay: "3s" }}
-        >
-          <div
-            className="h-16 w-16 rounded-xl border border-cyan/60 bg-gradient-to-br from-cyan/50 to-cyan/20 backdrop-blur-md shadow-[0_0_25px_var(--color-cyan)]/50"
-            style={{ transform: "rotate(65deg)" }}
-          />
-        </div>
-
-        {/* Micro-particles / stars */}
-        <div className="absolute left-[30%] top-[40%] h-2 w-2 animate-pulse rounded-full bg-primary shadow-[0_0_12px_var(--color-primary)]" />
-        <div
-          className="absolute right-[25%] top-[35%] h-2 w-2 animate-pulse rounded-full bg-warning shadow-[0_0_15px_var(--color-warning)]"
-          style={{ animationDelay: "1s" }}
-        />
-        <div
-          className="absolute left-[55%] bottom-[25%] h-2 w-2 animate-pulse rounded-full bg-success shadow-[0_0_12px_var(--color-success)]"
-          style={{ animationDelay: "0.5s" }}
-        />
-        <div
-          className="absolute right-[40%] top-[20%] h-1.5 w-1.5 animate-pulse rounded-full bg-violet shadow-[0_0_10px_var(--color-violet)]"
-          style={{ animationDelay: "2s" }}
-        />
       </div>
 
       <div className="relative z-10">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 sm:px-10 sm:py-6">
           <div className="flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-transparent overflow-hidden">
-              <img src="/logo.png" className="h-full w-full object-contain" alt="OmniMind AI" />
+            <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Brain className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm font-semibold tracking-tight">OmniMind AI</p>
-              <p className="text-[10px] text-muted-foreground">Enterprise Intelligence OS</p>
+              <p className="text-[10px] text-muted-foreground">Enterprise Storekeeper Operations</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <Link
               to="/login"
-              className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+              className="inline-flex items-center gap-2 rounded-md bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition-all"
             >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-2 rounded-md gradient-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
-            >
-              Register Company <ArrowRight className="h-4 w-4" />
+              Storekeeper Login <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </header>
 
         {/* Hero */}
-        <section className="mx-auto max-w-5xl px-6 pt-16 pb-20 text-center sm:px-10 sm:pt-24 sm:pb-28">
-          <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-primary">
-            <Sparkles className="h-3 w-3" /> Decision Intelligence for Modern Businesses
+        <section className="mx-auto max-w-4xl px-6 pt-16 pb-20 text-center sm:px-10 sm:pt-24 sm:pb-28">
+          <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-primary">
+            <Sparkles className="h-3 w-3" /> Retail & Storekeeper Decision Engine
           </p>
           <h1 className="mt-6 font-display text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
-            From business data to <span className="gradient-text">intelligent decisions</span>.
+            Autonomous store intelligence & <span className="gradient-text">inventory control</span>.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            OmniMind AI unifies sales, inventory, customers, suppliers, and utilities into a single
-            decision surface — with predictive analytics and evidence-backed AI recommendations
-            designed for owners, admins, and store managers.
+            OmniMind AI powers multi-store POS checkouts, real-time inventory ledgering, automated purchase orders, and AI predictive analytics.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 rounded-lg gradient-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90"
             >
-              Get Started <ChevronRight className="h-4 w-4" />
+              Sign In to Command Center <ChevronRight className="h-4 w-4" />
             </Link>
-            <a
-              href="#features"
-              className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface/50 px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-surface"
-            >
-              Explore Features
-            </a>
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Trusted by enterprise retail businesses & multi-department stores
+            Sign in with <code className="rounded bg-surface px-1.5 py-0.5 text-foreground">admin@gmail.com</code> / password <code className="rounded bg-surface px-1.5 py-0.5 text-foreground">123456789</code>
           </p>
         </section>
 
         {/* Features grid */}
-        <section id="features" className="mx-auto max-w-5xl px-6 pb-24 sm:px-10">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <section className="mx-auto max-w-5xl px-6 pb-24 sm:px-10">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
+                icon: BarChart3,
+                title: "Live POS & Sales",
+                desc: "High-speed multi-terminal billing checkout with thermal receipt generation.",
+              },
+              {
                 icon: TrendingUp,
-                title: "Real-time Analytics",
-                desc: "Live revenue, footfall, and department performance dashboards updated in real time.",
+                title: "Inventory Ledger",
+                desc: "Real-time stock level tracking, FIFO expiry warnings, and reorder triggers.",
               },
               {
                 icon: Brain,
-                title: "AI Decision Center",
-                desc: "Gemini-powered AI recommendations for pricing, inventory, staffing, and promotions.",
-              },
-              {
-                icon: ShieldCheck,
-                title: "Anomaly Detection",
-                desc: "Automated alerts for revenue drops, inventory shrinkage, and operational risks.",
-              },
-              {
-                icon: BarChart3,
-                title: "Business Forecasting",
-                desc: "Predictive models for sales trends, seasonal demand, and cash flow planning.",
+                title: "AI Demand Forecast",
+                desc: "Predictive AI models forecast seasonal demand spikes and prevent stockouts.",
               },
               {
                 icon: Users,
-                title: "Customer 360°",
-                desc: "Complete customer profiles with spend analysis, visit frequency, and churn prediction.",
-              },
-              {
-                icon: Zap,
-                title: "Time Machine",
-                desc: "Simulate business scenarios and model decisions before committing resources.",
+                title: "Customer & Supplier 360",
+                desc: "Deep analytics on customer purchase history and supplier delivery SLAs.",
               },
             ].map((f) => (
               <div
                 key={f.title}
                 className="group glass rounded-xl border border-hairline p-6 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
               >
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:gradient-primary group-hover:text-primary-foreground">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
                   <f.icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-4 text-sm font-semibold">{f.title}</h3>
@@ -233,27 +133,10 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* Role badges */}
-        <section className="mx-auto max-w-3xl px-6 pb-20 text-center sm:px-10">
-          <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
-            Built for every level of business management
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
-            {["Store Owner", "Admin", "Manager"].map((r) => (
-              <span
-                key={r}
-                className="rounded-full border border-hairline bg-surface/80 px-4 py-1.5 text-xs font-medium"
-              >
-                {r}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        {/* Footer CTA */}
+        {/* Footer */}
         <footer className="border-t border-hairline bg-surface/30 py-8 text-center">
           <p className="text-xs text-muted-foreground">
-            © 2026 OmniMind AI · Enterprise Decision Intelligence OS
+            © 2026 OmniMind AI · Storekeeper Enterprise Business Operations
           </p>
         </footer>
       </div>
