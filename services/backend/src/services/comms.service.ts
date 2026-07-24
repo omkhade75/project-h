@@ -23,18 +23,18 @@ export class CommsService {
   constructor(private prisma: DatabaseService) {}
 
   private memoryWaConfigCache: WhatsAppConfig = {
-    twilioAccountSid: "",
-    twilioAuthToken: "",
-    twilioWhatsAppSender: "whatsapp:+14155238886",
-    ownerWhatsAppNumber: "+919876543210",
-    managerWhatsAppNumber: "+919876543211",
+    twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || "",
+    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || "",
+    twilioWhatsAppSender: process.env.TWILIO_WHATSAPP_SENDER || "whatsapp:+14155238886",
+    ownerWhatsAppNumber: process.env.OWNER_WHATSAPP_NUMBER || "+919876543210",
+    managerWhatsAppNumber: process.env.MANAGER_WHATSAPP_NUMBER || "+919876543211",
   };
 
   private memoryVapiConfigCache: VapiConfig = {
-    vapiPhoneId: "027dfd39-b626-43cf-859f-6583a33f580b",
-    vapiAgentId: "88b76de6-b66b-46f0-a536-8182804fab8a",
-    vapiPublicKey: "e3322c27-c9ac-45cb-9c58-e49c8f423a1f",
-    vapiPrivateKey: "581c84cb-6185-4714-98d1-bdd823189ea0",
+    vapiPhoneId: process.env.VAPI_PHONE_ID || "027dfd39-b626-43cf-859f-6583a33f580b",
+    vapiAgentId: process.env.VAPI_AGENT_ID || "88b76de6-b66b-46f0-a536-8182804fab8a",
+    vapiPublicKey: process.env.VAPI_PUBLIC_KEY || "e3322c27-c9ac-45cb-9c58-e49c8f423a1f",
+    vapiPrivateKey: process.env.VAPI_PRIVATE_KEY || "581c84cb-6185-4714-98d1-bdd823189ea0",
   };
 
   private getWaConfigPath() {
