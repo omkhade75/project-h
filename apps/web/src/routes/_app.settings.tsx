@@ -39,10 +39,10 @@ function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [vapi, setVapi] = useState({
-    vapiPhoneId: "",
-    vapiAgentId: "",
-    vapiPublicKey: "",
-    vapiPrivateKey: "",
+    vapiPhoneId: "027dfd39-b626-43cf-859f-6583a33f580b",
+    vapiAgentId: "88b76de6-b66b-46f0-a536-8182804fab8a",
+    vapiPublicKey: "e3322c27-c9ac-45cb-9c58-e49c8f423a1f",
+    vapiPrivateKey: "581c84cb-6185-4714-98d1-bdd823189ea0",
   });
   const [loadingVapi, setLoadingVapi] = useState(true);
   const [savingVapi, setSavingVapi] = useState(false);

@@ -31,10 +31,10 @@ export class CommsService {
   };
 
   private memoryVapiConfigCache: VapiConfig = {
-    vapiPhoneId: "e0cfb9a5-a9d8-4422-a09c-b87ef3a50c95",
-    vapiAgentId: "294c5d56-74a9-472d-a0ba-5c626aca4747",
-    vapiPublicKey: "4a80f4e1-29e2-4236-afd3-0d41c54d3793",
-    vapiPrivateKey: "6ab6eb8f-0c48-4d51-9cdd-38caf3977158",
+    vapiPhoneId: "027dfd39-b626-43cf-859f-6583a33f580b",
+    vapiAgentId: "88b76de6-b66b-46f0-a536-8182804fab8a",
+    vapiPublicKey: "e3322c27-c9ac-45cb-9c58-e49c8f423a1f",
+    vapiPrivateKey: "581c84cb-6185-4714-98d1-bdd823189ea0",
   };
 
   private getWaConfigPath() {
@@ -90,7 +90,7 @@ export class CommsService {
   async initiateVapiCall(workspaceId: string, data: any) {
     const config = this.memoryVapiConfigCache;
 
-    let phone = data.phoneNumber.trim().replace(/\s+/g, "");
+    let phone = (data.phoneNumber || data.recipientPhone || "").trim().replace(/\s+/g, "");
     if (!phone.startsWith("+")) {
       if (phone.length === 10) phone = "+91" + phone;
       else phone = "+" + phone;
@@ -102,34 +102,75 @@ export class CommsService {
         data: {
           workspaceId,
           channel: "VOICE",
-          recipientName: data.recipientName,
+          recipientName: data.recipientName || "Voice Recipient",
           recipientPhone: phone,
           messageType: "CRM_OUTREACH",
-          body: data.messageContext,
+          body: data.messageContext || data.script || "Bizora AI Calling Agent Outreach",
           status: "PENDING",
         },
       });
       logId = log.id;
     } catch (dbErr) {}
 
-    // Mock Vapi call for now to avoid actual outbound charges
-    setTimeout(async () => {
-      try {
-        if (logId) {
+    // Dispatch real outbound phone call via Vapi REST API
+    try {
+      const vapiResponse = await fetch("https://api.vapi.ai/call/phone", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${config.vapiPrivateKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phoneNumberId: config.vapiPhoneId,
+          assistantId: config.vapiAgentId,
+          customer: {
+            number: phone,
+            name: data.recipientName || "Valued Business Partner",
+          },
+          assistantOverrides: {
+            variableValues: {
+              messageContext: data.messageContext || data.script || "Urgent operational update regarding your business account.",
+              recipientName: data.recipientName || "Partner",
+            },
+          },
+        }),
+      });
+
+      const resData: any = await vapiResponse.json();
+
+      if (logId) {
+        await this.prisma.messageLog.update({
+          where: { id: logId },
+          data: {
+            status: vapiResponse.ok ? "SENT" : "FAILED",
+            providerId: resData.id || "vapi-call-" + Date.now(),
+          },
+        });
+      }
+
+      return {
+        success: vapiResponse.ok,
+        data: {
+          callId: resData.id || "vapi-call-" + Date.now(),
+          status: resData.status || (vapiResponse.ok ? "queued" : "failed"),
+          details: resData,
+        },
+      };
+    } catch (err: any) {
+      console.error("[Vapi API Call Error]:", err);
+      if (logId) {
+        try {
           await this.prisma.messageLog.update({
             where: { id: logId },
-            data: { status: 'SENT', providerId: 'mock-vapi-call-' + Date.now() },
+            data: { status: "FAILED" },
           });
-        }
-      } catch (err) {}
-    }, 1000);
-
-    return {
-      success: true,
-      data: {
-        callId: 'mock-vapi-call-' + Date.now(),
-        status: 'queued',
+        } catch (e) {}
       }
-    };
+
+      return {
+        success: false,
+        error: err?.message || "Failed to dispatch Vapi AI voice call",
+      };
+    }
   }
 }
