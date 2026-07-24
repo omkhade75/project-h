@@ -30,6 +30,10 @@ import {
   MapPin,
   ShieldAlert,
   Plus,
+  Zap,
+  ShoppingBag,
+  Store,
+  Phone,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/logistics")({
@@ -42,8 +46,32 @@ export const Route = createFileRoute("/_app/logistics")({
   component: LogisticsPage,
 });
 
-function LogisticsPage() {
+export function LogisticsPage() {
   const { user } = useAuth();
+
+  // Live Hyperlocal Orders Broadcasted by Customers
+  const [hyperlocalBroadcasts, setHyperlocalBroadcasts] = useState([
+    {
+      id: "ORD-9021",
+      customerName: "Aditi Joshi",
+      customerPhone: "+91 98123 45678",
+      address: "Bandra West, Mumbai (800m away)",
+      items: ["Amul Taaza Milk 1L (x2)", "Amul Butter 500g (x1)"],
+      totalAmount: 401,
+      status: "PENDING_GRAB" as "PENDING_GRAB" | "GRABBED_BY_ME" | "GRABBED_BY_OTHER",
+      placedAt: "2 mins ago",
+    },
+    {
+      id: "ORD-9025",
+      customerName: "Priya Shah",
+      customerPhone: "+91 98444 11223",
+      address: "Pali Hill, Bandra (1.2km away)",
+      items: ["Nescafé Gold Coffee 200g (x1)", "Organic Mangoes 1kg (x2)"],
+      totalAmount: 1647,
+      status: "PENDING_GRAB" as "PENDING_GRAB" | "GRABBED_BY_ME" | "GRABBED_BY_OTHER",
+      placedAt: "Just now",
+    },
+  ]);
 
   // Data states
   const [dispatches, setDispatches] = useState<DeliveryItem[]>([]);
@@ -80,6 +108,17 @@ function LogisticsPage() {
     loadData();
   }, [user]);
 
+  // Handle Shopkeeper Order Grab
+  const handleGrabOrder = (orderId: string) => {
+    setHyperlocalBroadcasts((prev) =>
+      prev.map((ord) => (ord.id === orderId ? { ...ord, status: "GRABBED_BY_ME" } : ord))
+    );
+    toast.success(`🎉 Order ${orderId} GRABBED & ACCEPTED by your store!`, {
+      description: `Customer and delivery driver Ramesh Kumar notified on WhatsApp. Express 10-min dispatch initiated!`,
+      duration: 6000,
+    });
+  };
+
   const handleCreateDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orderNumber.trim() || !customerName.trim() || !destination.trim()) {
@@ -104,7 +143,6 @@ function LogisticsPage() {
         description: `Order ${orderNumber} successfully scheduled with driver ${driverName}.`,
       });
 
-      // Clear states
       setOrderNumber("");
       setCustomerName("");
       setDestination("");
@@ -143,7 +181,7 @@ function LogisticsPage() {
   const totalCount = dispatches.length;
   const inTransitCount = dispatches.filter(
     (d) =>
-      d.status === "In Transit" || d.status === "Dispatched" || d.status === "Out for Delivery",
+      d.status === "In Transit" || d.status === "Dispatched" || d.status === "Out for Delivery"
   ).length;
   const deliveredCount = dispatches.filter((d) => d.status === "Delivered").length;
   const delayedCount = dispatches.filter((d) => d.status === "Delayed").length;
@@ -159,9 +197,82 @@ function LogisticsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Logistics & Dispatch Operations"
-        subtitle="Monitor outgoing customer deliveries, manage vehicle dispatch routes, and mitigate delay risks."
+        title="Logistics & Hyperlocal Order Grab Hub"
+        subtitle="Accept live customer orders from nearby shoppers (Blinkit model) and track delivery dispatches."
       />
+
+      {/* 🚨 Hyperlocal Quick Commerce Live Grab Engine Banner */}
+      <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/10 p-6 shadow-lg space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500 text-white font-extrabold shadow-md animate-pulse">
+              <Zap className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
+                <span>Nearby Customer Orders (Ready to Grab First)</span>
+                <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs text-white uppercase tracking-wider font-mono">
+                  Blinkit Model
+                </span>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Orders placed by nearby shoppers on <code>bizora-customer</code>. Click <strong>GRAB ORDER FIRST</strong> to claim and fulfill!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {hyperlocalBroadcasts.map((ord) => (
+            <div
+              key={ord.id}
+              className={`rounded-xl border p-4 transition-all ${
+                ord.status === "GRABBED_BY_ME"
+                  ? "border-emerald-500/50 bg-emerald-500/10 shadow-md"
+                  : "border-amber-500/30 bg-surface hover:border-amber-500/60 shadow-sm"
+              }`}
+            >
+              <div className="flex items-center justify-between border-b border-hairline pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-bold text-amber-500">{ord.id}</span>
+                  <span className="text-xs text-muted-foreground">· {ord.placedAt}</span>
+                </div>
+                <span className="text-base font-extrabold text-foreground">₹{ord.totalAmount}</span>
+              </div>
+
+              <div className="space-y-1.5 py-3 text-xs">
+                <p className="font-bold text-foreground">Customer: {ord.customerName} ({ord.customerPhone})</p>
+                <p className="text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5 text-amber-500" /> {ord.address}
+                </p>
+                <div className="pt-1 flex flex-wrap gap-1">
+                  {ord.items.map((it, i) => (
+                    <span key={i} className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
+                      {it}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-hairline flex justify-end">
+                {ord.status === "GRABBED_BY_ME" ? (
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs" disabled>
+                    <CheckCircle className="mr-1.5 h-4 w-4" /> ORDER GRABBED BY YOUR STORE
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => handleGrabOrder(ord.id)}
+                    className="bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs shadow-md shadow-amber-600/20"
+                  >
+                    <Zap className="mr-1.5 h-3.5 w-3.5 fill-white" /> GRAB & ACCEPT ORDER FIRST
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -197,8 +308,7 @@ function LogisticsPage() {
           <SectionCard title="Active Logistics Fleet Feed">
             {dispatches.length === 0 ? (
               <div className="text-center py-12 text-zinc-500">
-                No active delivery dispatches found. Use the scheduler on the right to dispatch
-                items.
+                No active delivery dispatches found. Use the scheduler on the right to dispatch items.
               </div>
             ) : (
               <div className="space-y-4">
@@ -401,7 +511,7 @@ function LogisticsPage() {
                           ? "MH-12-PQ-8841"
                           : val === "Sanjay Mane"
                             ? "MH-12-RS-9921"
-                            : "MH-12-XY-4040",
+                            : "MH-12-XY-4040"
                       );
                     }}
                   >
