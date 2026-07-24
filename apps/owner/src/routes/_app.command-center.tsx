@@ -7,8 +7,6 @@ import {
   Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -36,7 +34,7 @@ import { toast } from "sonner";
 import { KpiCard } from "@/components/kpi-card";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { FORECAST, fmtINR } from "@/lib/mock-data";
+import { fmtINR } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth-context";
 import { useBusinessData, type KpiItem } from "@/lib/business-context";
 import { getCommandCenterServer, dispatchEodReportServer, getForecastingServer } from "@/lib/server-analytics";
@@ -45,7 +43,7 @@ import { getMessageLogsServer } from "@/lib/server-whatsapp-logs";
 export const Route = createFileRoute("/_app/command-center")({
   head: () => ({
     meta: [
-      { title: "Command Center — OmniMind AI" },
+      { title: "Command Center — Bizora AI" },
       {
         name: "description",
         content:
@@ -162,10 +160,7 @@ export function CommandCenter() {
     return days.flatMap((d, di) =>
       hours.map((h) => {
         const count = counts[`${d}-${h}`] || 0;
-        const peak = h >= 18 && h <= 21 ? 2.2 : h >= 12 && h <= 14 ? 1.5 : 1;
-        const weekend = di >= 5 ? 1.8 : 1;
-        const baseline = Math.round(10 + (di * 2 + h) * 0.5 * peak * weekend);
-        return { day: d, hour: `${h}`, v: baseline + count * 8 };
+        return { day: d, hour: `${h}`, v: count };
       }),
     );
   }, [safeScopedTxns]);
@@ -210,10 +205,10 @@ export function CommandCenter() {
           data: { role: user?.role || "owner", email: user?.email || "", activeDate, timeRange },
         });
         setLiveKpis([
-          { key: "revenue", label: "Gross Revenue", value: res?.grossRevenue || 0, delta: 8.4 },
-          { key: "profit", label: "Net Profit", value: res?.netProfit || 0, delta: 4.1 },
-          { key: "orders", label: "Total Orders", value: res?.orders || 0, delta: 6.2 },
-          { key: "expenses", label: "Total Expenses", value: res?.expenses || 0, delta: 5.4 },
+          { key: "revenue", label: "Gross Revenue", value: res?.grossRevenue || 0, delta: 0 },
+          { key: "profit", label: "Net Profit", value: res?.netProfit || 0, delta: 0 },
+          { key: "orders", label: "Total Orders", value: res?.orders || 0, delta: 0 },
+          { key: "expenses", label: "Total Expenses", value: res?.expenses || 0, delta: 0 },
         ]);
       } catch (err) {
         console.warn("Command center KPI load warning:", err);
@@ -232,7 +227,6 @@ export function CommandCenter() {
     "Daily",
   );
 
-  // Construct chart data based on resolution
   const resolvedChartData = useMemo(() => {
     if (chartResolution === "Hourly") {
       return Array.from({ length: 14 }, (_, i) => {
@@ -329,7 +323,7 @@ export function CommandCenter() {
               onClick={() => navigate({ to: "/ai-decisions" as never })}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Ask OmniMind
+              Ask Bizora AI
             </Button>
           </>
         }
@@ -337,27 +331,21 @@ export function CommandCenter() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {liveKpis.length > 0 ? (
-          liveKpis.map((k) => (
-            <KpiCard
-              key={k.key}
-              label={k.label}
-              value={k.value}
-              delta={k.delta}
-              spark={k.spark}
-              icon={ICONS[k.key]}
-              format={
-                k.key === "orders" || k.key === "footfall" || k.key === "newCustomers"
-                  ? "num"
-                  : "inr-compact"
-              }
-            />
-          ))
-        ) : (
-          <div className="col-span-4 text-center text-muted-foreground p-4">
-            Loading KPIs from database...
-          </div>
-        )}
+        {liveKpis.map((k) => (
+          <KpiCard
+            key={k.key}
+            label={k.label}
+            value={k.value}
+            delta={k.delta}
+            spark={k.spark}
+            icon={ICONS[k.key]}
+            format={
+              k.key === "orders" || k.key === "footfall" || k.key === "newCustomers"
+                ? "num"
+                : "inr-compact"
+            }
+          />
+        ))}
       </div>
 
       {/* Executive brief */}
@@ -429,34 +417,42 @@ export function CommandCenter() {
         </SectionCard>
 
         <SectionCard title="Department Contribution" subtitle="Revenue share this period">
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={safeDeptRev}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={56}
-                  outerRadius={92}
-                  paddingAngle={2}
-                >
-                  {safeDeptRev.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: any) => fmtINR(Number(v))} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-3 space-y-1.5 text-xs">
-            {safeDeptRev.slice(0, 5).map((d) => (
-              <div key={d.name} className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
-                <span className="min-w-0 truncate text-muted-foreground">{d.name}</span>
-                <span className="ml-auto font-medium">{fmtINR(d.value, { compact: true })}</span>
+          {safeDeptRev.length === 0 ? (
+            <div className="h-72 flex items-center justify-center text-xs text-muted-foreground">
+              No department revenue logged in database.
+            </div>
+          ) : (
+            <>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={safeDeptRev}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={56}
+                      outerRadius={92}
+                      paddingAngle={2}
+                    >
+                      {safeDeptRev.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: any) => fmtINR(Number(v))} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+              <div className="mt-3 space-y-1.5 text-xs">
+                {safeDeptRev.slice(0, 5).map((d) => (
+                  <div key={d.name} className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
+                    <span className="min-w-0 truncate text-muted-foreground">{d.name}</span>
+                    <span className="ml-auto font-medium">{fmtINR(d.value, { compact: true })}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </SectionCard>
       </div>
 
@@ -469,56 +465,63 @@ export function CommandCenter() {
         >
           <Heatmap heatmapData={dynamicHeatmap} />
         </SectionCard>
-        <SectionCard title="Revenue Forecast" subtitle="Next 7 days · with confidence band">
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={forecastData.length > 0 ? forecastData : FORECAST}>
-                <CartesianGrid stroke="var(--color-hairline)" vertical={false} />
-                <XAxis dataKey="day" tickLine={false} axisLine={false} hide />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v: any) => `${Number(v) / 1000}K`}
-                  width={44}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="upper"
-                  stroke="none"
-                  fill="var(--color-primary)"
-                  fillOpacity={0.08}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="lower"
-                  stroke="none"
-                  fill="var(--color-background)"
-                  fillOpacity={1}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="actual"
-                  stroke="var(--color-cyan)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="forecast"
-                  stroke="var(--color-primary)"
-                  strokeWidth={2}
-                  strokeDasharray="5 4"
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+        <SectionCard title="Revenue Forecast" subtitle="Next 7 days · predictive band">
+          {forecastData.length === 0 ? (
+            <div className="h-52 flex items-center justify-center text-xs text-muted-foreground">
+              No forecast model data available.
+            </div>
+          ) : (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={forecastData}>
+                  <CartesianGrid stroke="var(--color-hairline)" vertical={false} />
+                  <XAxis dataKey="day" tickLine={false} axisLine={false} hide />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: any) => `${Number(v) / 1000}K`}
+                    width={44}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="upper"
+                    stroke="none"
+                    fill="var(--color-primary)"
+                    fillOpacity={0.08}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="lower"
+                    stroke="none"
+                    fill="var(--color-background)"
+                    fillOpacity={1}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="actual"
+                    stroke="var(--color-cyan)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="forecast"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
           <div className="mt-3 rounded-md border border-hairline bg-surface p-3 text-xs">
-            <p className="font-medium">Next Saturday</p>
+            <p className="font-medium">AI Demand Forecast Status</p>
             <p className="mt-1 text-muted-foreground">
-              Predicted revenue <span className="font-semibold text-foreground">₹62.4L</span> ±
-              ₹4.1L · Confidence 89%
+              {forecastData.length > 0
+                ? "Forecast calculated based on historical database sales records."
+                : "0 forecast calculations. Log POS sales to generate predictive models."}
             </p>
           </div>
         </SectionCard>
@@ -540,11 +543,17 @@ export function CommandCenter() {
           </Button>
         }
       >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {safeRecommendations.slice(0, 3).map((r) => (
-            <RecCard key={r.id} r={r} />
-          ))}
-        </div>
+        {safeRecommendations.length === 0 ? (
+          <div className="py-12 text-center text-xs text-muted-foreground">
+            No active AI recommendations in database.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {safeRecommendations.slice(0, 3).map((r) => (
+              <RecCard key={r.id} r={r} />
+            ))}
+          </div>
+        )}
       </SectionCard>
 
       {/* Communication Hub Ledger */}
@@ -665,10 +674,10 @@ export function CommandCenter() {
 function ExecutiveBrief() {
   const { executiveBrief } = useBusinessData();
   const safeBrief = executiveBrief || {
-    summary: "Today's retail operations running smoothly across all departments.",
-    positives: ["Gross revenue on track", "Footfall steady"],
-    risks: ["Low stock on fast-moving SKUs"],
-    opportunities: ["Cross-sell promotions recommended"],
+    summary: "No transaction data or business activity recorded for the selected period in the database.",
+    positives: ["0 sales transactions recorded", "0 new customer acquisitions"],
+    risks: ["0 expenses recorded", "0 stockout anomalies detected"],
+    opportunities: ["No pending AI optimization actions"],
   };
 
   return (
@@ -679,9 +688,6 @@ function ExecutiveBrief() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
             <Sparkles className="h-3 w-3" /> Today's Executive Brief
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            Generated 2 min ago · Confidence 92%
           </span>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-foreground/90">{safeBrief.summary}</p>
