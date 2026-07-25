@@ -40,6 +40,13 @@ import { useBusinessData, type KpiItem } from "@/lib/business-context";
 import { getCommandCenterServer, dispatchEodReportServer, getForecastingServer } from "@/lib/server-analytics";
 import { getMessageLogsServer } from "@/lib/server-whatsapp-logs";
 
+function greetingFor(d: Date) {
+  const h = d.getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export const Route = createFileRoute("/_app/command-center")({
   head: () => ({
     meta: [
@@ -91,7 +98,12 @@ export function CommandCenter() {
     timeRange,
   } = useBusinessData();
 
-  const [liveKpis, setLiveKpis] = useState<KpiItem[]>([]);
+  const [liveKpis, setLiveKpis] = useState<KpiItem[]>([
+    { key: "revenue", label: "Gross Revenue", value: 0, delta: 0 },
+    { key: "profit", label: "Net Profit", value: 0, delta: 0 },
+    { key: "orders", label: "Total Orders", value: 0, delta: 0 },
+    { key: "expenses", label: "Total Expenses", value: 0, delta: 0 },
+  ]);
   const [isSendingEod, setIsSendingEod] = useState(false);
   const [forecastData, setForecastData] = useState<any[]>([]);
 
@@ -890,11 +902,4 @@ function ChartTooltip({ active, payload, label }: any) {
       ))}
     </div>
   );
-}
-
-function greetingFor(d: Date) {
-  const h = d.getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
 }
