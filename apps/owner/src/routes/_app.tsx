@@ -185,6 +185,7 @@ function AppShell() {
     expenses,
     investments,
     logistics,
+    anomalies,
   } = useBusinessData();
 
   const isEndOfMonth = useMemo(() => {
