@@ -1297,250 +1297,28 @@ Here is the exact financial reconciliation:
   }
 
   // 9.7 Amul Reorder Deep Dive
-  if (ctx.intent === "amul_reorder_deep_dive") {
-    const answer = `Here is the comprehensive diagnostic evaluation regarding whether you should reorder **Amul Taaza Milk 1L** immediately:
-
-1. **Current Stock**: **128 units** on hand.
-2. **Sales Velocity**: Average daily sales count is **42 units**.
-3. **Expected Stock Depletion**: In **3.0 days** (calculated as 128 / 42).
-4. **Supplier Lead Time**: **2.1 days** for Amul Foods Ltd.
-5. **Existing Purchase Orders**: **0 pending** in the database.
-6. **Expiry Risk**: Nestlé Yogurt has high expiry risk (2 days), but Amul Milk inventory is turning over so fast that there is **0% expiry risk** on current stock.
-7. **Working Capital**: Healthy (surplus cash: ₹9.68L).
-8. **Revenue at Risk**: **₹16,300** if stock runs empty before replenishment.
-
-**AI Recommendation**: **Yes, place the reorder for 240 units immediately**. Since lead time (2.1 days) is very close to depletion (3.0 days), delaying the order by even 24 hours creates a high probability of a dairy shelf stockout.`;
-
-    return {
-      answer,
-      summary:
-        "Immediate reorder of 240 units of Amul Milk is highly recommended. Stockout predicted in 3 days.",
-      evidence: [
-        {
-          label: "Amul Milk Stock Count",
-          value: "128 units",
-          sourceType: "product",
-          sourceId: "SKU-10021",
-        },
-        {
-          label: "Amul Milk Lead Time",
-          value: "2.1 days",
-          sourceType: "product",
-          sourceId: "SKU-10021",
-        },
-      ],
-      reasoning: [
-        "Evaluated stock-on-hand against daily transaction volumes.",
-        "Modeled lead time delivery latency to determine ordering thresholds.",
-      ],
-      recommendedActions: [
-        {
-          title: "Place Amul Milk PO (240 units)",
-          description: "Generate PO for ₹10,560 from Amul Foods.",
-          priority: "high" as const,
-          estimatedImpact: "Protects ₹16.3K revenue",
-          actionType: "CREATE_PO" as const,
-          entityId: "rec-dairy-reorder-001",
-        },
-      ],
-      risks: [{ title: "Dairy shelf depletion in 3 days", severity: "high" as const }],
-      confidence: 0.98,
-    };
-  }
-
-  // 9.8 KPI Reconciliation
-  if (ctx.intent === "kpi_reconciliation") {
-    const answer = `The Command Center KPIs and the PostgreSQL ledger records reconcile perfectly.
-
-**Reconciliation Report**:
-1. **Sales Transactions**: Total sales matches transaction lines (₹6,562.1 across active orders).
-2. **Operating Expenses**: Ledger expenses match accounting line items (₹2,40,000 for payroll and ₹96,000 utility base).
-3. **Account Balances**: Treasury cash balance of **₹12,40,000** completely aligns with double-entry ledger entries.
-4. **Inconsistency Check**: **No mismatches or unreconciled balances detected**. The data pipeline is in a fully synchronized state.`;
-
-    return {
-      answer,
-      summary:
-        "All Command Center KPIs, transaction records, and account balances are fully reconciled.",
-      evidence: [
-        { label: "Gross Sales Mismatch Check", value: "0.00% difference", sourceType: "ledger" },
-        { label: "Cash Balance Mismatch Check", value: "0.00% difference", sourceType: "account" },
-      ],
-      reasoning: [
-        "Compared total sum of Transaction line totals with reported Gross Revenue.",
-        "Verified double-entry cash accounts match reported treasury bank balances.",
-      ],
-      recommendedActions: [],
-      risks: [],
-      confidence: 0.99,
-    };
-  }
-
-  // 9.9 Anomaly Timeline
-  if (ctx.intent === "anomaly_timeline") {
-    const answer = `Here is the reconstructed timeline of the HVAC Zone B electricity anomaly over the last 30 days:
-
-*   **May 1, 2026 (First Signal)**: Grid electricity sensor reports baseline overnight usage of 150 kWh/hour in Zone B.
-*   **May 2, 2026 (The Fault)**: HVAC Zone B compressor valve fails to cycle off after mall hours (11 PM). Sensor reports overnight usage jump to 395 kWh/hour (+163% spike).
-*   **May 3 - May 5, 2026 (Operational Impact)**: Accumulation of excess energy cost at **₹1,280 daily**. 
-*   **May 5, 2026 (Flagged Anomaly)**: AI Decision Center triggers a Critical alert for HVAC Zone B compressor. Total estimated monthly cash leak is projected at **₹38,400**.
-*   **AI Recommended Intervention**: Dispatch HVAC maintenance crew to inspect compressor valves.`;
-
-    return {
-      answer,
-      summary: "HVAC Zone B compressor valve failed on May 2, causing a ₹1,280/day cash leak.",
-      evidence: [
-        {
-          label: "Anomaly Overnight Spike",
-          value: "+163% usage",
-          sourceType: "anomaly",
-          sourceId: "anom-util-hvac-001",
-        },
-        {
-          label: "Accruing Daily Leak",
-          value: "₹1,280/day",
-          sourceType: "anomaly",
-          sourceId: "anom-util-hvac-001",
-        },
-      ],
-      reasoning: [
-        "Extracted historical utility reading sensor timestamps.",
-        "Isolated start of deviation from baseline energy profiles.",
-      ],
-      recommendedActions: [
-        {
-          title: "Dispatch HVAC Crew",
-          description: "Investigate Zone B compressor valves immediately.",
-          priority: "high" as const,
-          estimatedImpact: "Halts ₹38.4K monthly leak",
-          actionType: "INVESTIGATE_ANOMALY" as const,
-          entityId: "anom-util-hvac-001",
-        },
-      ],
-      risks: [{ title: "Accumulating utility costs", severity: "high" as const }],
-      confidence: 0.97,
-    };
-  }
-
-  // 9.10 Best Action Recommendation
-  if (ctx.intent === "best_action_recommendation") {
-    const answer = `To improve expected business performance over the next 7 days, the AI evaluated three candidate actions:
-
-1.  **Candidate A: Dispatch HVAC Maintenance to Zone B**
-    *   *Implementation Cost*: ₹5,000 (labor)
-    *   *7-Day Return*: Saves **₹8,960** in utility leaks (₹38.4K monthly).
-    *   *ROI*: **179%**. High reversibility.
-2.  **Candidate B: Place urgent reorder PO for Amul Milk**
-    *   *Implementation Cost*: ₹10,560 (inventory)
-    *   *7-Day Return*: Protects **₹16,300** in dairy category sales.
-    *   *ROI*: **154%**.
-3.  **Candidate C: Win-back discount campaign for VIP (Meera Rane)**
-    *   *Implementation Cost*: ₹2,000 (voucher)
-    *   *7-Day Return*: Retains **₹25,000** expected shopping basket spends.
-    *   *ROI*: **1250%** (Highest long-term return).
-
-**The Decision**: **Implement Candidate A immediately, followed by Candidate B**. Securing utility waste is a guaranteed cost-saving action, while Amul Milk purchase prevents immediate empty shelves.`;
-
-    return {
-      answer,
-      summary:
-        "Implementing HVAC Zone B compressor maintenance is the highest-priority guaranteed cost-saving action today.",
-      evidence: [
-        { label: "HVAC labor cost", value: "₹5,000", sourceType: "expense" },
-        { label: "Amul Milk PO cost", value: "₹10,560", sourceType: "expense" },
-      ],
-      reasoning: [
-        "Compared immediate capital deployment costs with projected 7-day revenue/savings outcomes.",
-      ],
-      recommendedActions: [
-        {
-          title: "Dispatch HVAC Crew to Zone B",
-          description: "Inspect compressor valves to plug the energy leak.",
-          priority: "high" as const,
-          estimatedImpact: "Saves ₹38.4K/month",
-          actionType: "INVESTIGATE_ANOMALY" as const,
-          entityId: "anom-util-hvac-001",
-        },
-        {
-          title: "Create Amul PO",
-          description: "Order 240 units from Amul Foods.",
-          priority: "high" as const,
-          estimatedImpact: "Protects ₹16.3K revenue",
-          actionType: "CREATE_PO" as const,
-          entityId: "rec-dairy-reorder-001",
-        },
-      ],
-      risks: [],
-      confidence: 0.96,
-    };
-  }
-
-  // 9.11 Challenge Recommendation
-  if (ctx.intent === "challenge_recommendation") {
-    const answer = `**Challenging the HVAC Zone B dispatch decision**:
-
-*   **The Recommendation**: Dispatch maintenance crew to HVAC Zone B.
-*   **The Strongest Counter-Argument**: If the overnight energy draw spike was not caused by a mechanical valve failure, but instead by tenant stores (e.g. fashion anchor tenant) running overnight inventory audits or restocking events with lights and auxiliary HVAC active, then sending a maintenance crew is an unnecessary ₹5,000 labor expense.
-*   **Evidence that would make it wrong**: Tenant operational logs showing overnight shift work scheduled in Zone B on May 2-5.
-*   **Additional Data needed**: Zone B tenant occupancy and access card logs for the overnight periods.`;
-
-    return {
-      answer,
-      summary:
-        "Challenging HVAC Zone B: Overnight energy spikes might be tenant shift work, not mechanical failures.",
-      evidence: [
-        {
-          label: "HVAC Zone B draw",
-          value: "+163% overnight",
-          sourceType: "anomaly",
-          sourceId: "anom-util-hvac-001",
-        },
-      ],
-      reasoning: ["Audited alternative occupancy hypotheses for HVAC spikes."],
-      recommendedActions: [
-        {
-          title: "Verify Tenant Logs",
-          description: "Check tenant building logs before sending HVAC crew.",
-          priority: "low" as const,
-          actionType: "NAVIGATE" as const,
-          entityId: "/utilities",
-        },
-      ],
-      risks: [],
-      confidence: 0.95,
-    };
-  }
-
-  // Default Overview / General Summary
+  // Default Overview / General Summary based on real database records
   const summary = getBusinessSummary(ctx.resolvedDate, roleScope);
   const actions = getRecommendedActions(ctx.resolvedDate, roleScope);
 
+  const hasData = summary.orders > 0 || summary.grossRevenue > 0;
+
   return {
-    answer:
-      summary.orders === 0
-        ? `There is currently no transaction activity recorded for ${ctx.resolvedDate}. Revenue and profit are at ₹0.`
-        : roleScope === "manager"
-          ? `GrandSquare Mall (Fashion scoped) is running steadily on ${ctx.resolvedDate}. Scoped sales total ₹${summary.grossRevenue} with a net profit margin estimate of 16%.`
-          : `GrandSquare Mall is performing steadily on ${ctx.resolvedDate}. Total gross revenue reached ₹${summary.grossRevenue} with a net profit of ₹${summary.netProfit} across ${summary.orders} orders.`,
-    summary:
-      summary.orders === 0
-        ? "No business activity recorded."
-        : roleScope === "manager"
-          ? "Fashion department metrics are within standard guidelines."
-          : "GrandSquare Mall operations are performing within normal parameters.",
+    answer: hasData
+      ? `Business is operating with ₹${summary.grossRevenue} gross revenue across ${summary.orders} orders on ${ctx.resolvedDate}. Net profit is estimated at ₹${summary.netProfit}.`
+      : `There is currently no transaction activity or operational risk recorded for ${ctx.resolvedDate}. Total gross revenue is ₹0 across 0 orders.`,
+    summary: hasData
+      ? `Operations recorded ₹${summary.grossRevenue} in revenue today.`
+      : "No business activity or transaction records logged in the database.",
     evidence: [
       { label: "Gross Revenue", value: `₹${summary.grossRevenue}` },
-      { label: "Net Profit", value: `₹${summary.netProfit}` },
-      { label: "Active recommendations", value: `${summary.activeRecommendations} pending` },
+      { label: "Total Orders", value: `${summary.orders}` },
+      { label: "Active Recommendations", value: `${summary.activeRecommendations} pending` },
     ],
-    reasoning:
-      summary.orders === 0
-        ? ["No sales transactions found in the database for this date."]
-        : [
-            "Calculated from daily transaction ledgers.",
-            "Profit margins derived from standard COGS deductions.",
-          ],
-    recommendedActions: actions.slice(0, 2).map((r) => ({
+    reasoning: hasData
+      ? ["Calculated directly from live database transaction records."]
+      : ["No sales transactions found in the database for this date range."],
+    recommendedActions: actions.map((r) => ({
       title: r.title,
       description: r.explanation,
       priority:
@@ -1559,9 +1337,9 @@ Here is the exact financial reconciliation:
     })),
     risks:
       summary.activeAnomalies > 0
-        ? [{ title: "Grid energy draw leak in Zone B", severity: "high" }]
+        ? [{ title: `${summary.activeAnomalies} operational anomalies flagged`, severity: "high" }]
         : [],
-    confidence: 0.94,
+    confidence: hasData ? 0.95 : 1.0,
   };
 }
 
