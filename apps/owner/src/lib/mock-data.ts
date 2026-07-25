@@ -904,7 +904,7 @@ export const LIVE_FEED = [
   { t: "15 min ago", type: "expense", text: "Expense added ₹68,400 · Maintenance" },
 ];
 
-// Calendar month
+// Calendar month grid builder (returns clean cells with 0 revenue baseline)
 export function getMonthDays(year: number, month: number) {
   const first = new Date(year, month, 1);
   const days = new Date(year, month + 1, 0).getDate();
@@ -912,13 +912,7 @@ export function getMonthDays(year: number, month: number) {
   const cells: ({ day: number; revenue: number; state: string; event?: string } | null)[] = [];
   for (let i = 0; i < pad; i++) cells.push(null);
   for (let d = 1; d <= days; d++) {
-    const r = seeded(year * 10000 + month * 100 + d);
-    const revenue = Math.round(120000 + r() * 120000);
-    const weekend = new Date(year, month, d).getDay() >= 5;
-    const rev = weekend ? Math.round(revenue * 1.3) : revenue;
-    const state = rev > 200000 ? "peak" : rev > 150000 ? "good" : rev > 110000 ? "avg" : "low";
-    const event = d === 5 ? "Spike day" : d === 12 ? "Promotion" : d === 18 ? "Anomaly" : undefined;
-    cells.push({ day: d, revenue: rev, state, event });
+    cells.push({ day: d, revenue: 0, state: "none", event: undefined });
   }
   return cells;
 }
