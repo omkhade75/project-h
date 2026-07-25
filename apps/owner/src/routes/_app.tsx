@@ -196,6 +196,8 @@ function AppShell() {
     return nextDay.getMonth() !== d.getMonth();
   }, [activeDate]);
 
+  const endOfMonthNotifId = `eom-bills-${activeDate?.slice(0, 7) || "current"}`;
+  const hasEomNotif = isEndOfMonth && !readNotifs.has(endOfMonthNotifId);
   const unreadAnomalies = (anomalies || []).filter((a) => !readNotifs.has(a.id));
   const totalUnreadNotifs = unreadAnomalies.length + (hasEomNotif ? 1 : 0);
 
