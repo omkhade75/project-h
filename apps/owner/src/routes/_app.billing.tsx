@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createTransactionServer } from "@/lib/server-transactions";
 import {
   getProductsServer,
@@ -51,7 +51,7 @@ import {
 export const Route = createFileRoute("/_app/billing")({
   head: () => ({
     meta: [
-      { title: "Billing (POS) — OmniMind AI" },
+      { title: "Billing (POS) — Bizora AI" },
       { name: "description", content: "Point of Sale and Billing interface." },
     ],
   }),
@@ -134,28 +134,38 @@ function RouteComponent() {
           email: user?.email || "",
         },
       };
-      const prods = await getProductsServer(payload);
-      const custs = await getCustomersServer({
-        data: {
-          role: user?.role || "owner",
-          email: user?.email || "",
-          status: "Active",
-        },
-      });
-      const opts = await getProductOptionsServer(payload);
 
-      setProducts(prods);
-      setCustomers(custs);
-      setDepartments(opts.departments);
+      const [prodsRes, custsRes, optsRes] = await Promise.all([
+        getProductsServer(payload).catch(() => []),
+        getCustomersServer({
+          data: {
+            role: user?.role || "owner",
+            email: user?.email || "",
+            status: "Active",
+          },
+        }).catch(() => []),
+        getProductOptionsServer(payload).catch(() => ({ departments: [], categories: [] })),
+      ]);
 
-      if (opts.departments.length > 0) {
-        setFormDepartmentId(opts.departments[0].id);
+      const safeProds = Array.isArray(prodsRes) ? prodsRes : [];
+      const safeCusts = Array.isArray(custsRes) ? custsRes : [];
+      const safeDepts = Array.isArray(optsRes?.departments) ? optsRes.departments : [];
+
+      setProducts(safeProds);
+      setCustomers(safeCusts);
+      setDepartments(safeDepts);
+
+      if (safeDepts.length > 0) {
+        setFormDepartmentId(safeDepts[0].id);
       }
-      if (prods.length > 0) {
-        setSelectedItemSku(prods[0].id);
+      if (safeProds.length > 0) {
+        setSelectedItemSku(safeProds[0].id);
       }
     } catch (e) {
-      toast.error("Failed to load catalog & customers.");
+      console.warn("Billing page data load fallback triggered:", e);
+      setProducts([]);
+      setCustomers([]);
+      setDepartments([]);
     } finally {
       setLoading(false);
     }
@@ -168,7 +178,6 @@ function RouteComponent() {
   // Auto-detect department based on cart items
   useEffect(() => {
     if (cartItems.length > 0 && products.length > 0) {
-      // Find the departmentId of the most recently added product in the cart
       const latestItemProductId = cartItems[cartItems.length - 1].productId;
       const product = products.find((p) => p.id === latestItemProductId);
       if (product && product.departmentId) {
@@ -229,7 +238,6 @@ function RouteComponent() {
           },
         });
 
-        // Add newly registered product locally
         const newProd: ProductListItem = {
           id: sku,
           sku,
@@ -254,7 +262,7 @@ function RouteComponent() {
           status: "Active",
           unit: "units",
           expiry: null,
-          supplier: "GrandSquare Wholesalers",
+          supplier: "Wholesalers",
           sold: 0,
           revenue: 0,
         };
@@ -262,7 +270,6 @@ function RouteComponent() {
         setProducts((prev) => [...prev, newProd]);
         productSkuToCart = sku;
 
-        // Reset custom fields
         setCustomProdName("");
         setCustomProdBrand("");
         setCustomProdPrice("");
@@ -301,199 +308,114 @@ function RouteComponent() {
   };
 
   const removeFromCart = (index: number) => {
-    const updated = cartItems.filter((_, idx) => idx !== index);
-    setCartItems(updated);
+    setCartItems(cartItems.filter((_, i) => i !== index));
   };
+
+  const handleQuickAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustFirst.trim() || !newCustPhone.trim()) {
+      toast.error("First name and phone number are required.");
+      return;
+    }
+
+    try {
+      setAddingCustomer(true);
+      const name = `${newCustFirst.trim()} ${newCustLast.trim()}`.trim();
+      const res = await addCustomerServer({
+        data: {
+          name,
+          phone: newCustPhone.trim(),
+          email: newCustEmail.trim() || undefined,
+          favDept: newCustDept || "Grocery",
+          notes: "Quick POS Registration",
+          role: user?.role || "owner",
+          userEmail: user?.email || "",
+        },
+      });
+
+      if (res) {
+        setCustomers((prev) => [res, ...prev]);
+        setFormCustomerId(res.id);
+        setShowAddCustomerModal(false);
+        setNewCustFirst("");
+        setNewCustLast("");
+        setNewCustEmail("");
+        setNewCustPhone("");
+        setNewCustDept("");
+        toast.success(`Customer "${name}" registered successfully.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to register customer.");
+    } finally {
+      setAddingCustomer(false);
+    }
+  };
+
+  // Calculations
+  const calculatedItems = cartItems.map((ci) => {
+    const prod = products.find((p) => p.id === ci.productId);
+    const unitPrice = prod?.price || 0;
+    const gross = unitPrice * ci.quantity;
+    const net = Math.max(0, gross - ci.discount);
+    return {
+      ...ci,
+      productName: prod?.name || ci.productId,
+      sku: prod?.sku || ci.productId,
+      unitPrice,
+      gross,
+      net,
+    };
+  });
+
+  const subtotal = calculatedItems.reduce((acc, i) => acc + i.net, 0);
+  const tax = Math.round(subtotal * 0.18); // 18% GST standard
+  const grandTotal = subtotal + tax;
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0) {
-      toast.error("POS transaction cart is empty.");
+      toast.error("Cart is empty. Add products to process transaction.");
       return;
     }
-    setSaving(true);
+
     try {
-      const req = {
+      setSaving(true);
+      const res = await createTransactionServer({
         data: {
           customerId: formCustomerId === "walkin" ? null : formCustomerId,
-          walkinPhone: formCustomerId === "walkin" && walkinPhone ? walkinPhone : null,
-          departmentId: formDepartmentId,
-          items: cartItems,
+          walkinPhone: formCustomerId === "walkin" ? walkinPhone.trim() || null : null,
+          departmentId: formDepartmentId || null,
           paymentMethod: formPaymentMethod,
+          items: cartItems.map((ci) => ({
+            productId: ci.productId,
+            quantity: ci.quantity,
+            discount: ci.discount,
+          })),
+          activeDate: activeDate,
           role: user?.role || "owner",
-          emailUser: user?.email || "",
-          transactionDate: activeDate,
+          email: user?.email || "",
         },
-      };
-      const res = (await createTransactionServer(req)) as any;
-
-      toast.success("Transaction billed and stock updated successfully.");
-
-      // Build a local object to show the Invoice Print View
-      const customer = customers.find((c) => c.id === formCustomerId);
-      setCompletedTxn({
-        id: "INV-" + Date.now().toString().slice(-6),
-        date: new Date().toLocaleString(),
-        customerName: customer ? customer.name : "Walk-in Customer",
-        items: cartItems.map((item) => {
-          const prod = products.find((p) => p.id === item.productId);
-          return {
-            name: prod ? prod.name : "Unknown",
-            qty: item.quantity,
-            price: prod ? prod.price : 0,
-            discount: item.discount,
-            taxRate: 18, // Fixed 18% GST display
-          };
-        }),
-        paymentMethod: formPaymentMethod,
       });
 
-      setCartItems([]);
-      setWalkinPhone("");
-
-      // Reload customers so visits/spend increases in memory
-      loadData();
+      if (res && res.success) {
+        toast.success("Transaction completed successfully!");
+        setCompletedTxn(res.transaction);
+        setCartItems([]);
+        setWalkinPhone("");
+      } else {
+        toast.error("Failed to complete transaction.");
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to process sale checkout.");
+      toast.error(err.message || "Transaction execution error.");
     } finally {
       setSaving(false);
     }
   };
 
-  // Estimate total cart amount
-  let cartSubtotal = 0;
-  let cartTax = 0;
-  let cartDiscount = 0;
-
-  cartItems.forEach((item) => {
-    const prod = products.find((p) => p.id === item.productId);
-    const price = prod ? prod.price : 0;
-    const itemSub = price * item.quantity;
-    cartSubtotal += itemSub;
-    cartDiscount += item.discount;
-    // Assuming 18% GST (9% CGST + 9% SGST)
-    const taxable = itemSub - item.discount;
-    cartTax += taxable * 0.18;
-  });
-
-  const cartTotal = cartSubtotal - cartDiscount + cartTax;
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-      </div>
-    );
-  }
-
-  // If completed, show Invoice
-  if (completedTxn) {
-    let invSubtotal = 0;
-    let invDiscount = 0;
-    let invTax = 0;
-    completedTxn.items.forEach((it: any) => {
-      const sub = it.price * it.qty;
-      invSubtotal += sub;
-      invDiscount += it.discount;
-      const taxable = sub - it.discount;
-      invTax += taxable * 0.18;
-    });
-    const invTotal = invSubtotal - invDiscount + invTax;
-
-    return (
-      <div className="space-y-6 max-w-3xl mx-auto">
-        <PageHeader
-          title="Checkout Complete"
-          subtitle="Invoice generated successfully. Visit counts and customer spend have been incremented."
-        />
-
-        <div className="bg-white border border-zinc-200 shadow-sm rounded-xl overflow-hidden p-8">
-          <div className="flex justify-between items-start mb-8 border-b pb-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-                <h2 className="text-2xl font-bold text-zinc-900">TAX INVOICE</h2>
-              </div>
-              <p className="text-zinc-500">OmniMind Retail Solutions</p>
-              <p className="text-zinc-500">GSTIN: 27AAAAA0000A1Z5</p>
-            </div>
-            <div className="text-right">
-              <p className="font-semibold text-zinc-900">Invoice #: {completedTxn.id}</p>
-              <p className="text-zinc-500 text-sm">Date: {completedTxn.date}</p>
-              <p className="text-zinc-500 text-sm">
-                Billed To:{" "}
-                <span className="font-medium text-zinc-900">{completedTxn.customerName}</span>
-              </p>
-              <p className="text-zinc-500 text-sm">Payment: {completedTxn.paymentMethod}</p>
-            </div>
-          </div>
-
-          <table className="w-full text-sm mb-8">
-            <thead className="bg-zinc-50 border-y">
-              <tr>
-                <th className="py-3 px-4 text-left font-semibold text-zinc-600">Item</th>
-                <th className="py-3 px-4 text-right font-semibold text-zinc-600">Qty</th>
-                <th className="py-3 px-4 text-right font-semibold text-zinc-600">Rate</th>
-                <th className="py-3 px-4 text-right font-semibold text-zinc-600">Discount</th>
-                <th className="py-3 px-4 text-right font-semibold text-zinc-600">GST (18%)</th>
-                <th className="py-3 px-4 text-right font-semibold text-zinc-600">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {completedTxn.items.map((it: any, i: number) => {
-                const sub = it.price * it.qty;
-                const d = it.discount;
-                const tax = (sub - d) * 0.18;
-                const tot = sub - d + tax;
-                return (
-                  <tr key={i}>
-                    <td className="py-3 px-4 text-zinc-900">{it.name}</td>
-                    <td className="py-3 px-4 text-right text-zinc-600">{it.qty}</td>
-                    <td className="py-3 px-4 text-right text-zinc-600">{fmtINR(it.price)}</td>
-                    <td className="py-3 px-4 text-right text-zinc-600">{fmtINR(it.discount)}</td>
-                    <td className="py-3 px-4 text-right text-zinc-600">{fmtINR(tax)}</td>
-                    <td className="py-3 px-4 text-right font-medium text-zinc-900">
-                      {fmtINR(tot)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end border-t pt-6">
-            <div className="w-64 space-y-3">
-              <div className="flex justify-between text-zinc-600">
-                <span>Subtotal</span>
-                <span>{fmtINR(invSubtotal)}</span>
-              </div>
-              <div className="flex justify-between text-zinc-600">
-                <span>Total Discount</span>
-                <span className="text-red-500">-{fmtINR(invDiscount)}</span>
-              </div>
-              <div className="flex justify-between text-zinc-600">
-                <span>CGST (9%)</span>
-                <span>{fmtINR(invTax / 2)}</span>
-              </div>
-              <div className="flex justify-between text-zinc-600">
-                <span>SGST (9%)</span>
-                <span>{fmtINR(invTax / 2)}</span>
-              </div>
-              <div className="flex justify-between font-bold text-lg text-zinc-900 pt-3 border-t">
-                <span>Grand Total</span>
-                <span>{fmtINR(invTotal)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => window.print()}>
-              <FileText className="h-4 w-4 mr-2" />
-              Print Invoice
-            </Button>
-            <Button onClick={() => setCompletedTxn(null)}>New Bill</Button>
-          </div>
-        </div>
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -639,65 +561,60 @@ function RouteComponent() {
                       </Select>
                     </div>
                   </div>
-
-                  {detectingCategory ? (
-                    <div className="flex items-center gap-2 text-xs text-indigo-600 bg-indigo-50/50 p-2 rounded">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>AI is analyzing product details to auto-classify...</span>
-                    </div>
-                  ) : customProdCatName ? (
-                    <div className="text-xs text-emerald-700 bg-emerald-50 p-2 rounded border border-emerald-100 flex items-center justify-between">
-                      <span>
-                        🏷️ Auto-detected Category: <strong>{customProdCatName}</strong> (
-                        {departments.find((d) => d.id === customProdDeptId)?.name || "Grocery"})
-                      </span>
-                      <span className="text-[10px] bg-emerald-100 px-1.5 py-0.5 rounded font-mono text-emerald-800">
-                        Confidence: 99%
-                      </span>
-                    </div>
-                  ) : null}
                 </div>
               )}
             </div>
           </SectionCard>
 
-          <SectionCard title="Current Cart">
+          {/* Cart items table */}
+          <SectionCard title={`Current Cart (${cartItems.length} items)`}>
             {cartItems.length === 0 ? (
-              <div className="text-center py-10 text-zinc-500">
-                Cart is empty. Add products to begin billing.
+              <div className="py-12 text-center text-sm text-zinc-500 flex flex-col items-center justify-center">
+                <ShoppingCart className="h-8 w-8 mb-2 text-zinc-400" />
+                <p>Transaction cart is empty.</p>
+                <p className="text-xs text-zinc-400 mt-1">Select items above to build invoice.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {cartItems.map((item, idx) => {
-                  const p = products.find((x) => x.id === item.productId);
-                  if (!p) return null;
-                  const itemTotal = p.price * item.quantity - item.discount;
-                  return (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-3 border rounded-lg bg-zinc-50/50"
-                    >
-                      <div>
-                        <p className="font-medium text-zinc-900">{p.name}</p>
-                        <p className="text-sm text-zinc-500">
-                          {item.quantity} x {fmtINR(p.price)}
-                          {item.discount > 0 && ` (- ₹${item.discount} discount)`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold text-zinc-900">{fmtINR(itemTotal)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                          onClick={() => removeFromCart(idx)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs uppercase bg-zinc-100/50">
+                    <tr>
+                      <th className="p-3">Product</th>
+                      <th className="p-3 text-right">Price</th>
+                      <th className="p-3 text-center">Qty</th>
+                      <th className="p-3 text-right">Discount</th>
+                      <th className="p-3 text-right">Net Total</th>
+                      <th className="p-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200">
+                    {calculatedItems.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-zinc-50">
+                        <td className="p-3 font-medium">
+                          {item.productName}
+                          <div className="text-xs text-zinc-500 font-mono">{item.sku}</div>
+                        </td>
+                        <td className="p-3 text-right">{fmtINR(item.unitPrice)}</td>
+                        <td className="p-3 text-center font-semibold">{item.quantity}</td>
+                        <td className="p-3 text-right text-amber-600">
+                          {item.discount > 0 ? `-${fmtINR(item.discount)}` : "—"}
+                        </td>
+                        <td className="p-3 text-right font-bold">{fmtINR(item.net)}</td>
+                        <td className="p-3 text-center">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFromCart(idx)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </SectionCard>
@@ -733,10 +650,6 @@ function RouteComponent() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-zinc-500">
-                  Selecting a customer will automatically increment their Visit Count and Spend
-                  Amount.
-                </p>
 
                 {formCustomerId === "walkin" && (
                   <div className="pt-2 space-y-1 animate-in slide-in-from-top-1 duration-200">
@@ -748,7 +661,7 @@ function RouteComponent() {
                       value={walkinPhone}
                       onChange={(e) => setWalkinPhone(e.target.value)}
                       placeholder="e.g. +919876543210"
-                      className="h-8 text-xs bg-zinc-50/50"
+                      className="h-8 text-xs"
                     />
                   </div>
                 )}
@@ -758,7 +671,7 @@ function RouteComponent() {
                 <Label>Sales Department</Label>
                 <Select value={formDepartmentId} onValueChange={setFormDepartmentId}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select sales department..." />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => (
@@ -771,52 +684,48 @@ function RouteComponent() {
               </div>
 
               <div className="space-y-2">
-                <Label>Payment Method</Label>
+                <Label>Payment Channel</Label>
                 <Select value={formPaymentMethod} onValueChange={setFormPaymentMethod}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="UPI">UPI</SelectItem>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Card">Credit/Debit Card</SelectItem>
-                    <SelectItem value="Store Credit">Store Credit</SelectItem>
+                    <SelectItem value="UPI">UPI / QR Code</SelectItem>
+                    <SelectItem value="Card">Credit / Debit Card</SelectItem>
+                    <SelectItem value="Cash">Cash Settlement</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <hr className="my-4" />
-
-              <div className="space-y-2 mb-6 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">Subtotal:</span>
-                  <span className="text-zinc-900">{fmtINR(cartSubtotal)}</span>
+              {/* Total calculations card */}
+              <div className="p-4 border rounded-lg bg-zinc-50/50 space-y-2 text-sm">
+                <div className="flex justify-between text-zinc-600">
+                  <span>Subtotal</span>
+                  <span>{fmtINR(subtotal)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">Discount:</span>
-                  <span className="text-red-500">-{fmtINR(cartDiscount)}</span>
+                <div className="flex justify-between text-zinc-600">
+                  <span>GST Tax (18%)</span>
+                  <span>{fmtINR(tax)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-600">Estimated GST (18%):</span>
-                  <span className="text-zinc-900">{fmtINR(cartTax)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg pt-2 border-t mt-2">
-                  <span>Grand Total:</span>
-                  <span>{fmtINR(cartTotal)}</span>
+                <div className="flex justify-between font-bold text-base border-t pt-2 text-zinc-900">
+                  <span>Grand Total</span>
+                  <span className="text-indigo-600">{fmtINR(grandTotal)}</span>
                 </div>
               </div>
 
               <Button
                 type="submit"
-                className="w-full py-6 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 h-11 text-base font-semibold"
                 disabled={saving || cartItems.length === 0}
               >
                 {saving ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" /> Processing POS...
                   </>
                 ) : (
-                  "Complete Checkout & Generate Bill"
+                  <>
+                    <CheckCircle2 className="h-5 w-5 mr-2" /> Complete Sale & Print Bill
+                  </>
                 )}
               </Button>
             </form>
@@ -824,185 +733,64 @@ function RouteComponent() {
         </div>
       </div>
 
-      <QuickRegisterCustomerDialog
-        isOpen={showAddCustomerModal}
-        onClose={() => setShowAddCustomerModal(false)}
-        onSuccess={(newCust) => {
-          setCustomers((prev) => [...prev, newCust]);
-          setFormCustomerId(newCust.id);
-        }}
-        departments={departments}
-        user={user}
-      />
-    </div>
-  );
-}
+      {/* Completed Invoice Dialog */}
+      <Dialog open={!!completedTxn} onOpenChange={() => setCompletedTxn(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-600">
+              <CheckCircle2 className="h-6 w-6" /> Transaction Success
+            </DialogTitle>
+            <DialogDescription>
+              Receipt #{completedTxn?.id} created & logged to inventory ledger.
+            </DialogDescription>
+          </DialogHeader>
 
-// Inline Sub-modal helper for Quick Customer Registration
-function QuickRegisterCustomerDialog({
-  isOpen,
-  onClose,
-  onSuccess,
-  departments,
-  user,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: (newCust: CustomerListItem) => void;
-  departments: Array<{ id: string; name: string }>;
-  user: any;
-}) {
-  const [first, setFirst] = useState("");
-  const [last, setLast] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [dept, setDept] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!first.trim() || !last.trim()) {
-      toast.error("Customer name is required.");
-      return;
-    }
-    if (!phone.trim()) {
-      toast.error("Customer phone number is required.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const emailValue = email.trim() || `${first.toLowerCase()}.${last.toLowerCase()}@example.com`;
-      const res = await addCustomerServer({
-        data: {
-          firstName: first,
-          lastName: last,
-          email: emailValue,
-          phone,
-          loyaltyTier: "Bronze",
-          preferredDepartmentId: dept || null,
-          notes: "Quick registered via POS panel.",
-          role: user?.role || "owner",
-          emailUser: user?.email || "",
-        },
-      });
-
-      toast.success(`Customer "${first} ${last}" registered successfully!`);
-
-      onSuccess({
-        id: (res as any).id || "CUST-" + Date.now().toString().slice(-5),
-        customerCode: (res as any).customerCode || "CUST-" + Date.now().toString().slice(-5),
-        name: `${first} ${last}`.trim(),
-        firstName: first,
-        lastName: last,
-        email: emailValue,
-        phone,
-        joined: new Date().toISOString().split("T")[0],
-        visits: 0,
-        spend: 0,
-        aov: 0,
-        favDept: departments.find((d) => d.id === dept)?.name || "Fashion",
-        segment: "Bronze",
-        customerType: "B2C",
-        churn: 12,
-        status: "Active",
-        lastVisit: new Date().toISOString().split("T")[0],
-      });
-
-      // Clear states
-      setFirst("");
-      setLast("");
-      setEmail("");
-      setPhone("");
-      setDept("");
-      onClose();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to register customer.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Quick Register Customer</DialogTitle>
-          <DialogDescription>
-            Register a new loyalty customer directly to enable POS WhatsApp receipts and point
-            accumulation.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>First Name</Label>
-              <Input
-                value={first}
-                onChange={(e) => setFirst(e.target.value)}
-                placeholder="Aarav"
-                required
-              />
+          <div className="border rounded-lg p-4 space-y-3 bg-zinc-50/50 text-sm font-mono">
+            <div className="flex justify-between text-xs text-zinc-500 border-b pb-2">
+              <span>Receipt: {completedTxn?.id}</span>
+              <span>{completedTxn?.date}</span>
             </div>
             <div className="space-y-1">
-              <Label>Last Name</Label>
-              <Input
-                value={last}
-                onChange={(e) => setLast(e.target.value)}
-                placeholder="Mehra"
-                required
-              />
+              {completedTxn?.items?.map((item: any, idx: number) => (
+                <div key={idx} className="flex justify-between text-xs">
+                  <span>
+                    {item.productName || item.productId} x{item.quantity}
+                  </span>
+                  <span>{fmtINR(item.total)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-2 space-y-1 text-xs font-sans">
+              <div className="flex justify-between text-zinc-600">
+                <span>Payment Method</span>
+                <span className="font-semibold">{completedTxn?.paymentMethod}</span>
+              </div>
+              <div className="flex justify-between text-zinc-900 font-bold text-sm">
+                <span>Total Paid</span>
+                <span className="text-emerald-600">{fmtINR(completedTxn?.total || 0)}</span>
+              </div>
             </div>
           </div>
-          <div className="space-y-1">
-            <Label>Phone Number (WhatsApp)</Label>
-            <Input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="e.g. +919876543210"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>Email (Optional)</Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="aarav@gmail.com"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>Preferred Sales Department</Label>
-            <Select value={dept} onValueChange={setDept}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select preferred dept..." />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
-              Cancel
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => window.print()}
+              className="w-full sm:w-auto"
+            >
+              <FileText className="h-4 w-4 mr-2" /> Print Receipt
             </Button>
             <Button
-              type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-              disabled={saving}
+              type="button"
+              onClick={() => setCompletedTxn(null)}
+              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Register Customer
+              Start New POS Sale
             </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

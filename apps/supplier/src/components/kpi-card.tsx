@@ -8,7 +8,7 @@ interface KpiCardProps {
   value: number;
   delta?: number;
   spark?: { i: number; v: number }[];
-  format?: "inr" | "inr-compact" | "num";
+  format?: "inr" | "inr-compact" | "num" | "percent";
   icon?: React.ReactNode;
   onClick?: () => void;
 }
@@ -18,7 +18,7 @@ export function KpiCard({
   value,
   delta,
   spark,
-  format = "inr-compact",
+  format = "num",
   icon,
   onClick,
 }: KpiCardProps) {
@@ -29,7 +29,9 @@ export function KpiCard({
       ? fmtINR(value)
       : format === "inr-compact"
         ? fmtINR(value, { compact: true })
-        : fmtNum(value);
+        : format === "percent"
+          ? `${value}%`
+          : fmtNum(value);
 
   return (
     <button

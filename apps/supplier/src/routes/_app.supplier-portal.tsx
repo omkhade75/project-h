@@ -98,23 +98,25 @@ function SupplierPortal() {
         }
       />
 
-      {/* Real Dynamic KPI Stats (0 if no data) */}
+      {/* Real Dynamic KPI Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <KpiCard
           label="Pending POs"
           value={pendingPOsCount}
           icon={<FileText className="h-4 w-4" />}
+          format="num"
         />
         <KpiCard
           label="Active Shipments"
           value={activeShipmentsCount}
           icon={<Truck className="h-4 w-4" />}
+          format="num"
         />
         <KpiCard
           label="Total Settlement spend"
           value={totalSpend}
           icon={<CreditCard className="h-4 w-4" />}
-          format="currency"
+          format="inr"
         />
         <KpiCard
           label="Quality Score"
