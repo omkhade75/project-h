@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ScaffoldPage } from "@/components/scaffold-page";
-import { useAuth } from "@/lib/auth-context";
+import { useBusinessData } from "@/lib/business-context";
 
 export const Route = createFileRoute("/_app/data-import")({
   head: () => ({
     meta: [
-      { title: "Data Import — OmniMind AI" },
+      { title: "Data Import — Bizora AI" },
       { name: "description", content: "Connect data sources and upload historical records." },
     ],
   }),
@@ -13,8 +13,8 @@ export const Route = createFileRoute("/_app/data-import")({
 });
 
 function DataImportPage() {
-  const { user } = useAuth();
-  const isGrandSquare = user?.workspaceId === "grandsquare-mall";
+  const { transactions, products, customers } = useBusinessData();
+  const totalIngested = transactions.length + products.length + customers.length;
 
   return (
     <ScaffoldPage
@@ -23,16 +23,16 @@ function DataImportPage() {
       sections={[
         {
           title: "Connected Sources",
-          desc: "Live",
+          desc: "Live Integrations",
           rows: [
-            { label: "POS · GoFrugal", v: isGrandSquare ? "Connected" : "Not Connected" },
-            { label: "ERP · Tally Prime", v: isGrandSquare ? "Connected" : "Not Connected" },
-            { label: "HR · Zoho People", v: isGrandSquare ? "Connected" : "Not Connected" },
-            { label: "MSEDCL", v: isGrandSquare ? "Connected" : "Not Connected" },
+            { label: "POS · GoFrugal", v: "Not Connected" },
+            { label: "ERP · Tally Prime", v: "Not Connected" },
+            { label: "HR · Zoho People", v: "Not Connected" },
+            { label: "MSEDCL", v: "Not Connected" },
           ],
         },
         {
-          title: "Upload",
+          title: "Upload Data",
           desc: "CSV / XLSX",
           rows: [
             { label: "Sales history", v: "Upload" },
@@ -42,11 +42,11 @@ function DataImportPage() {
         },
         {
           title: "Sync Status",
-          desc: "Last 24h",
+          desc: "Database Ingestion Summary",
           rows: [
-            { label: "Successful syncs", v: isGrandSquare ? "24" : "0" },
-            { label: "Failed", v: "0" },
-            { label: "Records ingested", v: isGrandSquare ? "48,240" : "0" },
+            { label: "Successful syncs", v: totalIngested > 0 ? "1" : "0" },
+            { label: "Failed syncs", v: "0" },
+            { label: "Records ingested", v: totalIngested.toLocaleString("en-IN") },
           ],
         },
       ]}

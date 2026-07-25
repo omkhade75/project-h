@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_app/reports")({
 
 function ReportsPage() {
   const { user } = useAuth();
-  const { activeDate, products, transactions: scopedTransactions, expenses } = useBusinessData();
+  const { activeDate, products, transactions: scopedTransactions, expenses, staff = [] } = useBusinessData();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(false);
@@ -246,7 +246,9 @@ function ReportsPage() {
                 </div>
                 <div className="flex justify-between text-xs py-2 border-t border-hairline">
                   <span className="text-muted-foreground">Recipients</span>
-                  <span className="font-medium">6 managers</span>
+                  <span className="font-medium">
+                    {staff.filter((s: any) => s.role === "manager").length} managers
+                  </span>
                 </div>
               </div>
               <Button onClick={downloadExecutiveCSV} className="w-full mt-4 text-xs" size="sm" variant="outline">

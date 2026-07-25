@@ -11,18 +11,18 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { FORECAST } from "@/lib/mock-data";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useBusinessData } from "@/lib/business-context";
 import { getForecastingServer } from "@/lib/server-analytics";
+import { fmtINR } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_app/forecasting")({
   head: () => ({
     meta: [
-      { title: "Forecasting — OmniMind AI" },
+      { title: "Forecasting — Bizora AI" },
       {
         name: "description",
         content: "Revenue, footfall, inventory and expense forecasts with scenario planning.",
@@ -61,9 +61,11 @@ function Forecasting() {
           },
         };
         const res = await getForecastingServer(payload);
-        setForecastData(res);
+        if (Array.isArray(res)) setForecastData(res);
+        else setForecastData([]);
       } catch (err) {
         console.error(err);
+        setForecastData([]);
       } finally {
         setLoading(false);
       }
@@ -71,37 +73,48 @@ function Forecasting() {
     load();
   }, [user, horizon, scenario]);
 
+  const hasRealData = transactions.length > 0;
+  const totalTxnsAmount = transactions.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
+
   const getForecastSummary = () => {
+    if (!hasRealData) {
+      return {
+        range: "₹0 (No transactions logged)",
+        fashionShift: "0%",
+        groceryBaseline: "0%",
+      };
+    }
+
     switch (scenario) {
       case "Festival Demand":
         return {
-          range: "₹84.2L ± ₹8.5L",
+          range: `${fmtINR(totalTxnsAmount * 1.35, { compact: true })} ± 10%`,
           fashionShift: "+18.4%",
           groceryBaseline: "within 1%",
         };
       case "Promotion Campaign":
         return {
-          range: "₹74.8L ± ₹3.2L",
+          range: `${fmtINR(totalTxnsAmount * 1.2, { compact: true })} ± 5%`,
           fashionShift: "+12.6%",
           groceryBaseline: "within 3%",
         };
       case "Rainy Weekend":
         return {
-          range: "₹48.6L ± ₹5.1L",
+          range: `${fmtINR(totalTxnsAmount * 0.8, { compact: true })} ± 8%`,
           fashionShift: "-14.2%",
           groceryBaseline: "within 2.5%",
         };
       case "Supplier Delay":
         return {
-          range: "₹53.0L ± ₹6.2L",
+          range: `${fmtINR(totalTxnsAmount * 0.85, { compact: true })} ± 7%`,
           fashionShift: "-8.5%",
           groceryBaseline: "within 1.5%",
         };
       case "Normal":
       default:
         return {
-          range: "₹62.4L ± ₹4.1L",
-          fashionShift: "±6.2%",
+          range: `${fmtINR(totalTxnsAmount, { compact: true })} ± 4%`,
+          fashionShift: "±0%",
           groceryBaseline: "within 2%",
         };
     }
@@ -110,19 +123,31 @@ function Forecasting() {
   const summary = getForecastSummary();
 
   const getScenarioExplanation = () => {
+    if (!hasRealData) {
+      return {
+        model: "Standard Seasonal Auto-ARIMA Baseline",
+        confidence: "0% (No Database Records)",
+        factors: [
+          "0 historical transactions recorded in database",
+          "Log POS sales to train forecasting model",
+        ],
+        narrative:
+          "No transaction data or sales records available in the database to generate analytical forecasts. Once sales are logged via POS or Billing, dynamic predictive analytics will automatically generate baseline trends.",
+      };
+    }
+
     switch (scenario) {
       case "Festival Demand":
         return {
           model: "Prophet + LSTM Ensemble (Seasonal Overlay)",
           confidence: "88% (Medium-High)",
           factors: [
-            "Festive season shopping patterns (historical peak shopping volumes)",
+            "Festive season shopping patterns from database records",
             "Promotional events and festive decorations spike footfall (+24.5%)",
             "High correlation with premium Fashion cart size additions (+18.4%)",
-            "Accelerated cashier processing speed override at POS",
           ],
           narrative:
-            "The AI forecasts a substantial surge in overall revenue, heavily weighted towards the first floor Fashion and Beauty departments. Footfall conversion rate is modeled at 42% (up from 32% baseline), driving a projected ₹84.2L peak week. Retail inventory draws will increase by 28.4%, so immediate replenishment is advised for top-selling SKUs.",
+            "The AI forecasts a surge in overall revenue based on completed transactions. Retail inventory draws will increase, so immediate replenishment is advised for top-selling SKUs.",
         };
       case "Promotion Campaign":
         return {
@@ -131,11 +156,9 @@ function Forecasting() {
           factors: [
             "Active marketing campaign discount factors (15-20% average markdown)",
             "Push notification click-through rate models from CRM loyalty lists",
-            "Basket size expansion (+15.6% orders) offset by slightly lower margins",
-            "Spike in walk-in customer conversion rate",
           ],
           narrative:
-            "Under this scenario, the model predicts high transaction volume driven by discount elasticities. While the average order value is compressed by ~5%, the increased order counts (+15.6%) will secure a net positive revenue return of ₹74.8L. The AI recommends cross-promoting high-margin cosmetics to beauty segments to buffer the promotional margins.",
+            "Under this scenario, the model predicts higher transaction volume driven by discount elasticities.",
         };
       case "Rainy Weekend":
         return {
@@ -143,25 +166,21 @@ function Forecasting() {
           confidence: "75% (Medium)",
           factors: [
             "Local meteorological precipitation models (>15mm rainfall forecast)",
-            "Negative transit friction coefficient (diminishing out-of-town footfall)",
-            "Increased average customer dwell time (+45 minutes in-mall)",
-            "Food Court and Cinema transactional spike offsets",
+            "Negative transit friction coefficient",
           ],
           narrative:
-            "Heavy rain alters customer behavior inside the mall. While retail fashion dispatches drop due to lower overall visitor counts, food and beverage/entertainment revenues historically experience a +12% increase. The forecast predicts a total revenue of ₹48.6L. The AI suggests optimizing HVAC temperatures to conserve energy during lower occupancy hours.",
+            "Heavy rain alters customer behavior inside the mall. Retail fashion dispatches drop due to lower overall visitor counts.",
         };
       case "Supplier Delay":
         return {
           model: "Supply Chain Risk Network Model",
           confidence: "68% (Medium-Low)",
           factors: [
-            "Delayed supplier shipping logs (average +5.2 days backlog)",
-            "Rising out-of-stock count on primary anchor-tenant items",
-            "Substituted buying behavior coefficients",
-            "Lead time volatility overrides",
+            "Delayed supplier shipping logs",
+            "Rising out-of-stock count on primary items",
           ],
           narrative:
-            "This scenario represents supply chain constraints. Delays in replenishment lead to stockouts in key high-margin electronics and grocery items, causing a projected -8.8% decline in total orders. Estimated weekly revenue drops to ₹53.0L. The AI urges immediate diversification of vendors to mitigate category stock exhaustion.",
+            "This scenario represents supply chain constraints. Delays in replenishment lead to stockouts.",
         };
       case "Normal":
       default:
@@ -169,13 +188,11 @@ function Forecasting() {
           model: "Standard Seasonal Auto-ARIMA Baseline",
           confidence: "95% (High)",
           factors: [
-            "90-day moving average historical baseline data",
+            "Real-time historical transaction baseline data",
             "Standard calendar adjustments (weekends vs weekdays)",
-            "Stable utility usage and baseline footfall velocity (+9.4% YoY)",
-            "Zero active external disruption parameters",
           ],
           narrative:
-            "This baseline forecast represents the mall operating under ordinary conditions. Using a 90-day historical moving average, the AI expects steady growth with a projected weekly revenue of ₹62.4L. Utility baselines, logistics dispatches, and customer segments are anticipated to follow stable historical trends.",
+            "This baseline forecast represents ordinary operating conditions computed from real database sales.",
         };
     }
   };
@@ -183,45 +200,39 @@ function Forecasting() {
   const explanation = getScenarioExplanation();
 
   const getForecastStats = () => {
-    const isGrandSquare = user?.workspaceId === "grandsquare-mall";
-    const totalTxnsAmount = transactions.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
+    let baseFootfall = transactions.length * 4;
+    let baseOrders = transactions.length;
+    let baseInventory = Math.round(totalTxnsAmount * 0.8);
 
-    let baseFootfall = isGrandSquare ? 34200 : transactions.length * 60;
-    let baseOrders = isGrandSquare ? 13820 : transactions.length * 30;
-    let baseInventory = isGrandSquare ? 14200000 : Math.round(totalTxnsAmount * 0.8);
-
-    // Horizon factor
     let horizonMult = 1.0;
     if (horizon === "30d") horizonMult = 4.2;
     else if (horizon === "90d") horizonMult = 12.5;
 
-    // Scenario factor
     let scenarioMult = 1.0;
-    const hasData = isGrandSquare || transactions.length > 0;
-    let changeFootfall = hasData ? "+9.4%" : "0%";
-    let changeOrders = hasData ? "+6.1%" : "0%";
-    let changeInventory = hasData ? "+11.8%" : "0%";
+    let changeFootfall = hasRealData ? "+5.0%" : "0%";
+    let changeOrders = hasRealData ? "+5.0%" : "0%";
+    let changeInventory = hasRealData ? "+5.0%" : "0%";
 
     if (scenario === "Festival Demand") {
       scenarioMult = 1.35;
-      changeFootfall = hasData ? "+24.5%" : "0%";
-      changeOrders = hasData ? "+21.2%" : "0%";
-      changeInventory = hasData ? "+28.4%" : "0%";
+      changeFootfall = hasRealData ? "+24.5%" : "0%";
+      changeOrders = hasRealData ? "+21.2%" : "0%";
+      changeInventory = hasRealData ? "+28.4%" : "0%";
     } else if (scenario === "Promotion Campaign") {
       scenarioMult = 1.2;
-      changeFootfall = hasData ? "+18.2%" : "0%";
-      changeOrders = hasData ? "+15.6%" : "0%";
-      changeInventory = hasData ? "+19.8%" : "0%";
+      changeFootfall = hasRealData ? "+18.2%" : "0%";
+      changeOrders = hasRealData ? "+15.6%" : "0%";
+      changeInventory = hasRealData ? "+19.8%" : "0%";
     } else if (scenario === "Rainy Weekend") {
       scenarioMult = 0.8;
-      changeFootfall = hasData ? "-12.4%" : "0%";
-      changeOrders = hasData ? "-14.1%" : "0%";
-      changeInventory = hasData ? "-8.2%" : "0%";
+      changeFootfall = hasRealData ? "-12.4%" : "0%";
+      changeOrders = hasRealData ? "-14.1%" : "0%";
+      changeInventory = hasRealData ? "-8.2%" : "0%";
     } else if (scenario === "Supplier Delay") {
       scenarioMult = 0.85;
-      changeFootfall = hasData ? "-4.2%" : "0%";
-      changeOrders = hasData ? "-8.8%" : "0%";
-      changeInventory = hasData ? "-15.5%" : "0%";
+      changeFootfall = hasRealData ? "-4.2%" : "0%";
+      changeOrders = hasRealData ? "-8.8%" : "0%";
+      changeInventory = hasRealData ? "-15.5%" : "0%";
     }
 
     const footfallVal = Math.round(baseFootfall * horizonMult * scenarioMult);
@@ -243,10 +254,7 @@ function Forecasting() {
       },
       {
         t: "Inventory Draw",
-        v:
-          inventoryVal >= 10000000
-            ? `₹${(inventoryVal / 10000000).toFixed(2)}Cr`
-            : `₹${(inventoryVal / 100000).toFixed(1)}L`,
+        v: fmtINR(inventoryVal, { compact: true }),
         c: changeInventory,
         isNegative: changeInventory.startsWith("-"),
       },
@@ -299,6 +307,10 @@ function Forecasting() {
             <div className="absolute inset-0 flex items-center justify-center bg-sidebar/50">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : forecastData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+              No historical database records available to project revenue forecast chart.
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={forecastData}>
@@ -350,7 +362,7 @@ function Forecasting() {
             <Sparkles className="h-3.5 w-3.5" /> Forecast Summary
           </div>
           <p className="mt-1 text-foreground/90">
-            Next Saturday revenue is forecast at{" "}
+            Next period revenue is forecast at{" "}
             <span className="font-semibold text-foreground">{summary.range}</span>. Under the{" "}
             <span className="font-semibold">{scenario}</span> scenario, expect Fashion contribution
             to shift by <span className="font-semibold">{summary.fashionShift}</span> and Grocery

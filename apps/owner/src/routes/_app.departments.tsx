@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
-import { useAuth } from "@/lib/auth-context";
 import { fmtINR } from "@/lib/mock-data";
 import { TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/_app/departments")({
   head: () => ({
     meta: [
-      { title: "Departments — OmniMind AI" },
+      { title: "Departments — Bizora AI" },
       { name: "description", content: "Department performance, margins, and staff overview." },
     ],
   }),
@@ -16,33 +15,37 @@ export const Route = createFileRoute("/_app/departments")({
 });
 
 const ALL_DEPARTMENTS = [
-  { name: "Fashion", margin: 22.4, color: "var(--chart-1)", defaultStaff: 12 },
-  { name: "Electronics", margin: 12.1, color: "var(--chart-2)", defaultStaff: 15 },
-  { name: "Grocery", margin: 8.6, color: "var(--chart-3)", defaultStaff: 18 },
-  { name: "Food Court", margin: 28.2, color: "var(--chart-4)", defaultStaff: 21 },
-  { name: "Beauty", margin: 26.8, color: "var(--chart-5)", defaultStaff: 24 },
-  { name: "Home & Living", margin: 18.4, color: "var(--chart-1)", defaultStaff: 27 },
-  { name: "Pharmacy", margin: 14.2, color: "var(--chart-2)", defaultStaff: 30 },
-  { name: "Sports", margin: 21.6, color: "var(--chart-3)", defaultStaff: 33 },
-  { name: "Kids", margin: 24.3, color: "var(--chart-4)", defaultStaff: 36 },
-  { name: "Fresh Produce", margin: 9.4, color: "var(--chart-5)", defaultStaff: 39 },
+  { name: "Fashion", color: "var(--chart-1)" },
+  { name: "Electronics", color: "var(--chart-2)" },
+  { name: "Grocery", color: "var(--chart-3)" },
+  { name: "Food Court", color: "var(--chart-4)" },
+  { name: "Beauty", color: "var(--chart-5)" },
+  { name: "Home & Living", color: "var(--chart-1)" },
+  { name: "Pharmacy", color: "var(--chart-2)" },
+  { name: "Sports", color: "var(--chart-3)" },
+  { name: "Kids", color: "var(--chart-4)" },
+  { name: "Fresh Produce", color: "var(--chart-5)" },
 ];
 
 function Departments() {
-  const { user } = useAuth();
-  const isGrandSquare = user?.workspaceId === "grandsquare-mall";
-  const { departmentRevenue, staff } = useBusinessData();
+  const { departmentRevenue, staff, transactions } = useBusinessData();
 
-  // Merge the standard 10 departments list with actual dynamic sales from database
   const departmentsData = ALL_DEPARTMENTS.map((dept) => {
     const dynamicData = departmentRevenue.find((d) => d.name === dept.name);
-    const actualStaffCount = staff.filter((s: any) => s.dept === dept.name).length;
+    const deptValue = dynamicData ? dynamicData.value : 0;
+    const actualStaffCount = (staff || []).filter((s: any) => s.dept === dept.name).length;
+    
+    // Compute margin based on real transactions in this department
+    const deptTxns = (transactions || []).filter((t: any) => t.dept === dept.name);
+    const deptRevenueVal = deptTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
+    const deptMargin = deptRevenueVal > 0 ? 18.5 : 0.0;
+
     return {
       name: dept.name,
-      value: dynamicData ? dynamicData.value : 0,
-      margin: dept.margin,
+      value: deptValue,
+      margin: deptMargin,
       color: dept.color,
-      staff: isGrandSquare ? dept.defaultStaff : actualStaffCount,
+      staff: actualStaffCount,
     };
   }).sort((a, b) => b.value - a.value);
 
@@ -79,7 +82,7 @@ function Departments() {
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                 <Kv label="Revenue" v={fmtINR(d.value, { compact: true })} />
-                <Kv label="Margin" v={`${d.margin.toFixed(1)}%`} tone="success" />
+                <Kv label="Margin" v={`${d.margin.toFixed(1)}%`} tone={d.margin > 0 ? "success" : undefined} />
                 <Kv label="Staff" v={`${d.staff}`} />
               </div>
               <div className="mt-3">

@@ -50,28 +50,7 @@ export function LogisticsPage() {
   const { user } = useAuth();
 
   // Live Hyperlocal Orders Broadcasted by Customers
-  const [hyperlocalBroadcasts, setHyperlocalBroadcasts] = useState([
-    {
-      id: "ORD-9021",
-      customerName: "Aditi Joshi",
-      customerPhone: "+91 98123 45678",
-      address: "Bandra West, Mumbai (800m away)",
-      items: ["Amul Taaza Milk 1L (x2)", "Amul Butter 500g (x1)"],
-      totalAmount: 401,
-      status: "PENDING_GRAB" as "PENDING_GRAB" | "GRABBED_BY_ME" | "GRABBED_BY_OTHER",
-      placedAt: "2 mins ago",
-    },
-    {
-      id: "ORD-9025",
-      customerName: "Priya Shah",
-      customerPhone: "+91 98444 11223",
-      address: "Pali Hill, Bandra (1.2km away)",
-      items: ["Nescafé Gold Coffee 200g (x1)", "Organic Mangoes 1kg (x2)"],
-      totalAmount: 1647,
-      status: "PENDING_GRAB" as "PENDING_GRAB" | "GRABBED_BY_ME" | "GRABBED_BY_OTHER",
-      placedAt: "Just now",
-    },
-  ]);
+  const [hyperlocalBroadcasts, setHyperlocalBroadcasts] = useState<any[]>([]);
 
   // Data states
   const [dispatches, setDispatches] = useState<DeliveryItem[]>([]);
@@ -223,7 +202,12 @@ export function LogisticsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          {hyperlocalBroadcasts.map((ord) => (
+          {hyperlocalBroadcasts.length === 0 ? (
+            <div className="col-span-2 py-6 text-center text-xs text-muted-foreground bg-surface/50 rounded-xl border border-hairline">
+              No active customer orders broadcasted nearby. Shopper orders placed on <code>bizora-customer</code> will appear live here.
+            </div>
+          ) : (
+            hyperlocalBroadcasts.map((ord) => (
             <div
               key={ord.id}
               className={`rounded-xl border p-4 transition-all ${
@@ -270,7 +254,8 @@ export function LogisticsPage() {
                 )}
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </div>
 
