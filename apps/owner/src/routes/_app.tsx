@@ -195,10 +195,8 @@ function AppShell() {
     return nextDay.getMonth() !== d.getMonth();
   }, [activeDate]);
 
-  const endOfMonthNotifId = `eom-bills-${activeDate?.slice(0, 7)}`;
-  const hasEomNotif = isEndOfMonth && !readNotifs.has(endOfMonthNotifId);
-  const totalUnreadNotifs =
-    ANOMALIES.length + LIVE_FEED.length - readNotifs.size + (hasEomNotif ? 1 : 0);
+  const unreadAnomalies = (anomalies || []).filter((a) => !readNotifs.has(a.id));
+  const totalUnreadNotifs = unreadAnomalies.length + (hasEomNotif ? 1 : 0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -868,8 +866,7 @@ function AppShell() {
                       <button
                         onClick={() => {
                           const allIds = [
-                            ...ANOMALIES.map((a) => a.id),
-                            ...LIVE_FEED.map((_, i) => `feed-${i}`),
+                            ...(anomalies || []).map((a) => a.id),
                           ];
                           if (isEndOfMonth) allIds.push(endOfMonthNotifId);
                           setReadNotifs(new Set(allIds));
@@ -922,110 +919,62 @@ function AppShell() {
                         </button>
                       )}
 
-                      {/* Anomaly alerts */}
-                      {ANOMALIES.map((a) => {
-                        const isRead = readNotifs.has(a.id);
-                        const severityColor =
-                          a.severity === "Critical"
-                            ? "bg-destructive/15 text-destructive"
-                            : a.severity === "High"
-                              ? "bg-warning/15 text-warning"
-                              : a.severity === "Medium"
-                                ? "bg-info/15 text-info"
-                                : "bg-muted text-muted-foreground";
-                        return (
-                          <button
-                            key={a.id}
-                            onClick={() => {
-                              setReadNotifs((prev) => new Set([...prev, a.id]));
-                              setNotifOpen(false);
-                              navigate({ to: "/anomalies" });
-                            }}
-                            className={cn(
-                              "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
-                              !isRead && "bg-primary/5",
-                            )}
-                          >
-                            <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-destructive/10">
-                              <AlertTriangle className="h-4 w-4 text-destructive" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-semibold truncate">{a.metric}</span>
-                                <span
-                                  className={cn(
-                                    "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
-                                    severityColor,
-                                  )}
-                                >
-                                  {a.severity}
-                                </span>
-                              </div>
-                              <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                                {a.actual} vs expected {a.expected} ({a.deviation})
-                              </p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">{a.when}</p>
-                            </div>
-                            {!isRead && (
-                              <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                            )}
-                          </button>
-                        );
-                      })}
-
-                      {/* Live feed items */}
-                      {LIVE_FEED.map((f, i) => {
-                        const feedId = `feed-${i}`;
-                        const isRead = readNotifs.has(feedId);
-                        const iconMap: Record<string, typeof Activity> = {
-                          sale: ShoppingBagIcon,
-                          customer: Users,
-                          alert: AlertTriangle,
-                          delivery: Truck,
-                          return: RotateCcw,
-                          ai: Sparkles,
-                          expense: Wallet,
-                        };
-                        const FeedIcon = iconMap[f.type] || Activity;
-                        const colorMap: Record<string, string> = {
-                          sale: "bg-success/10 text-success",
-                          customer: "bg-info/10 text-info",
-                          alert: "bg-warning/10 text-warning",
-                          delivery: "bg-primary/10 text-primary",
-                          return: "bg-destructive/10 text-destructive",
-                          ai: "bg-violet/10 text-violet",
-                          expense: "bg-warning/10 text-warning",
-                        };
-                        return (
-                          <button
-                            key={feedId}
-                            onClick={() => {
-                              setReadNotifs((prev) => new Set([...prev, feedId]));
-                              setNotifOpen(false);
-                            }}
-                            className={cn(
-                              "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
-                              !isRead && "bg-primary/5",
-                            )}
-                          >
-                            <div
+                      {/* Anomaly alerts from database */}
+                      {(anomalies || []).length === 0 && !isEndOfMonth ? (
+                        <div className="py-10 text-center text-xs text-muted-foreground">
+                          No unread notifications
+                        </div>
+                      ) : (
+                        (anomalies || []).map((a) => {
+                          const isRead = readNotifs.has(a.id);
+                          const severityColor =
+                            a.severity === "Critical"
+                              ? "bg-destructive/15 text-destructive"
+                              : a.severity === "High"
+                                ? "bg-warning/15 text-warning"
+                                : a.severity === "Medium"
+                                  ? "bg-info/15 text-info"
+                                  : "bg-muted text-muted-foreground";
+                          return (
+                            <button
+                              key={a.id}
+                              onClick={() => {
+                                setReadNotifs((prev) => new Set([...prev, a.id]));
+                                setNotifOpen(false);
+                                navigate({ to: "/anomalies" });
+                              }}
                               className={cn(
-                                "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-                                colorMap[f.type] || "bg-muted",
+                                "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
+                                !isRead && "bg-primary/5",
                               )}
                             >
-                              <FeedIcon className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium">{f.text}</p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">{f.t}</p>
-                            </div>
-                            {!isRead && (
-                              <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                            )}
-                          </button>
-                        );
-                      })}
+                              <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-destructive/10">
+                                <AlertTriangle className="h-4 w-4 text-destructive" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-semibold truncate">{a.metric}</span>
+                                  <span
+                                    className={cn(
+                                      "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
+                                      severityColor,
+                                    )}
+                                  >
+                                    {a.severity}
+                                  </span>
+                                </div>
+                                <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                                  {a.actual} vs expected {a.expected} ({a.deviation})
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">{a.when}</p>
+                              </div>
+                              {!isRead && (
+                                <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
                     </div>
 
                     {/* Footer */}

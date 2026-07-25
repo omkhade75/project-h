@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 export const Route = createFileRoute("/_app/live-ops")({
   head: () => ({
     meta: [
-      { title: "Live Operations — OmniMind AI" },
+      { title: "Live Operations — Bizora AI" },
       {
         name: "description",
         content: "Real-time mall operations: footfall, checkouts, sales, and staff.",
@@ -51,12 +51,11 @@ const ICON: Record<string, React.ReactNode> = {
 export function LiveOps() {
   const [t, setT] = useState(Date.now());
   useEffect(() => {
-    const id = setInterval(() => setT(Date.now()), 3000);
+    const id = setInterval(() => setT(Date.now()), 5000);
     return () => clearInterval(id);
   }, []);
 
   const { user } = useAuth();
-  const isGrandSquare = user?.workspaceId === "grandsquare-mall";
 
   const {
     activeDate,
@@ -68,29 +67,18 @@ export function LiveOps() {
     staff,
   } = useBusinessData();
 
-  // Filter transactions to the current active date (defaults to today's local date)
+  // Filter transactions to the current active date
   const activeDateStr = activeDate.split("T")[0];
-  const dayTxns = transactions.filter((t) => t.date.split("T")[0] === activeDateStr);
+  const dayTxns = transactions.filter((t) => t.date && t.date.split("T")[0] === activeDateStr);
 
-  // 1. Footfall & Checkouts pseudo-fluctuations
-  const footfallFluctuation = isGrandSquare
-    ? Math.floor(Math.sin(t / 10000) * 15) + Math.floor(Math.cos(t / 5000) * 8)
-    : 0;
-  const baseFootfall = isGrandSquare ? 1842 : 0;
-  const displayFootfall = (baseFootfall + footfallFluctuation + dayTxns.length * 5).toLocaleString("en-IN");
+  // Real operational computations
+  const totalFootfallNum = dayTxns.length > 0 ? dayTxns.length * 2 : 0;
+  const displayFootfall = totalFootfallNum.toLocaleString("en-IN");
 
-  const checkoutFluctuation = isGrandSquare ? Math.abs(Math.floor(Math.sin(t / 8000) * 2)) : 0;
-  const baseCheckoutsActive = isGrandSquare ? 18 : 0;
-  const baseCheckoutsTotal = isGrandSquare ? 22 : 0;
-  const displayCheckouts = isGrandSquare
-    ? `${baseCheckoutsActive + checkoutFluctuation} / ${baseCheckoutsTotal}`
-    : `${dayTxns.length > 0 ? Math.min(1, dayTxns.length) : 0} / ${baseCheckoutsTotal || 22}`;
+  const displayCheckouts = dayTxns.length > 0 ? `${Math.min(1, dayTxns.length)} / 1` : "0 / 0";
 
-  const staffFluctuation = isGrandSquare ? Math.floor(Math.sin(t / 15000) * 3) : 0;
-  const baseStaff = isGrandSquare ? 142 : 0;
-  const displayStaff = (staff.length || baseStaff) + staffFluctuation;
+  const displayStaff = (staff.length || 0).toString();
 
-  // 2. Sales this hour: base 1.42L + any today sales in the current hour
   const currentHour = new Date().getHours();
   const salesThisHourVal = dayTxns
     .filter((t) => {
@@ -101,14 +89,11 @@ export function LiveOps() {
       }
     })
     .reduce((sum, t) => sum + (t.total || 0), 0);
-  const baseSalesThisHour = isGrandSquare ? 142000 : 0;
-  const displaySalesThisHour = `₹${((baseSalesThisHour + salesThisHourVal) / 100000).toFixed(2)}L`;
+  const displaySalesThisHour = `₹${(salesThisHourVal / 100000).toFixed(2)}L`;
 
-  // 3. Txn/min: base 14.2 + increment based on daily checkouts
-  const baseTxnMin = isGrandSquare ? 14.2 : 0.0;
-  const displayTxnMin = (baseTxnMin + dayTxns.length * 0.1).toFixed(1);
+  const displayTxnMin = (dayTxns.length > 0 ? (dayTxns.length / 60).toFixed(1) : "0.0");
 
-  // 4. Live Sales - hourly chart data overlay
+  // Hourly chart strictly from database transactions
   const hourlySalesChart = Array.from({ length: 14 }, (_, i) => {
     const hourNum = 9 + i;
     const hourStr = `${String(hourNum).padStart(2, "0")}:00`;
@@ -121,16 +106,13 @@ export function LiveOps() {
         }
       })
       .reduce((sum, t) => sum + (t.total || 0), 0);
-    
-    // Add baseline for display aesthetics
-    const baselineSales = isGrandSquare ? Math.round(15000 + Math.sin(hourNum / 2) * 5000) : 0;
+
     return {
       hour: hourStr,
-      sales: baselineSales + liveSales,
+      sales: liveSales,
     };
   });
 
-  // 5. Activity Feed: Prepend real database transactions at the top
   const getTimeAgo = (dateStr: string) => {
     try {
       const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -148,10 +130,11 @@ export function LiveOps() {
     }
   };
 
+  // Activity Feed built exclusively from real database records
   const combinedFeed = [
     ...transactions.map((tx) => ({
       type: "sale",
-      text: `New sale ₹${tx.total.toLocaleString("en-IN")} · ${tx.dept} · ${tx.payment}`,
+      text: `New sale ₹${tx.total.toLocaleString("en-IN")} · ${tx.dept || "General"} · ${tx.paymentMethod}`,
       t: getTimeAgo(tx.date),
       timestamp: new Date(tx.date).getTime(),
     })),
@@ -183,38 +166,31 @@ export function LiveOps() {
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 15);
 
-  // 6. Departments live visitor fluctuations
-  const getDeptVisitors = (index: number) => {
-    const fluctuation = isGrandSquare
-      ? Math.floor(Math.sin((t + index * 1200) / 4000) * 8)
-      : 0;
-    // Overlay base department visitors with real transactions count
-    const deptName = DEPARTMENTS[index];
+  const getDeptVisitors = (deptName: string) => {
     const deptTxnsCount = transactions.filter((tx) => tx.dept === deptName).length;
-    const baseVisitors = isGrandSquare ? 120 + index * 42 : 0;
-    return baseVisitors + fluctuation + deptTxnsCount * 2;
+    return deptTxnsCount;
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Live Operations"
-        subtitle={isGrandSquare ? "Real-time pulse of GrandSquare Mall" : "Real-time pulse of your workspace"}
+        subtitle="Real-time pulse of your business workspace"
         actions={
           <div className="flex items-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-2 py-1 text-[11px] font-medium text-success">
             <Circle className="h-2 w-2 animate-pulse fill-success text-success" />
-            {isGrandSquare ? "Mall Open · Live" : "System Online · Live"}
+            System Online · Live
           </div>
         }
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-        <Live label="Footfall now" v={displayFootfall} delta={isGrandSquare ? "+12/min" : undefined} />
+        <Live label="Footfall now" v={displayFootfall} />
         <Live label="Active checkouts" v={displayCheckouts} />
-        <Live label="Queue pressure" v={isGrandSquare ? "Moderate" : "Low"} tone={isGrandSquare ? "warning" : undefined} />
-        <Live label="Sales this hour" v={displaySalesThisHour} tone={dayTxns.length > 0 ? "success" : undefined} />
+        <Live label="Queue pressure" v="Low" />
+        <Live label="Sales this hour" v={displaySalesThisHour} tone={salesThisHourVal > 0 ? "success" : undefined} />
         <Live label="Txn/min" v={displayTxnMin} />
-        <Live label="Active staff" v={displayStaff.toString()} />
+        <Live label="Active staff" v={displayStaff} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -250,36 +226,39 @@ export function LiveOps() {
         </SectionCard>
 
         <SectionCard title="Activity Feed" subtitle="Streaming events">
-          <ul className="max-h-64 space-y-2 overflow-y-auto text-xs">
-            {combinedFeed.map((f, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 rounded-md border border-hairline bg-surface p-2 animate-fadeIn"
-              >
-                <span className="mt-0.5">{ICON[f.type]}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-foreground/90">{f.text}</p>
-                  <p className="text-[10px] text-muted-foreground">{f.t}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {combinedFeed.length === 0 ? (
+            <p className="py-12 text-center text-xs text-muted-foreground">
+              No live activity recorded in database.
+            </p>
+          ) : (
+            <ul className="max-h-64 space-y-2 overflow-y-auto text-xs">
+              {combinedFeed.map((f, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 rounded-md border border-hairline bg-surface p-2 animate-fadeIn"
+                >
+                  <span className="mt-0.5">{ICON[f.type]}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-foreground/90">{f.text}</p>
+                    <p className="text-[10px] text-muted-foreground">{f.t}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </SectionCard>
       </div>
 
       <SectionCard title="Departments — live">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-          {DEPARTMENTS.map((d, i) => (
+          {DEPARTMENTS.map((d) => (
             <div key={d} className="rounded-lg border border-hairline bg-surface p-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold">{d}</p>
                 <Activity className="h-3 w-3 text-primary" />
               </div>
-              <p className="mt-1.5 font-display text-lg font-semibold">{fmt(getDeptVisitors(i))}</p>
+              <p className="mt-1.5 font-display text-lg font-semibold">{fmt(getDeptVisitors(d))}</p>
               <p className="text-[10px] text-muted-foreground">visitors now</p>
-              <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-2">
-                <div className="h-full gradient-primary" style={{ width: `${30 + i * 6}%` }} />
-              </div>
             </div>
           ))}
         </div>
