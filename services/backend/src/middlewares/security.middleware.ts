@@ -17,10 +17,10 @@ export function setupSecurityMiddleware(app: INestApplication) {
     })
   );
 
-  // Global Rate Limiter: 100 requests per 15 mins
+  // Global Rate Limiter: 5000 requests per 15 mins (Generous for dashboard polling)
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
