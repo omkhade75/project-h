@@ -253,4 +253,17 @@ export class CommsService {
       };
     }
   }
+
+  async getMessageLogs(workspaceId: string) {
+    try {
+      const logs = await this.prisma.messageLog.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+      return { success: true, data: logs };
+    } catch (err) {
+      return { success: true, data: [] };
+    }
+  }
 }

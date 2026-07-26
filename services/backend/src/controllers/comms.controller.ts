@@ -39,4 +39,10 @@ export class CommsController {
     const user = req.user;
     return await this.commsService.initiateVapiCall(user?.workspaceId || 'grandsquare-mall', body);
   }
+
+  @Get('logs')
+  async getMessageLogs(@Req() req) {
+    const user = req.user;
+    return await this.commsService.getMessageLogs(user?.workspaceId || 'grandsquare-mall');
+  }
 }

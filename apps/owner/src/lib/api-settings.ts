@@ -13,3 +13,6 @@ export const updateSettingsServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
   return handleResponse(await fetchApi('/api/settings', { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
+
+export const getMallSettingsServer = getSettingsServer;
+export const updateMallSettingsServer = updateSettingsServer;
