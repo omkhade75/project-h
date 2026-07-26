@@ -21,7 +21,7 @@ import {
 export const Route = createFileRoute("/_app/income")({
   head: () => ({
     meta: [
-      { title: "Settlement Invoices — Bizora AI" },
+      { title: "Settlement Invoices | Bizora" },
       {
         name: "description",
         content: "Vendor settlement invoices and incoming payments ledger.",

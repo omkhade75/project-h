@@ -7,7 +7,7 @@ import { fmtINR, fmtNum } from "@/lib/mock-data";
 export const Route = createFileRoute("/_app/analytics")({
   head: () => ({
     meta: [
-      { title: "Analytics — Bizora AI" },
+      { title: "Analytics | Bizora" },
       {
         name: "description",
         content: "Cross-domain analytics across revenue, customers, and operations.",

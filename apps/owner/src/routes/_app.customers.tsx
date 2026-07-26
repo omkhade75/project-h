@@ -53,7 +53,7 @@ const VAPI_PUBLIC_KEY = "e3322c27-c9ac-45cb-9c58-e49c8f423a1f";
 export const Route = createFileRoute("/_app/customers")({
   head: () => ({
     meta: [
-      { title: "Customer Intelligence — Bizora AI" },
+      { title: "Customer Intelligence | Bizora" },
       {
         name: "description",
         content: "Customer lifetime value, segments, churn prediction, and AI voice calls.",

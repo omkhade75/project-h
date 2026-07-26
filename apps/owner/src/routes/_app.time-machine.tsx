@@ -32,7 +32,7 @@ import { useAuth } from "@/lib/auth-context";
 export const Route = createFileRoute("/_app/time-machine")({
   head: () => ({
     meta: [
-      { title: "Business Time Machine — Bizora AI" },
+      { title: "Business Time Machine | Bizora" },
       {
         name: "description",
         content:

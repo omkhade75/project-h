@@ -23,7 +23,7 @@ import { useBusinessData } from "@/lib/business-context";
 export const Route = createFileRoute("/_app/supplier-portal")({
   head: () => ({
     meta: [
-      { title: "Supplier Dashboard — Bizora AI" },
+      { title: "Supplier Dashboard | Bizora" },
       {
         name: "description",
         content: "Supplier Portal: manage purchase orders, track logistics, configure catalog, and verify payments.",

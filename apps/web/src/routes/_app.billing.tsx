@@ -51,7 +51,7 @@ import {
 export const Route = createFileRoute("/_app/billing")({
   head: () => ({
     meta: [
-      { title: "Billing (POS) — Bizora AI" },
+      { title: "Billing (POS) | Bizora" },
       { name: "description", content: "Point of Sale and Billing interface." },
     ],
   }),

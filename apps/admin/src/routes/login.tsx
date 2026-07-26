@@ -16,7 +16,7 @@ export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => loginSearchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "Super Admin Console Sign In — Bizora" },
+      { title: "Super Admin Console Sign In | Bizora" },
       {
         name: "description",
         content: "Sign in to Bizora Super Admin Portal to manage registered shopkeepers and company approvals.",

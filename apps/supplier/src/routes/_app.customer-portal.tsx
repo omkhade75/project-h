@@ -24,7 +24,7 @@ import { useBusinessData } from "@/lib/business-context";
 export const Route = createFileRoute("/_app/customer-portal")({
   head: () => ({
     meta: [
-      { title: "Customer Dashboard — Bizora AI" },
+      { title: "Customer Dashboard | Bizora" },
       {
         name: "description",
         content: "Personal customer dashboard: orders, loyalty points, wallet, returns, and rewards.",

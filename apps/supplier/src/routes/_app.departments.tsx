@@ -8,7 +8,7 @@ import { TrendingUp } from "lucide-react";
 export const Route = createFileRoute("/_app/departments")({
   head: () => ({
     meta: [
-      { title: "Departments — Bizora AI" },
+      { title: "Departments | Bizora" },
       { name: "description", content: "Department performance, margins, and staff overview." },
     ],
   }),

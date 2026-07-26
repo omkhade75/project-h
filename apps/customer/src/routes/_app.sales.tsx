@@ -56,7 +56,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/sales")({
   head: () => ({
     meta: [
-      { title: "Sales Intelligence — Bizora AI" },
+      { title: "Sales Intelligence | Bizora" },
       {
         name: "description",
         content:

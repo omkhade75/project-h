@@ -6,7 +6,7 @@ import { useBusinessData } from "@/lib/business-context";
 export const Route = createFileRoute("/_app/anomalies")({
   head: () => ({
     meta: [
-      { title: "Anomaly & Risk Center — Bizora AI" },
+      { title: "Anomaly & Risk Center | Bizora" },
       {
         name: "description",
         content: "Detect sudden sales drops, expense spikes, and abnormal operations in real time.",

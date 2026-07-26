@@ -52,7 +52,7 @@ import {
 export const Route = createFileRoute("/_app/tax")({
   head: () => ({
     meta: [
-      { title: "Tax & Compliance — Bizora AI" },
+      { title: "Tax & Compliance | Bizora" },
       { name: "description", content: "GST, income tax provision, and compliance deadlines." },
     ],
   }),

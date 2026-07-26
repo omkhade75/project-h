@@ -48,7 +48,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/products")({
   head: () => ({
     meta: [
-      { title: "Product Intelligence — Bizora AI" },
+      { title: "Product Intelligence | Bizora" },
       {
         name: "description",
         content:

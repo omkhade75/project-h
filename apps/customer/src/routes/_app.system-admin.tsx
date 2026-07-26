@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_app/system-admin")({
     }
   },
   head: () => ({
-    meta: [{ title: "System Admin — Bizora AI" }],
+    meta: [{ title: "System Admin | Bizora" }],
   }),
   component: SystemAdminPage,
 });

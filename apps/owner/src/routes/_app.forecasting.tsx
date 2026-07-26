@@ -22,7 +22,7 @@ import { fmtINR } from "@/lib/mock-data";
 export const Route = createFileRoute("/_app/forecasting")({
   head: () => ({
     meta: [
-      { title: "Forecasting — Bizora AI" },
+      { title: "Forecasting | Bizora" },
       {
         name: "description",
         content: "Revenue, footfall, inventory and expense forecasts with scenario planning.",

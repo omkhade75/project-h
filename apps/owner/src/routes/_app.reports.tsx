@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/_app/reports")({
   head: () => ({
     meta: [
-      { title: "Reports & Payments — Bizora AI" },
+      { title: "Reports & Payments | Bizora" },
       { name: "description", content: "Scheduled reports and remaining payments tracking." },
     ],
   }),

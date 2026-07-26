@@ -20,7 +20,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/data-import")({
   head: () => ({
     meta: [
-      { title: "Data Import — Bizora AI" },
+      { title: "Data Import | Bizora" },
       { name: "description", content: "Connect data sources and upload historical records from photos, PDFs, and spreadsheets." },
     ],
   }),

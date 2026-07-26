@@ -43,7 +43,7 @@ import { buildAIContext, localQueryFallback } from "@/lib/ai-context-builder";
 export const Route = createFileRoute("/_app/ai-decisions")({
   head: () => ({
     meta: [
-      { title: "AI Decision Center — Bizora AI" },
+      { title: "AI Decision Center | Bizora" },
       {
         name: "description",
         content:

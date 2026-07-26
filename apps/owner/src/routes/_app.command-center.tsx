@@ -50,7 +50,7 @@ function greetingFor(d: Date) {
 export const Route = createFileRoute("/_app/command-center")({
   head: () => ({
     meta: [
-      { title: "Command Center — Bizora AI" },
+      { title: "Command Center | Bizora" },
       {
         name: "description",
         content:

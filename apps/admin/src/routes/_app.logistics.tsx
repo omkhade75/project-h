@@ -31,7 +31,7 @@ import {
 export const Route = createFileRoute("/_app/logistics")({
   head: () => ({
     meta: [
-      { title: "Logistics & Dispatches — Bizora AI" },
+      { title: "Logistics & Dispatches | Bizora" },
       { name: "description", content: "Outgoing customer delivery dispatch tracking operations." },
     ],
   }),

@@ -61,7 +61,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/inventory")({
   head: () => ({
     meta: [
-      { title: "Supplied Products — Bizora AI" },
+      { title: "Supplied Products | Bizora" },
       {
         name: "description",
         content: "Supplied products inventory, stock levels, and ledger history.",

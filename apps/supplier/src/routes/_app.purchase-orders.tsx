@@ -41,7 +41,7 @@ export const Route = createFileRoute("/_app/purchase-orders")({
   },
   head: () => ({
     meta: [
-      { title: "Purchase Orders — Bizora AI" },
+      { title: "Purchase Orders | Bizora" },
       {
         name: "description",
         content: "Open purchase orders, delivery status, and supplier commitments.",

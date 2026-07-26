@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/auth-context";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Super Admin Control Center — Bizora" },
+      { title: "Super Admin Control Center | Bizora" },
       {
         name: "description",
         content:

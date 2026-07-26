@@ -19,7 +19,7 @@ export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => loginSearchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "Sign in — Bizora AI" },
+      { title: "Sign in | Bizora" },
       {
         name: "description",
         content: "Sign in to Bizora AI, the mall intelligence and decision operating system.",

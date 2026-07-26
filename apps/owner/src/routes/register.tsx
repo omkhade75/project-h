@@ -12,7 +12,7 @@ import { GoogleMapsPicker } from "@/components/google-maps-picker";
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Register Company — Bizora AI" },
+      { title: "Register Company | Bizora" },
       {
         name: "description",
         content: "Register your enterprise for Bizora AI.",

@@ -22,7 +22,7 @@ import { getForecastingServer } from "@/lib/server-analytics";
 export const Route = createFileRoute("/_app/forecasting")({
   head: () => ({
     meta: [
-      { title: "Forecasting — Bizora AI" },
+      { title: "Forecasting | Bizora" },
       {
         name: "description",
         content: "Revenue, footfall, inventory and expense forecasts with scenario planning.",

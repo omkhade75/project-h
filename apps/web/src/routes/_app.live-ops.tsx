@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 export const Route = createFileRoute("/_app/live-ops")({
   head: () => ({
     meta: [
-      { title: "Live Operations — Bizora AI" },
+      { title: "Live Operations | Bizora" },
       {
         name: "description",
         content: "Real-time mall operations: footfall, checkouts, sales, and staff.",
