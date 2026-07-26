@@ -40,3 +40,6 @@ export const updatePurchaseOrderStatusServer = async (data?: any) => {
   const id = payload?.id || payload?.poId;
   return handleResponse(await fetchApi(`/api/suppliers/purchase-orders/${id || ''}/status`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
+
+export const getSuppliers = getSuppliersServer;
+export const getPurchaseOrders = getPurchaseOrdersServer;

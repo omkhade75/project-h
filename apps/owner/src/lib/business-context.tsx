@@ -16,16 +16,16 @@ import {
 import { useAuth } from "./auth-context";
 import { toast } from "sonner";
 import { fmtINR, fmtNum } from "./mock-data";
-import { getProductsServer } from "./server-products";
-import { getTransactionsServer } from "./server-transactions";
-import { getCustomersServer } from "./server-customers";
-import { getSuppliers, getPurchaseOrders } from "./server-suppliers";
-import { getExpensesServer } from "./server-expenses";
-import { getAnomaliesServer, getRecommendationsServer } from "./server-analytics";
-import { getUtilitiesServer } from "./server-utilities";
-import { getInvestmentsServer, type InvestmentItem } from "./server-investments";
-import { getLogisticsDispatchesServer, type DeliveryItem } from "./server-logistics";
-import { getStaffServer, type StaffListItem } from "./server-staff";
+import { getProductsServer } from "./api-products";
+import { getTransactionsServer } from "./api-transactions";
+import { getCustomersServer } from "./api-customers";
+import { getSuppliers, getPurchaseOrders } from "./api-suppliers";
+import { getExpensesServer } from "./api-expenses";
+import { getAnomaliesServer, getRecommendationsServer } from "./api-analytics";
+import { getUtilitiesServer } from "./api-utilities";
+import { getInvestmentsServer, type InvestmentItem } from "./api-investments";
+import { getLogisticsDispatchesServer, type DeliveryItem } from "./api-logistics";
+import { getStaffServer, type StaffListItem } from "./api-staff";
 
 export type TimeRange = "today" | "yesterday" | "7d" | "30d" | "custom";
 
