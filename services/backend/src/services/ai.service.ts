@@ -167,146 +167,132 @@ Also output your response as valid JSON matching the following contract:
         reasoning: [
           "Correlated hourly HVAC compressor power draw logs with store utility bills.",
           "Evaluated category profit margins across Grocery, Electronics, Beauty, and Fashion.",
-          "Cross-referenced supplier lead times with out-of-stock inventory logs."
-        ],
-        recommendedActions: [
-          {
-            title: "Dispatch HVAC Repair Crew to Zone B",
-            description: "Inspect compressor valves and overnight cycles to plug the ₹38,400/mo electricity leak.",
+        const dynamicActions: any[] = [];
+        if (lowStockProducts.length > 0) {
+          dynamicActions.push({
+            title: `Reorder Low-Stock Items (${lowStockProducts.length} SKUs)`,
+            description: `Generate draft Purchase Orders for items below safety threshold.`,
             priority: "high",
-            estimatedImpact: "₹38,400 monthly savings",
-            actionType: "INVESTIGATE_ANOMALY",
-            entityId: "anom-util-hvac-001"
-          },
-          {
-            title: "Audit Sony India SLA & Onboard Backup Supplier",
-            description: "Review Sony delivery delays and activate local secondary distributor for premium electronics.",
+            estimatedImpact: "Prevents stockouts on top SKUs",
+            actionType: "CREATE_PO",
+            entityId: lowStockProducts[0]?.id || "reorder"
+          });
+        }
+        if (activeAnomalies.length > 0) {
+          dynamicActions.push({
+            title: `Investigate Anomaly (${activeAnomalies[0]?.metric || "Telemetry Spike"})`,
+            description: activeAnomalies[0]?.cause || "Inspect operational telemetry spike.",
             priority: "medium",
-            estimatedImpact: "Protects high-margin category revenue",
-            actionType: "OPEN_SUPPLIER",
-            entityId: "sup-sony"
-          }
-        ],
-        risks: [
-          { title: "Zone B HVAC compressor valve failure", severity: "high" },
-          { title: "Premium Electronics category stockout", severity: "high" }
-        ],
+            estimatedImpact: "Prevents cost leaks",
+            actionType: "INVESTIGATE_ANOMALY",
+            entityId: activeAnomalies[0]?.id || "anomaly"
+          });
+        }
+
+        recommendedActions: dynamicActions,
+        risks: lowStockProducts.length > 0 ? [{ title: `${lowStockProducts.length} SKUs nearing depletion`, severity: "high" }] : [],
         confidence: 0.98
       };
     } else if (isStockQuery) {
+      const dynamicActions: any[] = [];
+      if (lowStockProducts.length > 0) {
+        lowStockProducts.forEach((p: any) => {
+          dynamicActions.push({
+            title: `Reorder ${p.name || "Product"}`,
+            description: `Generate PO for ${p.supplier?.name || "Supplier"} to replenish safety stock.`,
+            priority: "high",
+            estimatedImpact: "Protects sales velocity",
+            actionType: "CREATE_PO",
+            entityId: p.id
+          });
+        });
+      }
+
       response = {
-        answer: `### 📦 Inventory & Reorder Intelligence Audit\n\n` +
-          `A full scan of your store inventory identified **${outOfStockCount || 3} items completely OUT OF STOCK** and **${lowStockProducts.length || 5} items below safety threshold**:\n\n` +
-          `1. **Amul Taaza Milk 1L** (SKU: \`prod-dairy-milk\`) — Current stock: **128 units** | Reorder Point: **200 units** | Sales Velocity: **42 units/day**. Expiry risk on May 7.\n` +
-          `2. **Lakmé Perfecting Liquid Foundation** (SKU: \`prod-beauty-lakme\`) — Current stock: **4 units** | Reorder Point: **15 units**.\n` +
-          `3. **Sony Premium Audio System** (SKU: \`prod-elec-sony\`) — Current stock: **0 units** | Out of stock for 3 days.\n\n` +
-          `Draft Purchase Orders have been calculated based on 14-day sales velocity and supplier lead times.`,
-        summary: `${outOfStockCount || 3} items out of stock; ${lowStockProducts.length || 5} items below threshold needing immediate PO placement.`,
+        answer: lowStockProducts.length > 0
+          ? `### 📦 Inventory & Reorder Intelligence Audit\n\nIdentified **${outOfStockCount} items completely OUT OF STOCK** and **${lowStockProducts.length} items below safety threshold**.`
+          : `### 📦 Inventory & Reorder Intelligence Audit\n\nAll SKUs are currently well-stocked. No immediate reorder required.`,
+        summary: `${outOfStockCount} items out of stock; ${lowStockProducts.length} items below threshold.`,
         evidence: [
-          { label: "Amul Taaza Milk 1L Stock", value: "128 units (Reorder point: 200)" },
-          { label: "Lakmé Foundation Stock", value: "4 units left" },
-          { label: "Sony Audio System Stock", value: "0 units (Depleted)" }
+          { label: "Total SKUs Tracked", value: `${totalProducts}` },
+          { label: "Out of Stock SKUs", value: `${outOfStockCount}` },
+          { label: "Low Stock SKUs", value: `${lowStockProducts.length}` }
         ],
         reasoning: [
-          "Calculated daily sales velocity against current stock levels.",
-          "Factored in supplier lead time (Amul 2.1 days, Sony 7.4 days) to prevent shelf depletion."
+          "Calculated daily sales velocity against current stock levels from Prisma database."
         ],
-        recommendedActions: [
-          {
-            title: "Reorder Amul Taaza Milk 1L (240 Units)",
-            description: "Generate Purchase Order for 240 units from Amul Dairy to protect daily grocery sales.",
-            priority: "high",
-            estimatedImpact: "₹12,960 PO / ₹16.3K revenue protected",
-            actionType: "CREATE_PO",
-            entityId: "rec-dairy-reorder-001"
-          },
-          {
-            title: "Reorder Lakmé Foundation (25 Units)",
-            description: "Generate PO for Lakmé India distributor to replenish high-margin Beauty inventory.",
-            priority: "medium",
-            estimatedImpact: "Replenishes high-margin SKU",
-            actionType: "CREATE_PO",
-            entityId: "prod-beauty-lakme"
-          }
-        ],
-        risks: [
-          { title: "Dairy shelf depletion within 48 hours", severity: "high" },
-          { title: "Beauty section stockout lost sales", severity: "medium" }
-        ],
+        recommendedActions: dynamicActions,
+        risks: lowStockProducts.length > 0 ? [{ title: "Stockout on depleted inventory", severity: "high" }] : [],
         confidence: 0.96
       };
     } else if (isEnergyQuery) {
+      const dynamicActions: any[] = [];
+      if (activeAnomalies.length > 0) {
+        activeAnomalies.forEach((a: any) => {
+          dynamicActions.push({
+            title: `Resolve ${a.metric || "Grid Anomaly"}`,
+            description: a.cause || "Inspect telemetry anomaly.",
+            priority: "high",
+            estimatedImpact: "Eliminates excess energy cost",
+            actionType: "INVESTIGATE_ANOMALY",
+            entityId: a.id
+          });
+        });
+      }
+
       response = {
-        answer: `### ⚡ Infrastructure & Energy Anomaly Diagnosis\n\n` +
-          `Live utility telemetry flagged **1 active critical anomaly** in Mall Zone B:\n\n` +
-          `- **Metric**: HVAC Compressor Power Consumption\n` +
-          `- **Overnight Reading**: Actual draw **1,850 kWh** vs Baseline expected **700 kWh** (+163% deviation).\n` +
-          `- **Time Window**: 1:00 AM to 4:00 AM (Outside operating hours).\n` +
-          `- **Financial Cost**: **₹1,280 excess cost daily** (accumulating to **₹38,400 monthly**).\n\n` +
-          `**Root Cause**: Zone B HVAC rooftop compressor valves failed to cycle down after closing hours. HVAC maintenance dispatch is recommended.`,
-        summary: "HVAC Zone B compressor valve fault flagged; excess cost ₹1,280/day.",
+        answer: activeAnomalies.length > 0
+          ? `### ⚡ Infrastructure & Energy Anomaly Diagnosis\n\nLive utility telemetry flagged **${activeAnomalies.length} active critical anomaly**.`
+          : `### ⚡ Infrastructure & Energy Anomaly Diagnosis\n\nNo energy or utility grid anomalies detected. All meters operating within normal parameters.`,
+        summary: activeAnomalies.length > 0 ? `${activeAnomalies.length} utility anomalies flagged.` : "Grid operating normally with zero anomalies.",
         evidence: [
-          { label: "Zone B Actual Power Draw", value: "1,850 kWh" },
-          { label: "Baseline Expected Draw", value: "700 kWh" },
-          { label: "Excess Daily Overhead", value: "₹1,280/day" }
+          { label: "Active Grid Anomalies", value: `${activeAnomalies.length}` }
         ],
         reasoning: [
-          "Monitored hourly smart meter feeds across Roof Units A, B, and C.",
-          "Isolated overnight non-operating hours energy spikes."
+          "Monitored real-time telemetry meters against baseline thresholds."
         ],
-        recommendedActions: [
-          {
-            title: "Dispatch HVAC Crew to Zone B",
-            description: "Dispatch maintenance team to investigate Zone B rooftop compressor valves.",
-            priority: "high",
-            estimatedImpact: "₹38,400 monthly savings protected",
-            actionType: "INVESTIGATE_ANOMALY",
-            entityId: "anom-util-hvac-001"
-          }
-        ],
-        risks: [
-          { title: "Ongoing ₹1,280 daily excess electricity drain", severity: "high" }
-        ],
+        recommendedActions: dynamicActions,
+        risks: activeAnomalies.length > 0 ? [{ title: "Ongoing excess utility overhead", severity: "high" }] : [],
         confidence: 0.97
       };
     } else {
+      const dynamicActions: any[] = [];
+      if (lowStockProducts.length > 0) {
+        dynamicActions.push({
+          title: `Reorder Low-Stock Items (${lowStockProducts.length} SKUs)`,
+          description: `Review and approve draft POs for low stock items.`,
+          priority: "high",
+          actionType: "CREATE_PO",
+          entityId: lowStockProducts[0]?.id || "reorder"
+        });
+      }
+      if (activeAnomalies.length > 0) {
+        dynamicActions.push({
+          title: `Resolve Operational Anomaly`,
+          description: activeAnomalies[0]?.cause || "Inspect active telemetry anomaly.",
+          priority: "medium",
+          actionType: "INVESTIGATE_ANOMALY",
+          entityId: activeAnomalies[0]?.id || "anomaly"
+        });
+      }
+
       response = {
-        answer: `### 🏢 OmniMind Executive Health & Operational Summary\n\n` +
-          `A full telemetry audit of your store operations highlights healthy performance with **3 priority focus areas**:\n\n` +
-          `1. **Commerce & Sales Velocity**: **${recentTransactionsCount || 84} orders** processed today generating **₹${grossRevenue || 142850} gross sales**. Average Order Value (AOV) is **₹1,700**.\n` +
-          `2. **Inventory Stock Health**: **${totalProducts || 142} total SKUs** tracked. 3 items are out of stock (highest priority: Amul Milk and Sony Audio).\n` +
-          `3. **Infrastructure & Anomalies**: 1 utility anomaly flagged (Zone B HVAC compressor overnight power draw).\n\n` +
-          `The AI decision engine recommends executing low-stock PO reorders and dispatching HVAC maintenance.`,
-        summary: `Gross sales ₹${grossRevenue || 142850} across ${recentTransactionsCount || 84} orders. Operations stable with 2 actionable recommendations.`,
+        answer: `### 🏢 OmniMind Executive Health & Operational Summary\n\nA full telemetry audit of your store operations highlights healthy performance:\n\n` +
+          `- **Sales Volume**: **${recentTransactionsCount} orders** processed generating **₹${grossRevenue.toLocaleString('en-IN')} gross sales**.\n` +
+          `- **Inventory Status**: **${totalProducts} SKUs** tracked (${outOfStockCount} out-of-stock, ${lowStockProducts.length} low stock).\n` +
+          `- **Active Anomalies**: **${activeAnomalies.length} active anomalies** detected.`,
+        summary: `Gross sales ₹${grossRevenue.toLocaleString('en-IN')} across ${recentTransactionsCount} orders. ${dynamicActions.length} actionable recommendations.`,
         evidence: [
-          { label: "Gross Sales Revenue Today", value: `₹${grossRevenue || 142850}` },
-          { label: "Total Orders Processed", value: `${recentTransactionsCount || 84}` },
-          { label: "Out of Stock Items", value: `${outOfStockCount || 3}` },
-          { label: "Active Anomalies", value: `${activeAnomalies.length || 1}` }
+          { label: "Gross Sales Revenue", value: `₹${grossRevenue.toLocaleString('en-IN')}` },
+          { label: "Orders Processed", value: `${recentTransactionsCount}` },
+          { label: "Out of Stock Items", value: `${outOfStockCount}` },
+          { label: "Active Anomalies", value: `${activeAnomalies.length}` }
         ],
         reasoning: [
-          "Evaluated real-time POS sales transactions against daily targets.",
-          "Scanned inventory reorder thresholds and utility smart meter feeds."
+          "Evaluated real-time store database records and stock levels."
         ],
-        recommendedActions: [
-          {
-            title: "Reorder Low-Stock Items",
-            description: "Review and approve draft POs for Amul Milk and Lakmé Foundation.",
-            priority: "high",
-            actionType: "CREATE_PO",
-            entityId: "rec-dairy-reorder-001"
-          },
-          {
-            title: "Dispatch Maintenance to Zone B",
-            description: "Inspect HVAC compressor overnight power draw spike.",
-            priority: "medium",
-            actionType: "INVESTIGATE_ANOMALY",
-            entityId: "anom-util-hvac-001"
-          }
-        ],
-        risks: [
-          { title: "Stockout on high sales velocity SKUs", severity: "high" }
-        ],
+        recommendedActions: dynamicActions,
+        risks: lowStockProducts.length > 0 ? [{ title: "Low stock inventory risk", severity: "medium" }] : [],
         confidence: 0.95
       };
     }
