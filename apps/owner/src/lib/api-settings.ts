@@ -6,11 +6,10 @@ const handleResponse = (result: any, fallback: any = []) => {
 };
 
 export const getSettingsServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/settings/get', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/settings', { method: 'GET' }));
 };
 
 export const updateSettingsServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/settings/update', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/settings', { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };

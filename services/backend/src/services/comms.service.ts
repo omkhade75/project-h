@@ -232,7 +232,7 @@ export class CommsService {
         data: {
           callId: resData.id || "vapi-call-" + Date.now(),
           status: resData.status || (vapiResponse.ok ? "queued" : "failed"),
-          firstMessage: firstGreeting,
+          firstMessage: contextMsg,
           details: resData,
         },
       };
