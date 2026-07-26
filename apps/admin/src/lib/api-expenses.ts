@@ -6,21 +6,22 @@ const handleResponse = (result: any, fallback: any = []) => {
 };
 
 export const getExpensesServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/expenses/list', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/expenses', { method: 'GET' }));
 };
 
 export const addExpenseServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/expenses/add', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/expenses', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const editExpenseServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/expenses/edit', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = payload?.id || payload?.expenseId;
+  return handleResponse(await fetchApi(`/api/expenses/${id || ''}`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const archiveExpenseServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/expenses/archive', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = typeof payload === 'string' ? payload : (payload?.id || payload?.expenseId);
+  return handleResponse(await fetchApi(`/api/expenses/${id || ''}`, { method: 'DELETE' }));
 };

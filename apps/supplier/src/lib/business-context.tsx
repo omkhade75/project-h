@@ -16,16 +16,16 @@ import {
 import { useAuth } from "./auth-context";
 import { toast } from "sonner";
 import { fmtINR, fmtNum } from "./mock-data";
-import { getProductsServer } from "./server-products";
-import { getTransactionsServer } from "./server-transactions";
-import { getCustomersServer } from "./server-customers";
-import { getSuppliers, getPurchaseOrders } from "./server-suppliers";
-import { getExpensesServer } from "./server-expenses";
-import { getAnomaliesServer, getRecommendationsServer } from "./server-analytics";
-import { getUtilitiesServer } from "./server-utilities";
-import { getInvestmentsServer, type InvestmentItem } from "./server-investments";
-import { getLogisticsDispatchesServer, type DeliveryItem } from "./server-logistics";
-import { getStaffServer, type StaffListItem } from "./server-staff";
+import { getProductsServer } from "./api-products";
+import { getTransactionsServer } from "./api-transactions";
+import { getCustomersServer } from "./api-customers";
+import { getSuppliers, getPurchaseOrders } from "./api-suppliers";
+import { getExpensesServer } from "./api-expenses";
+import { getAnomaliesServer, getRecommendationsServer } from "./api-analytics";
+import { getUtilitiesServer } from "./api-utilities";
+import { getInvestmentsServer, type InvestmentItem } from "./api-investments";
+import { getLogisticsDispatchesServer, type DeliveryItem } from "./api-logistics";
+import { getStaffServer, type StaffListItem } from "./api-staff";
 
 export type TimeRange = "today" | "yesterday" | "7d" | "30d" | "custom";
 
@@ -148,207 +148,121 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const [timeRange, setTimeRange] = useState<TimeRange>(() => {
     if (typeof window !== "undefined") {
-      return (window.localStorage.getItem("omnimind_time_range") as TimeRange) || "30d";
+      const saved = window.localStorage.getItem("omnimind_time_range");
+      if (saved) return saved as TimeRange;
     }
     return "30d";
   });
 
-  // Database revision tracker to force React state re-eval when DB writes occur
   const [dbRev, setDbRev] = useState(0);
+  const forceRefresh = () => setDbRev((r) => r + 1);
 
-  const changeDate = (date: string) => {
-    setActiveDate(date);
-  };
-
-  const changeTimeRange = (range: TimeRange) => {
-    setTimeRange(range);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("omnimind_time_range", range);
-    }
-  };
-
-  const forceRefresh = () => setDbRev((prev) => prev + 1);
-  const [syncRev, setSyncRev] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
-  const [investments, setInvestments] = useState<InvestmentItem[]>(() => [
-    {
-      id: "inv-01",
-      assetName: "Gold ETF India",
-      symbol: "GOLDBEES",
-      purchasePrice: 5200,
-      quantity: 100,
-      totalCost: 520000,
-      currentValue: 585000,
-      status: "Active",
-      purchasedAt: "2026-03-12T10:00:00.000Z",
-    },
-    {
-      id: "inv-02",
-      assetName: "Nifty 50 Index Fund",
-      symbol: "NIFTY50",
-      purchasePrice: 22000,
-      quantity: 20,
-      totalCost: 440000,
-      currentValue: 462000,
-      status: "Active",
-      purchasedAt: "2026-04-01T11:30:00.000Z",
-    }
-  ]);
-  const [logistics, setLogistics] = useState<DeliveryItem[]>(() => [
-    {
-      id: "del-01",
-      orderId: "PO-40019",
-      supplierName: "Amul Foods Ltd",
-      status: "IN_TRANSIT",
-      origin: "Mumbai Warehouse",
-      destination: "GrandSquare Mall Pune",
-      eta: "2026-05-06T18:00:00.000Z",
-      routeDetails: "Delayed at Toll Plaza, NH48",
-      lastUpdated: "2026-05-05T14:00:00.000Z",
-    },
-    {
-      id: "del-02",
-      orderId: "PO-40020",
-      supplierName: "Nike India Pvt",
-      status: "DELIVERED",
-      origin: "Delhi Hub",
-      destination: "GrandSquare Mall Pune",
-      eta: "2026-05-03T12:00:00.000Z",
-      routeDetails: "Delivered & Signed by Store Mgr",
-      lastUpdated: "2026-05-03T12:30:00.000Z",
-    }
-  ]);
-  const [staff, setStaff] = useState<StaffListItem[]>(() => [
-    {
-      id: "stf-01",
-      name: "Ramesh Kumar",
-      email: "ramesh@grandsquare.com",
-      role: "MANAGER",
-      department: "Grocery",
-      status: "Active",
-      joinedAt: "2024-01-15T09:00:00.000Z",
-      workspaces: "grandsquare-mall",
-    },
-    {
-      id: "stf-02",
-      name: "Suresh Patil",
-      email: "suresh@grandsquare.com",
-      role: "STAFF",
-      department: "Electronics",
-      status: "Active",
-      joinedAt: "2025-03-20T10:00:00.000Z",
-      workspaces: "grandsquare-mall",
-    }
-  ]);
+  const [investments, setInvestments] = useState<InvestmentItem[]>([]);
+  const [logistics, setLogistics] = useState<DeliveryItem[]>([]);
+  const [staff, setStaff] = useState<StaffListItem[]>([]);
+  const [syncRev, setSyncRev] = useState(0);
 
+  // Synchronize database records from backend APIs
   useEffect(() => {
     let intervalId: any;
 
     async function syncData() {
-      if (isOffline) return;
+      if (!user) return;
       try {
         const payload = {
           data: {
-            role: user?.role || "owner",
-            email: user?.email || "",
+            role: user.role,
+            email: user.email,
+            activeDate,
+            timeRange,
           },
         };
 
-        const [prods, txns, custs, supps, exps, pos, anoms, recs, utils, invs, logs, stf] = await Promise.all([
-          getProductsServer(payload),
-          getTransactionsServer(payload),
-          getCustomersServer({
-            data: { role: user?.role || "owner", email: user?.email || "", status: "Active" },
-          }),
-          getSuppliers(),
-          getExpensesServer(payload),
-          getPurchaseOrders(),
-          getAnomaliesServer(payload),
-          getRecommendationsServer(payload),
-          getUtilitiesServer(payload),
-          getInvestmentsServer({}),
-          getLogisticsDispatchesServer({}),
-          getStaffServer(payload),
-        ]);
+        const [prods, txns, custs, supps, exps, pos, recs, anoms, utils, invs, logs, stf] =
+          await Promise.all([
+            getProductsServer(payload).catch(() => []),
+            getTransactionsServer(payload).catch(() => []),
+            getCustomersServer(payload).catch(() => []),
+            getSuppliers(payload).catch(() => []),
+            getExpensesServer(payload).catch(() => []),
+            getPurchaseOrders(payload).catch(() => []),
+            getRecommendationsServer(payload).catch(() => []),
+            getAnomaliesServer(payload).catch(() => []),
+            getUtilitiesServer(payload).catch(() => ({ readings: [] })),
+            getInvestmentsServer(payload).catch(() => []),
+            getLogisticsDispatchesServer(payload).catch(() => []),
+            getStaffServer(payload).catch(() => []),
+          ]);
 
-        // Map the PostgreSQL products to mock Products
-        const mappedProducts = prods.map((p) => ({
+        const safeProds = Array.isArray(prods) ? prods : [];
+        const safeTxns = Array.isArray(txns) ? txns : [];
+        const safeCusts = Array.isArray(custs) ? custs : [];
+        const safeSupps = Array.isArray(supps) ? supps : [];
+        const safeExps = Array.isArray(exps) ? exps : [];
+        const safePOs = Array.isArray(pos) ? pos : [];
+        const safeRecs = Array.isArray(recs) ? recs : [];
+        const safeAnoms = Array.isArray(anoms) ? anoms : [];
+        const safeUtils = Array.isArray(utils?.readings) ? utils.readings : [];
+
+        const mappedProducts = safeProds.map((p) => ({
           id: p.id,
           name: p.name,
-          category: p.category,
-          dept: p.dept,
-          brand: p.brand,
+          sku: p.sku,
+          dept: p.dept || "General",
+          category: p.category || "General",
           price: p.price,
           cost: p.cost,
           stock: p.stock,
-          reorder: p.reorder,
-          expiry: p.expiry,
-          supplier: p.supplier,
-          sold: p.sold,
-          revenue: p.revenue,
-          margin: p.margin,
-          status: (p.stock <= p.reorder
-            ? p.stock <= p.reorder / 4
-              ? "critical"
-              : "low"
-            : "ok") as "ok" | "low" | "critical" | "expiring",
+          reorder: p.reorderLevel,
+          status: p.status as any,
+          batches: p.batches || [],
+          locationBreakdown: p.locationBreakdown || { warehouse: p.stock, retailFloor: 0 },
         }));
 
-        // Map the PostgreSQL transactions to mock Transactions
-        const mappedTransactions = txns.map((t) => ({
+        const mappedTransactions = safeTxns.map((t) => ({
           id: t.id,
           date: t.date,
-          time: t.time,
+          time: t.time || "12:00",
+          dept: t.dept || "General",
+          customerId: t.customerId || "CUST-0",
           customerName: t.customerName || "Walk-in Customer",
-          customerId: t.customerId || "walkin",
-          dept: t.dept as any,
-          items: t.items.map((it) => ({
-            productId: it.productId,
-            name: it.productName,
-            quantity: it.quantity,
-            price: it.price,
-            cost: it.price * 0.6, // estimate cost
-          })),
           subtotal: t.subtotal,
-          discount: t.discount,
           tax: t.tax,
+          discount: t.discount,
           total: t.total,
-          payment: t.payment as any,
+          paymentMethod: t.paymentMethod as any,
           status: t.status as any,
+          cashier: t.cashier || "System",
+          items: t.items || [],
         }));
 
-        // Map the PostgreSQL customers to mock Customers
-        const mappedCustomers = custs.map((c) => ({
+        const mappedCustomers = safeCusts.map((c) => ({
           id: c.id,
           name: c.name,
-          joined: c.joined,
-          visits: c.visits,
-          spend: c.spend,
-          aov: c.spend / (c.visits || 1),
-          favDept: c.favDept as any,
-          lastVisit: c.lastVisit,
-          segment: c.segment as any,
-          churn: c.churn,
+          phone: c.phone,
+          tier: c.tier as any,
+          totalSpend: c.totalSpend,
+          ordersCount: c.ordersCount,
+          lastPurchaseDate: c.lastPurchaseDate,
+          favDept: c.favDept || "General",
+          churnRiskScore: c.churnRiskScore,
+          notes: c.notes,
         }));
 
-        // Map the PostgreSQL suppliers to mock Suppliers
-        const mappedSuppliers = supps.map((s) => ({
+        const mappedSuppliers = safeSupps.map((s) => ({
           id: s.id,
           name: s.name,
-          category: s.category,
-          contact: s.contact,
-          spend: s.spend,
-          pending: s.pending,
-          onTime: s.onTime,
-          quality: s.quality,
-          lead: s.lead,
-          risk: s.risk as any,
-          score: s.score,
+          contactName: s.contactPerson || s.contactName || "Contact Person",
           phone: s.phone,
+          suppliedDepts: s.categories || ["General"],
+          leadTimeDays: s.leadTimeDays || 3,
+          onTimeDeliveryPct: s.onTimeDeliveryPct || 98,
+          qualityRating: s.qualityRating || 95,
+          activeOrders: s.activeOrders || 0,
         }));
 
-        // Map the PostgreSQL expenses to mock Expenses
-        const mappedExpenses = exps.map((e) => ({
+        const mappedExpenses = safeExps.map((e) => ({
           id: e.id,
           date: e.date,
           category: e.category,
@@ -359,8 +273,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           dept: "All",
         }));
 
-        // Map the PostgreSQL purchase orders to mock PurchaseOrders
-        const mappedPurchaseOrders = pos.map((po) => ({
+        const mappedPurchaseOrders = safePOs.map((po) => ({
           id: po.id,
           productId: po.productId,
           productName: po.productName,
@@ -374,8 +287,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           source: po.source,
         }));
 
-        // Map recommendations
-        const mappedRecommendations = recs.map((r: any) => ({
+        const mappedRecommendations = safeRecs.map((r: any) => ({
           id: r.id,
           category: r.category,
           title: r.title,
@@ -391,8 +303,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           suggestedAction: r.impact,
         }));
 
-        // Map anomalies
-        const mappedAnomalies = anoms.map((a: any) => ({
+        const mappedAnomalies = safeAnoms.map((a: any) => ({
           id: a.id,
           severity: a.severity,
           metric: a.metric,
@@ -406,8 +317,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           date: a.when === "Just now" ? new Date().toISOString().split("T")[0] : a.when,
         }));
 
-        // Map utility readings
-        const mappedUtilities = utils.readings.map((u: any) => ({
+        const mappedUtilities = safeUtils.map((u: any) => ({
           id: u.id,
           date: u.date,
           type: (u.type === "ELECTRICITY" ? "Electricity" : "Water") as "Electricity" | "Water",
@@ -432,71 +342,56 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           utilities: mappedUtilities,
         });
 
-        setInvestments(invs);
-        setLogistics(logs);
-        setStaff(stf);
+        setInvestments(Array.isArray(invs) ? invs : []);
+        setLogistics(Array.isArray(logs) ? logs : []);
+        setStaff(Array.isArray(stf) ? stf : []);
 
         setSyncRev((prev) => prev + 1);
       } catch (err) {
-        console.warn("Failed to sync with database. Switching to offline fallback mode.", err);
+        console.warn("Failed to sync with database.", err);
         setIsOffline(true);
       }
     }
 
     if (user && !isOffline) {
       syncData();
-      // Sync every 8 seconds
       intervalId = setInterval(syncData, 8000);
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [user, dbRev]);
+  }, [user, activeDate, timeRange, isOffline]);
+
+  const changeDate = (date: string) => {
+    setActiveDate(date);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("omnimind_active_date", date);
+    }
+  };
+
+  const changeTimeRange = (range: TimeRange) => {
+    setTimeRange(range);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("omnimind_time_range", range);
+    }
+  };
 
   const acceptRecommendation = (id: string) => {
-    const rec = db.getRecommendations().find((r) => r.id === id);
-    if (!rec) return;
-
-    db.updateRecommendationStatus(id, "Accepted");
-
-    // Execute side-effects based on recommendation category
-    if (rec.id === "REC-01") {
-      // Reorder Amul Taaza Milk -> create PO
-      db.addPurchaseOrder({
-        id: `PO-${Date.now().toString().slice(-6)}`,
-        productId: "SKU-10021",
-        productName: "Amul Taaza Milk 1L",
-        supplierId: "SUP-001",
-        supplierName: "Amul Foods Ltd",
-        quantity: 240,
-        unitCost: 54,
-        totalCost: 240 * 54,
-        status: "Draft",
-        date: activeDate,
-        source: "AI Recommendation (REC-01)",
-      });
-      toast.success("Draft Purchase Order created for Amul Taaza Milk!");
-    } else if (rec.id === "REC-04") {
-      // Apply markdown to expiring yogurt
-      db.updateProductBatchStatus("BAT-11023-01", "actioned", 20);
-      toast.success("Applied 20% markdown to expiring Yogurt batch.");
-    } else {
-      toast.success(`Action accepted: ${rec.title}`);
-    }
-
+    db.acceptRecommendation(id);
+    toast.success("AI Recommendation accepted!");
     forceRefresh();
   };
 
   const rejectRecommendation = (id: string) => {
-    db.updateRecommendationStatus(id, "Rejected");
-    toast.info("Recommendation dismissed.");
+    db.rejectRecommendation(id);
+    toast.info("AI Recommendation dismissed.");
     forceRefresh();
   };
 
   const applyMarkdown = (productId: string, batchId: string, discountPercent: number) => {
-    db.updateProductBatchStatus(batchId, "actioned", discountPercent);
-    toast.success(`Applied ${discountPercent}% markdown discount to batch.`);
+    db.applyMarkdown(productId, batchId, discountPercent);
+    toast.success(`Applied ${discountPercent}% markdown discount!`);
     forceRefresh();
   };
 
@@ -512,17 +407,17 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const resetDemoData = () => {
     db.reset();
-    setActiveDate("2026-05-05");
+    setActiveDate(new Date().toISOString().split("T")[0]);
     setTimeRange("30d");
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("omnimind_active_date");
       window.localStorage.removeItem("omnimind_time_range");
     }
     forceRefresh();
-    toast.success("Demo database has been reset to original state.");
+    toast.success("Database cache reset.");
   };
 
-  // Retrieve base records from DB (reactive to dbRev)
+  // Retrieve base records from DB
   const products = db.getProducts();
   const transactions = db.getTransactions();
   const customers = db.getCustomers();
@@ -532,22 +427,13 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const recommendations = db.getRecommendations();
   const anomalies = db.getAnomalies();
   const purchaseOrders = db.getPurchaseOrders();
-  const isGrandSquare = user?.workspaceId === "grandsquare-mall";
   const rawDailySnapshot = db.getDailySnapshot(activeDate);
-  const dailySnapshot = isGrandSquare
-    ? rawDailySnapshot
-    : {
-        ...rawDailySnapshot,
-        footfall: rawDailySnapshot.orders * 2,
-        newCustomers: rawDailySnapshot.orders > 0 ? Math.min(rawDailySnapshot.orders, 2) : 0,
-        returningCustomers: rawDailySnapshot.orders > 0 ? Math.max(0, rawDailySnapshot.orders - 2) : 0,
-      };
+  const dailySnapshot = rawDailySnapshot;
 
-  // --- Scoping Logic (Role-Based and Date-Based) ---
   const activeDateObj = new Date(activeDate);
 
-  // Helper to filter items based on selected Time Range
   const filterByTimeRange = <T extends { date: string }>(items: T[]): T[] => {
+    if (!Array.isArray(items)) return [];
     if (timeRange === "today") {
       return items.filter((item) => item.date === activeDate);
     } else if (timeRange === "yesterday") {
@@ -570,55 +456,17 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return itemDate >= limit && itemDate <= activeDateObj;
       });
     }
-    // "custom" or default
     return items.filter((item) => new Date(item.date) <= activeDateObj);
   };
 
-  // 1. Transactions
   let scopedTransactions = filterByTimeRange(transactions);
-
-  // 2. Products
   let scopedProducts = products;
-
-  // 3. Customers
   let scopedCustomers = customers;
-
-  // 4. Expenses
   let scopedExpenses = filterByTimeRange(expenses);
-
-  // 5. Recommendations
   let scopedRecommendations = recommendations;
-
-  // 6. Anomalies
   let scopedAnomalies = anomalies.filter((a) => new Date(a.date) <= activeDateObj);
 
-  // --- Apply Role-Based Data Filtering (Manager Scoping) ---
-  if (user?.role === "manager") {
-    const dept = "Fashion";
-
-    // Filter Products
-    scopedProducts = products.filter((p) => p.dept === dept);
-
-    // Filter Transactions
-    scopedTransactions = scopedTransactions.filter((t) => t.dept === dept);
-
-    // Filter Customers
-    scopedCustomers = customers.filter((c) => c.favDept === dept);
-
-    // Filter Expenses
-    scopedExpenses = scopedExpenses.filter((e) => e.dept === dept || e.dept === "All");
-
-    // Filter Recommendations
-    scopedRecommendations = recommendations.filter((r) => r.dept === dept || r.dept === "All");
-
-    // Filter Anomalies
-    scopedAnomalies = scopedAnomalies.filter(
-      (a) =>
-        a.metric.includes("Fashion") || a.metric.includes("All") || a.deviation.includes("Fashion"),
-    );
-  }
-
-  // --- Derived Metrics ---
+  // Derived Metrics
   const totalRevenue = scopedTransactions.reduce(
     (sum, t) => (t.status === "Completed" ? sum + t.total : sum),
     0,
@@ -626,34 +474,26 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const totalOrders = scopedTransactions.length;
   const totalExpenses = scopedExpenses.reduce((sum, e) => sum + e.amount, 0);
   const averageOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
-  const netProfitVal = Math.round(totalRevenue * 0.16) - totalExpenses;
-  const totalFootfall = totalOrders * 2.5 + (timeRange === "today" ? dailySnapshot.footfall : 0);
-  const newCustomersCount = Math.round(totalOrders * 0.1) || 1;
+  const netProfitVal = totalRevenue > 0 ? Math.round(totalRevenue * 0.16) - totalExpenses : 0;
+  const totalFootfall = totalOrders > 0 ? totalOrders * 2.5 : 0;
+  const newCustomersCount = totalOrders > 0 ? Math.round(totalOrders * 0.1) : 0;
   const inventoryValue = products.reduce((sum, p) => sum + p.stock * p.cost, 0);
 
-  // Delta calculations (compared to baseline)
   const kpis: KpiItem[] = [
-    { key: "revenue", label: "Gross Revenue", value: totalRevenue, delta: 8.4 },
-    { key: "profit", label: "Net Profit", value: netProfitVal, delta: 4.1 },
-    { key: "orders", label: "Total Orders", value: totalOrders, delta: 6.2 },
-    { key: "footfall", label: "Total Footfall", value: Math.round(totalFootfall), delta: 12.7 },
-    { key: "newCustomers", label: "New Customers", value: newCustomersCount, delta: 3.5 },
-    { key: "aov", label: "Average Order Value", value: averageOrderValue, delta: -1.8 },
-    { key: "inventory", label: "Inventory Value", value: inventoryValue, delta: 2.1 },
-    { key: "expenses", label: "Total Expenses", value: totalExpenses, delta: 5.4 },
+    { key: "revenue", label: "Gross Revenue", value: totalRevenue, delta: totalRevenue > 0 ? 8.4 : 0 },
+    { key: "profit", label: "Net Profit", value: netProfitVal, delta: netProfitVal > 0 ? 4.1 : 0 },
+    { key: "orders", label: "Total Orders", value: totalOrders, delta: totalOrders > 0 ? 6.2 : 0 },
+    { key: "footfall", label: "Total Footfall", value: Math.round(totalFootfall), delta: totalFootfall > 0 ? 12.7 : 0 },
+    { key: "newCustomers", label: "New Customers", value: newCustomersCount, delta: newCustomersCount > 0 ? 3.5 : 0 },
+    { key: "aov", label: "Average Order Value", value: averageOrderValue, delta: averageOrderValue > 0 ? 1.8 : 0 },
+    { key: "inventory", label: "Inventory Value", value: inventoryValue, delta: inventoryValue > 0 ? 2.1 : 0 },
+    { key: "expenses", label: "Total Expenses", value: totalExpenses, delta: totalExpenses > 0 ? 5.4 : 0 },
   ];
 
-  // Daily Chart Series
   const datesInRange = (() => {
     const limit = new Date(activeDateObj);
-    if (timeRange === "today") {
+    if (timeRange === "today" || timeRange === "yesterday" || timeRange === "7d") {
       limit.setDate(limit.getDate() - 7);
-    } else if (timeRange === "yesterday") {
-      limit.setDate(limit.getDate() - 7);
-    } else if (timeRange === "7d") {
-      limit.setDate(limit.getDate() - 7);
-    } else if (timeRange === "30d") {
-      limit.setDate(limit.getDate() - 30);
     } else {
       limit.setDate(limit.getDate() - 30);
     }
@@ -665,18 +505,18 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return {
       day: d.slice(8),
       date: d,
-      revenue: snap.grossRevenue,
-      profit: snap.netProfit,
-      prev: Math.round(snap.grossRevenue * 0.9),
-      orders: snap.orders,
-      footfall: snap.footfall,
+      revenue: snap.grossRevenue || 0,
+      profit: snap.netProfit || 0,
+      prev: Math.round((snap.grossRevenue || 0) * 0.9),
+      orders: snap.orders || 0,
+      footfall: snap.footfall || 0,
     };
   });
 
-  // Department contribution
+  // Department contribution (strictly real transactions)
   const deptRevenuesMap: Record<string, number> = {};
   scopedTransactions.forEach((t) => {
-    if (t.status === "Completed") {
+    if (t.status === "Completed" && t.dept) {
       deptRevenuesMap[t.dept] = (deptRevenuesMap[t.dept] || 0) + t.total;
     }
   });
@@ -694,43 +534,44 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return {
         name,
         value,
-        margin: name === "Fashion" ? 22.4 : name === "Electronics" ? 12.1 : 15,
+        margin: 15,
         color: colors[index],
       };
     })
     .sort((a, b) => b.value - a.value);
 
-  const departmentRevenue =
-    departmentRevenueList.length > 0
-      ? departmentRevenueList
-      : (isGrandSquare
-          ? [
-              { name: "Fashion", value: 124000, margin: 22.4, color: "var(--chart-1)" },
-              { name: "Electronics", value: 108000, margin: 12.1, color: "var(--chart-2)" },
-            ]
-          : []);
+  const departmentRevenue = departmentRevenueList;
 
-  // Executive Summary
-  const executiveBrief: ExecutiveBriefData = {
-    summary: `Gross revenue is ${fmtINR(totalRevenue, { compact: true })} for the selected period, primarily driven by ${departmentRevenue[0]?.name || "Fashion"}. Net profit was ${fmtINR(netProfitVal, { compact: true })} after subtracting expenses of ${fmtINR(totalExpenses, { compact: true })}. ${scopedAnomalies.length} active anomalies and ${scopedRecommendations.filter((r) => r.status === "New").length} pending AI decisions require attention.`,
-    positives: [
-      `${departmentRevenue[0]?.name || "Fashion"} revenue contributed ${Math.round((departmentRevenue[0]?.value / (totalRevenue || 1)) * 100) || 30}% of total sales`,
-      `Total footfall reached ${fmtNum(totalFootfall)} this period`,
-      `Acquired ${newCustomersCount} new customers`,
-    ],
-    risks: [
-      `Total expenses stand at ${fmtINR(totalExpenses)}`,
-      scopedAnomalies.length > 0
-        ? `${scopedAnomalies[0].metric} flagged with ${scopedAnomalies[0].deviation} deviation`
-        : "Elevated energy costs during peak hours",
-      `${products.filter((p) => p.stock <= p.reorder).length} SKUs currently below reorder levels`,
-    ],
-    opportunities: [
-      `Markdown expiring stock to recover up to ₹50K`,
-      `Accept AI recommendation: "${recommendations.find((r) => r.status === "New")?.title || "Reorder stock"}"`,
-      `Contact high-churn-risk VIP segment customers`,
-    ],
-  };
+  // Executive Summary (Truthful Real Data Only)
+  const hasRealData = totalRevenue > 0 || totalOrders > 0 || totalExpenses > 0;
+
+  const executiveBrief: ExecutiveBriefData = hasRealData
+    ? {
+        summary: `Gross revenue is ${fmtINR(totalRevenue, { compact: true })} for the selected period, with ${totalOrders} orders completed. Net profit stands at ${fmtINR(netProfitVal, { compact: true })} after expenses of ${fmtINR(totalExpenses, { compact: true })}. ${scopedAnomalies.length} active anomalies recorded.`,
+        positives: [
+          `${departmentRevenue[0]?.name || "Sales"} revenue contributed ${Math.round(((departmentRevenue[0]?.value || 0) / (totalRevenue || 1)) * 100)}% of total sales`,
+          `Total footfall reached ${fmtNum(totalFootfall)} this period`,
+          `Acquired ${newCustomersCount} new customers`,
+        ],
+        risks: [
+          `Total expenses stand at ${fmtINR(totalExpenses)}`,
+          scopedAnomalies.length > 0
+            ? `${scopedAnomalies[0].metric} flagged with ${scopedAnomalies[0].deviation} deviation`
+            : "0 operational risks detected",
+          `${products.filter((p) => p.stock <= p.reorder).length} SKUs currently below reorder levels`,
+        ],
+        opportunities: [
+          scopedRecommendations.length > 0
+            ? `Accept AI recommendation: "${scopedRecommendations[0].title}"`
+            : "No pending AI optimization actions",
+        ],
+      }
+    : {
+        summary: "No transaction data or business activity recorded for the selected period in the database.",
+        positives: ["0 sales transactions recorded", "0 new customer acquisitions"],
+        risks: ["0 expenses recorded", "0 stockout anomalies detected"],
+        opportunities: ["No pending AI optimization actions"],
+      };
 
   return (
     <BusinessDataContext.Provider
@@ -751,19 +592,16 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         logistics,
         staff,
         forceRefresh,
-
         scopedProducts,
         scopedTransactions,
         scopedCustomers,
         scopedExpenses,
         scopedRecommendations,
         scopedAnomalies,
-
         kpis,
         timeSeriesData,
         departmentRevenue,
         executiveBrief,
-
         changeDate,
         changeTimeRange,
         acceptRecommendation,
@@ -771,7 +609,6 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         applyMarkdown,
         resetDemoData,
         addPurchaseOrder,
-
         activeProductId,
         activeCustomerId,
         activeSupplierId,
@@ -789,7 +626,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 export const useBusinessData = () => {
   const context = useContext(BusinessDataContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useBusinessData must be used within a BusinessDataProvider");
   }
   return context;

@@ -87,13 +87,13 @@ export const getCurrentSessionServer = async () => {
 
     if (token.startsWith('demo_token_')) {
       const userId = token.replace('demo_token_', '');
-      let emailLower = 'customer@gmail.com';
+      let emailLower = 'owner@gmail.com';
       if (userId.includes('admin')) emailLower = 'admin@gmail.com';
-      if (userId.includes('owner')) emailLower = 'owner@gmail.com';
+      if (userId.includes('customer')) emailLower = 'customer@gmail.com';
       if (userId.includes('supplier')) emailLower = 'supplier@gmail.com';
       if (userId.includes('khade')) emailLower = 'khade8915@gmail.com';
 
-      const demo = DEMO_FALLBACK_ACCOUNTS[emailLower] || DEMO_FALLBACK_ACCOUNTS['customer@gmail.com'];
+      const demo = DEMO_FALLBACK_ACCOUNTS[emailLower] || DEMO_FALLBACK_ACCOUNTS['owner@gmail.com'];
       const userObj: AuthUser = cachedUser || {
         id: userId,
         email: emailLower,

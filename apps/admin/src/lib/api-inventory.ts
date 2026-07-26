@@ -6,13 +6,11 @@ const handleResponse = (result: any, fallback: any = []) => {
 };
 
 export const getInventoryStockServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/inventory/stock', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/inventory/stock', { method: 'GET' }));
 };
 
 export const getInventoryMovementsServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/inventory/movements', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/inventory/movements', { method: 'GET' }));
 };
 
 export const mutateInventoryServer = async (data?: any) => {
@@ -21,6 +19,5 @@ export const mutateInventoryServer = async (data?: any) => {
 };
 
 export const getExpiryIntelligenceServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/inventory/expiry', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/inventory/expiry', { method: 'GET' }));
 };

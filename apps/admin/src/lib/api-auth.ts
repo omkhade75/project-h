@@ -30,7 +30,6 @@ export const loginServer = async (data: { data: { email: string; password: strin
     throw new Error('Email and password are required.');
   }
 
-  // 1. First check demo accounts with correct password "123456789"
   if (password === '123456789' && DEMO_FALLBACK_ACCOUNTS[emailLower]) {
     const demo = DEMO_FALLBACK_ACCOUNTS[emailLower];
     const demoUser: AuthUser = {
@@ -50,7 +49,6 @@ export const loginServer = async (data: { data: { email: string; password: strin
     return { success: true, user: demoUser };
   }
 
-  // 2. Otherwise call backend REST API
   try {
     const result = await fetchApi<{ user: AuthUser; token: string }>('/api/auth/login', {
       method: 'POST',
@@ -89,13 +87,13 @@ export const getCurrentSessionServer = async () => {
 
     if (token.startsWith('demo_token_')) {
       const userId = token.replace('demo_token_', '');
-      let emailLower = 'admin@gmail.com';
-      if (userId.includes('owner')) emailLower = 'owner@gmail.com';
+      let emailLower = 'owner@gmail.com';
+      if (userId.includes('admin')) emailLower = 'admin@gmail.com';
       if (userId.includes('customer')) emailLower = 'customer@gmail.com';
       if (userId.includes('supplier')) emailLower = 'supplier@gmail.com';
       if (userId.includes('khade')) emailLower = 'khade8915@gmail.com';
 
-      const demo = DEMO_FALLBACK_ACCOUNTS[emailLower] || DEMO_FALLBACK_ACCOUNTS['admin@gmail.com'];
+      const demo = DEMO_FALLBACK_ACCOUNTS[emailLower] || DEMO_FALLBACK_ACCOUNTS['owner@gmail.com'];
       const userObj: AuthUser = cachedUser || {
         id: userId,
         email: emailLower,
@@ -109,7 +107,6 @@ export const getCurrentSessionServer = async () => {
       return { user: userObj };
     }
 
-    // Try live /api/auth/me
     const result = await fetchApi<{ user: AuthUser | null }>('/api/auth/me', {
       method: 'GET',
     });
@@ -151,11 +148,7 @@ export const impersonateTenantServer = async (data: { data: { workspaceId: strin
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    
-    if (result.success) {
-      return { success: true };
-    }
-    return { success: false };
+    return { success: !!result.success };
   } catch (err) {
     return { success: false };
   }
@@ -166,11 +159,7 @@ export const stopImpersonatingServer = async () => {
     const result = await fetchApi('/api/auth/stop-impersonate', {
       method: 'POST',
     });
-    
-    if (result.success) {
-      return { success: true };
-    }
-    return { success: false };
+    return { success: !!result.success };
   } catch (err) {
     return { success: false };
   }

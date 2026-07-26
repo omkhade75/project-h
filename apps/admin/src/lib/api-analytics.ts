@@ -6,23 +6,19 @@ const handleResponse = (result: any, fallback: any = []) => {
 };
 
 export const getCommandCenterServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/analytics/command-center', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/analytics/command-center', { method: 'GET' }));
 };
 
 export const getAnomaliesServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/analytics/anomalies', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/analytics/anomalies', { method: 'GET' }));
 };
 
 export const getRecommendationsServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/analytics/recommendations', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/analytics/recommendations', { method: 'GET' }));
 };
 
 export const getForecastingServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/analytics/forecasting', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/analytics/forecasting', { method: 'GET' }));
 };
 
 export const dispatchEodReportServer = async (data?: any) => {

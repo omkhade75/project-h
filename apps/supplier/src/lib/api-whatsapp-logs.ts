@@ -5,4 +5,4 @@ const handleResponse = (result: any, fallback: any = []) => {
   return fallback;
 };
 
-export const getMessageLogsServer = async () => handleResponse(await fetchApi('/api/whatsapp/logs', { method: 'GET' }));
+export const getMessageLogsServer = async () => handleResponse(await fetchApi('/api/comms/logs', { method: 'GET' }));

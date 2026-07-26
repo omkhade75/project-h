@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Req, Query } from '@nestjs/common';
 import { SystemAdminService } from '../services/system-admin.service';
 
-@Controller('api/system-admin')
+@Controller(['api/system-admin', 'api/admin'])
 export class SystemAdminController {
   constructor(private readonly sysAdminService: SystemAdminService) {}
 
@@ -38,6 +38,11 @@ export class SystemAdminController {
 
   @Get('companies')
   async searchCompanies(@Req() req, @Query('query') query: string) {
+    return await this.sysAdminService.searchCompanies(req.user, query);
+  }
+
+  @Get('companies/search')
+  async searchCompaniesAlt(@Req() req, @Query('query') query: string) {
     return await this.sysAdminService.searchCompanies(req.user, query);
   }
 

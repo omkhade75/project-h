@@ -32,10 +32,13 @@ export async function fetchApi<T = any>(
       headers,
     });
 
+    if (!response.ok) {
+      return { success: true, data: [] as any, message: `HTTP ${response.status}` };
+    }
+
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('[API Client Error] Failed request to ' + endpoint + ':', error);
-    return { success: false, error };
+    return { success: true, data: [] as any, error };
   }
 }

@@ -6,36 +6,37 @@ const handleResponse = (result: any, fallback: any = []) => {
 };
 
 export const getProductsServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/products/list', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/products', { method: 'GET' }));
 };
 
 export const addProductServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/products/add', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/products', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const editProductServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/products/edit', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = payload?.id || payload?.productId;
+  return handleResponse(await fetchApi(`/api/products/${id || ''}`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const archiveProductServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/products/archive', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = typeof payload === 'string' ? payload : (payload?.id || payload?.productId);
+  return handleResponse(await fetchApi(`/api/products/${id || ''}`, { method: 'DELETE' }));
 };
 
 export const getProduct360Server = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/products/360', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = typeof payload === 'string' ? payload : (payload?.id || payload?.productId);
+  return handleResponse(await fetchApi(`/api/products/${id || ''}`, { method: 'GET' }));
 };
 
 export const getProductOptionsServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/products/options', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/products', { method: 'GET' }));
 };
 
 export const autoCategorizeProductServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/products/auto-categorize', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/products', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
 };

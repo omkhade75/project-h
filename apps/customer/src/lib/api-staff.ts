@@ -6,26 +6,28 @@ const handleResponse = (result: any, fallback: any = []) => {
 };
 
 export const getStaffServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/staff/list', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/staff', { method: 'GET' }));
 };
 
 export const addStaffServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/staff/add', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/staff', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const editStaffServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/staff/edit', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = payload?.id || payload?.staffId;
+  return handleResponse(await fetchApi(`/api/staff/${id || ''}`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const archiveStaffServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/staff/archive', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = typeof payload === 'string' ? payload : (payload?.id || payload?.staffId);
+  return handleResponse(await fetchApi(`/api/staff/${id || ''}`, { method: 'DELETE' }));
 };
 
 export const updateStaffStatusServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/staff/update-status', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = payload?.id || payload?.staffId;
+  return handleResponse(await fetchApi(`/api/staff/${id || ''}`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };

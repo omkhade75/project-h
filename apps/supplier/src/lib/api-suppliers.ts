@@ -6,36 +6,40 @@ const handleResponse = (result: any, fallback: any = []) => {
 };
 
 export const getSuppliersServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/suppliers/list', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/suppliers', { method: 'GET' }));
 };
 
 export const addSupplierServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/suppliers/add', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/suppliers', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const editSupplierServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/suppliers/edit', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = payload?.id || payload?.supplierId;
+  return handleResponse(await fetchApi(`/api/suppliers/${id || ''}`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const archiveSupplierServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/suppliers/archive', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = typeof payload === 'string' ? payload : (payload?.id || payload?.supplierId);
+  return handleResponse(await fetchApi(`/api/suppliers/${id || ''}`, { method: 'DELETE' }));
 };
 
 export const getPurchaseOrdersServer = async (data?: any) => {
-  const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/suppliers/po/list', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/suppliers/purchase-orders', { method: 'GET' }));
 };
 
 export const createPurchaseOrderServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/suppliers/po/create', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  return handleResponse(await fetchApi('/api/suppliers/purchase-orders', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
 export const updatePurchaseOrderStatusServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  return handleResponse(await fetchApi('/api/suppliers/po/update-status', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
+  const id = payload?.id || payload?.poId;
+  return handleResponse(await fetchApi(`/api/suppliers/purchase-orders/${id || ''}/status`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
+
+export const getSuppliers = getSuppliersServer;
+export const getPurchaseOrders = getPurchaseOrdersServer;
