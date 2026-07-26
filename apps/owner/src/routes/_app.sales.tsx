@@ -115,16 +115,21 @@ function RouteComponent() {
       });
       const opts = await getProductOptionsServer(payload);
 
-      setTransactions(txs);
-      setProducts(prods);
-      setCustomers(custs);
-      setDepartments(opts.departments);
+      const safeTxs = Array.isArray(txs) ? txs : Array.isArray((txs as any)?.data) ? (txs as any).data : [];
+      const safeProds = Array.isArray(prods) ? prods : Array.isArray((prods as any)?.data) ? (prods as any).data : [];
+      const safeCusts = Array.isArray(custs) ? custs : Array.isArray((custs as any)?.data) ? (custs as any).data : [];
+      const safeDepts = Array.isArray(opts?.departments) ? opts.departments : [];
 
-      if (opts.departments.length > 0) {
-        setFormDepartmentId(opts.departments[0].id);
+      setTransactions(safeTxs);
+      setProducts(safeProds);
+      setCustomers(safeCusts);
+      setDepartments(safeDepts);
+
+      if (safeDepts.length > 0) {
+        setFormDepartmentId(safeDepts[0].id);
       }
-      if (prods.length > 0) {
-        setSelectedItemSku(prods[0].id);
+      if (safeProds.length > 0) {
+        setSelectedItemSku(safeProds[0].id);
       }
     } catch (e) {
       toast.error("Failed to load sales database records.");
@@ -193,28 +198,33 @@ function RouteComponent() {
     }
   };
 
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const safeDepartments = Array.isArray(departments) ? departments : [];
+
   // KPIs
-  const totalRevenue = transactions.reduce((sum, t) => sum + t.total, 0);
-  const totalDiscount = transactions.reduce((sum, t) => sum + t.discount, 0);
-  const totalCost = transactions.reduce((sum, t) => {
-    // calculate COGS from transaction items cost snapshot
-    const itemCogs = t.items.reduce((itemSum, item) => {
-      // Find matching cost snapshot or product cost
-      const prod = products.find((p) => p.id === item.productId);
-      const cost = prod ? prod.cost : item.price * 0.6;
-      return itemSum + item.quantity * cost;
+  const totalRevenue = safeTransactions.reduce((sum, t) => sum + (t?.total || 0), 0);
+  const totalDiscount = safeTransactions.reduce((sum, t) => sum + (t?.discount || 0), 0);
+  const totalCost = safeTransactions.reduce((sum, t) => {
+    const items = Array.isArray(t?.items) ? t.items : [];
+    const itemCogs = items.reduce((itemSum, item) => {
+      const prod = safeProducts.find((p) => p?.id === item?.productId);
+      const cost = prod ? prod.cost : (item?.price || 0) * 0.6;
+      return itemSum + (item?.quantity || 0) * cost;
     }, 0);
     return sum + itemCogs;
   }, 0);
   const totalProfit = totalRevenue - totalCost - totalDiscount;
 
-  const totalOrders = transactions.length;
+  const totalOrders = safeTransactions.length;
   const avgOrderVal = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
 
   // Department splits
   const deptRevenueMap: Record<string, number> = {};
-  transactions.forEach((t) => {
-    deptRevenueMap[t.dept] = (deptRevenueMap[t.dept] || 0) + t.total;
+  safeTransactions.forEach((t) => {
+    const deptName = t?.dept || "General";
+    deptRevenueMap[deptName] = (deptRevenueMap[deptName] || 0) + (t?.total || 0);
   });
 
   const departmentRevenue = Object.keys(deptRevenueMap)
@@ -226,8 +236,9 @@ function RouteComponent() {
 
   // Payment splits
   const payMap: Record<string, number> = {};
-  transactions.forEach((t) => {
-    payMap[t.payment] = (payMap[t.payment] || 0) + 1;
+  safeTransactions.forEach((t) => {
+    const payMethod = t?.payment || "UPI";
+    payMap[payMethod] = (payMap[payMethod] || 0) + 1;
   });
   const paymentSplit = Object.keys(payMap).map((name) => ({
     name,
@@ -236,8 +247,9 @@ function RouteComponent() {
 
   // Group by date for 30-day Area chart (using completed transaction totals)
   const dateRevenueMap: Record<string, number> = {};
-  transactions.forEach((t) => {
-    dateRevenueMap[t.date] = (dateRevenueMap[t.date] || 0) + t.total;
+  safeTransactions.forEach((t) => {
+    const d = t?.date || "";
+    if (d) dateRevenueMap[d] = (dateRevenueMap[d] || 0) + (t?.total || 0);
   });
 
   // Rebuild 30 day timeseries data dynamically

@@ -111,8 +111,9 @@ function MarketIntelligencePage() {
   const [investing, setInvesting] = useState(false);
   const [liquidatingId, setLiquidatingId] = useState<string | null>(null);
 
-  const activeAsset = commodities.find((c) => c.symbol === selectedAsset) || commodities[0];
-  const totalCost = activeAsset.price * (Number(investQty) || 0);
+  const safeCommodities = Array.isArray(commodities) && commodities.length > 0 ? commodities : DEFAULT_COMMODITIES;
+  const activeAsset = safeCommodities.find((c) => c?.symbol === selectedAsset) || safeCommodities[0] || DEFAULT_COMMODITIES[0];
+  const totalCost = (activeAsset?.price || 0) * (Number(investQty) || 0);
 
   const loadData = async () => {
     try {
@@ -124,20 +125,23 @@ function MarketIntelligencePage() {
 
       // 2. Load investment holdings
       const invs = await getInvestmentsServer({});
-      setHoldings(invs);
+      setHoldings(Array.isArray(invs) ? invs : []);
 
       // 3. Load live market data
       try {
-        const liveData = (await getLiveMarketDataServer({})) as typeof DEFAULT_COMMODITIES;
-        setCommodities(liveData);
+        const liveData = (await getLiveMarketDataServer({})) as any;
+        if (Array.isArray(liveData) && liveData.length > 0 && liveData[0]?.price) {
+          setCommodities(liveData);
+        }
       } catch (err) {
-        console.error("Failed to load live market data, falling back to mock data", err);
+        console.error("Failed to load live market data, falling back to default commodities", err);
       }
 
       // Calculate portfolio total value (only active ones)
-      const activeVal = invs
-        .filter((inv) => inv.status === "Active")
-        .reduce((sum, inv) => sum + Number(inv.totalCost), 0);
+      const safeInvs = Array.isArray(invs) ? invs : [];
+      const activeVal = safeInvs
+        .filter((inv) => inv?.status === "Active")
+        .reduce((sum, inv) => sum + Number(inv?.totalCost || 0), 0);
       setPortfolioValue(activeVal);
     } catch (err) {
       console.error(err);
