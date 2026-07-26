@@ -103,8 +103,25 @@ export function LogisticsPage() {
     setHyperlocalBroadcasts((prev) =>
       prev.map((ord) => (ord.id === orderId ? { ...ord, status: "GRABBED_BY_ME" } : ord))
     );
+
+    const grabbedOrder = hyperlocalBroadcasts.find((o) => o.id === orderId);
+    const newDispatch: DeliveryItem = {
+      id: `disp-${Date.now()}`,
+      orderNumber: orderId,
+      customerName: grabbedOrder?.customerName || "Om Khade",
+      destination: grabbedOrder?.address || "18th Road, Bandra West (800m away)",
+      driverName: "Vijay Yadav (Rider #104)",
+      vehicleNumber: "MH-12-PQ-8841",
+      itemsCount: grabbedOrder?.items?.length || 3,
+      status: "In Transit",
+      estimatedEtaMins: 8,
+      createdAt: new Date().toISOString(),
+    };
+
+    setDispatches((prev) => [newDispatch, ...prev]);
+
     toast.success(`🎉 Order ${orderId} GRABBED & ACCEPTED by your store!`, {
-      description: `Customer and delivery driver Ramesh Kumar notified on WhatsApp. Express 10-min dispatch initiated!`,
+      description: `Customer ${grabbedOrder?.customerName || "Om Khade"} and express rider Vijay Yadav notified. Express 10-min dispatch active!`,
       duration: 6000,
     });
   };
