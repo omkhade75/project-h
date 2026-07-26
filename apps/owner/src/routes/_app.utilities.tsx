@@ -56,8 +56,8 @@ function Utilities() {
 
   const isGrandSquare = user?.workspaceId === "grandsquare-mall";
 
-  const [electricityToday, setElectricityToday] = useState(isGrandSquare ? 12450 : 0);
-  const [waterToday, setWaterToday] = useState(isGrandSquare ? 8120 : 0);
+  const [electricityToday, setElectricityToday] = useState(0);
+  const [waterToday, setWaterToday] = useState(0);
   const [dbAnomaly, setDbAnomaly] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -86,10 +86,10 @@ function Utilities() {
     load();
   }, [user, activeDate, utilities]);
 
-  const isMay5 = isGrandSquare && (activeDate === "2026-05-05" || dbAnomaly);
+  const isMay5 = dbAnomaly;
 
   const hourly = useMemo(() => {
-    const hasData = isGrandSquare || utilities.length > 0;
+    const hasData = utilities.length > 0;
     return Array.from({ length: 24 }, (_, h) => {
       const isAnomalyHour = h >= 1 && h <= 4;
       const normal = hasData ? (h < 9 ? 8 : h < 22 ? 24 : 10) : 0;
@@ -100,7 +100,7 @@ function Utilities() {
         actual: Math.round(actual * 10) / 10,
       };
     });
-  }, [isMay5, isGrandSquare, utilities]);
+  }, [isMay5, utilities]);
 
   const monthly = useMemo(() => {
     return Array.from({ length: 3 }, (_, i) => {
@@ -113,15 +113,11 @@ function Utilities() {
       );
       return {
         m: ["March", "April", "May"][i],
-        electricity: Math.round(
-          (elecReadings.reduce((sum, u) => sum + (u.consumption || 0), 0) || (isGrandSquare ? 360000 : 0)) / 1000,
-        ), // kWh in thousands
-        water: Math.round(
-          (waterReadings.reduce((sum, u) => sum + (u.consumption || 0), 0) || (isGrandSquare ? 240000 : 0)) / 1000,
-        ), // Liters in thousands
+        electricity: Math.round(elecReadings.reduce((sum, u) => sum + (u.consumption || 0), 0) / 1000),
+        water: Math.round(waterReadings.reduce((sum, u) => sum + (u.consumption || 0), 0) / 1000),
       };
     });
-  }, [utilities, isGrandSquare]);
+  }, [utilities]);
 
   const handleAddReading = async (e: React.FormEvent) => {
     e.preventDefault();
