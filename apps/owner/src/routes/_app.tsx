@@ -1007,11 +1007,68 @@ function AppShell() {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1">
-          <div className="w-full p-4 sm:p-6 lg:p-8">
+        <main className="min-w-0 flex-1 pb-24 md:pb-8">
+          <div className="w-full p-3 sm:p-6 lg:p-8">
             <Outlet />
           </div>
         </main>
+
+        {/* Mobile Floating Bottom Navigation Dock */}
+        <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-sidebar/95 backdrop-blur-xl border-t border-hairline px-2 py-1.5 flex items-center justify-around shadow-2xl mobile-bottom-dock">
+          <Link
+            to="/command-center"
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+              routerState.location.pathname === "/command-center" && "text-primary font-bold bg-primary/10"
+            )}
+          >
+            <LayoutDashboard className="h-4.5 w-4.5" />
+            <span className="text-[10px] font-medium">Home</span>
+          </Link>
+
+          <Link
+            to="/products"
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+              routerState.location.pathname === "/products" && "text-primary font-bold bg-primary/10"
+            )}
+          >
+            <Package className="h-4.5 w-4.5" />
+            <span className="text-[10px] font-medium">Products</span>
+          </Link>
+
+          <Link
+            to="/billing"
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+              routerState.location.pathname === "/billing" && "text-primary font-bold bg-primary/10"
+            )}
+          >
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30">
+              <ShoppingCart className="h-4 w-4" />
+            </div>
+            <span className="text-[10px] font-medium text-primary">POS</span>
+          </Link>
+
+          <Link
+            to="/customers"
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+              routerState.location.pathname === "/customers" && "text-primary font-bold bg-primary/10"
+            )}
+          >
+            <Users className="h-4.5 w-4.5" />
+            <span className="text-[10px] font-medium">Customers</span>
+          </Link>
+
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95"
+          >
+            <Menu className="h-4.5 w-4.5" />
+            <span className="text-[10px] font-medium">Menu</span>
+          </button>
+        </nav>
 
         {/* Global Details Drawers */}
         <Product360Drawer

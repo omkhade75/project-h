@@ -340,3 +340,31 @@ header.glass {
   -webkit-backdrop-filter: blur(24px) !important;
   border-color: oklch(1 0 0 / 10%) !important;
 }
+
+/* Mobile Responsiveness & Touch Enhancements */
+@media (max-width: 767px) {
+  html, body {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Safe Area Inset Padding for Mobile Notch / Bottom Bar */
+  .mobile-bottom-dock {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  /* Smooth Mobile Touch Horizontal Scroll */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile Tap Animations */
+  button:active, a:active {
+    transform: scale(0.97);
+  }
+}
+
