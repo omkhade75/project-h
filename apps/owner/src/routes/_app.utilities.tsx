@@ -92,8 +92,8 @@ function Utilities() {
     const hasData = isGrandSquare || utilities.length > 0;
     return Array.from({ length: 24 }, (_, h) => {
       const isAnomalyHour = h >= 1 && h <= 4;
-      const normal = hasData ? (h < 9 ? 8 : h < 22 ? 24 + Math.sin(h / 3) * 6 : 10) : 0;
-      const actual = hasData ? (normal + (isAnomalyHour && isMay5 ? 14 : (Math.random() - 0.5) * 1.5)) : 0;
+      const normal = hasData ? (h < 9 ? 8 : h < 22 ? 24 : 10) : 0;
+      const actual = hasData ? (normal + (isAnomalyHour && isMay5 ? 14 : 0)) : 0;
       return {
         h: `${h}:00`,
         normal: Math.round(normal * 10) / 10,

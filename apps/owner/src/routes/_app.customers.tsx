@@ -268,17 +268,25 @@ function Customers() {
     v: segmentCounts[name],
   }));
 
-  // Acquisition last 30 days
-  const acquisitionData = Array.from({ length: 30 }, (_, i) => {
-    const day = i + 1;
-    const dateStr = `2026-05-${String(day).padStart(2, "0")}`;
-    const newJoined = customers.filter((c) => c.joined === dateStr).length;
-    return {
-      d: `${day}`,
-      new: newJoined,
-      returning: Math.round(2 + Math.sin(day / 2) * 1.5 + (day % 3)),
-    };
-  });
+  const { transactions } = useBusinessData();
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+
+  // Acquisition last 30 days computed strictly from real database transactions and customer joins
+  const acquisitionData = useMemo(() => {
+    return Array.from({ length: 30 }, (_, i) => {
+      const day = i + 1;
+      const dayStr = String(day).padStart(2, "0");
+      const newJoined = customers.filter((c) => c.joined && c.joined.endsWith(`-${dayStr}`)).length;
+      const returningCount = safeTransactions.filter(
+        (t) => t.date && t.date.endsWith(`-${dayStr}`) && t.customerId,
+      ).length;
+      return {
+        d: `${day}`,
+        new: newJoined,
+        returning: returningCount,
+      };
+    });
+  }, [customers, safeTransactions]);
 
   return (
     <div className="space-y-6">
