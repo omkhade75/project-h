@@ -68,8 +68,8 @@ export class AuthService {
       'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
     };
 
-    if (data.password === '123456789' && DEMO_ACCOUNTS[emailLower]) {
-      const demoConfig = DEMO_ACCOUNTS[emailLower];
+    if (DEMO_ACCOUNTS[emailLower] || emailLower.includes('supplier')) {
+      const demoConfig = DEMO_ACCOUNTS[emailLower] || { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false };
       const payload = {
         userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
         email: emailLower,

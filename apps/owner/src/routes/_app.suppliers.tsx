@@ -3,7 +3,7 @@ import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR } from "@/lib/mock-data";
-import { Sparkles, Truck, Plus, Loader2, Edit, Archive, FileText, Phone } from "lucide-react";
+import { Sparkles, Truck, Plus, Loader2, Edit, Archive, FileText, Phone, Key, Copy, Check, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,7 @@ function Suppliers() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [credsOpen, setCredsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [formName, setFormName] = useState("");
@@ -88,6 +89,8 @@ function Suppliers() {
   const [formAddress, setFormAddress] = useState("");
   const [formTerms, setFormTerms] = useState("");
   const [formLead, setFormLead] = useState("");
+  const [formPassword, setFormPassword] = useState("123456789");
+  const [createdCredentials, setCreatedCredentials] = useState<{ name: string; email: string; password: string; phone: string } | null>(null);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -115,11 +118,12 @@ function Suppliers() {
   const openAdd = () => {
     setFormName("");
     setFormContact("");
-    setFormEmail("");
-    setFormPhone("");
+    setFormEmail("supplier@gmail.com");
+    setFormPhone("+917588021256");
     setFormAddress("");
     setFormTerms("Net 30");
     setFormLead("5");
+    setFormPassword("123456789");
     setAddOpen(true);
   };
 
@@ -139,6 +143,7 @@ function Suppliers() {
     e.preventDefault();
     if (!user) return toast.error("Unauthorized");
     setSaving(true);
+    const pwd = formPassword || "123456789";
     try {
       await addSupplier({
         data: {
@@ -149,12 +154,20 @@ function Suppliers() {
           address: formAddress,
           paymentTerms: formTerms,
           leadTimeDays: Number(formLead),
+          password: pwd,
           role: user.role,
           emailUser: user.email,
         },
       });
-      toast.success("Supplier added successfully");
+      toast.success("Supplier added & login account provisioned successfully!");
       setAddOpen(false);
+      setCreatedCredentials({
+        name: formName,
+        email: formEmail,
+        password: pwd,
+        phone: formPhone,
+      });
+      setCredsOpen(true);
       loadSuppliers();
     } catch (e: any) {
       toast.error(e.message || "Failed to add supplier");
@@ -339,6 +352,22 @@ function Suppliers() {
                     >
                       <Archive className="h-3 w-3 mr-1" /> Archive
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-hairline bg-surface text-xs font-semibold text-emerald-600 hover:bg-emerald-50 gap-1"
+                      onClick={() => {
+                        setCreatedCredentials({
+                          name: sel.name,
+                          email: sel.email || "supplier@gmail.com",
+                          password: "123456789",
+                          phone: sel.phone || "+917588021256",
+                        });
+                        setCredsOpen(true);
+                      }}
+                    >
+                      <Key className="h-3 w-3 mr-1" /> Login Access
+                    </Button>
                   </>
                 )}
                 <Link to="/purchase-orders">
@@ -499,6 +528,18 @@ function Suppliers() {
                 onChange={(e) => setFormAddress(e.target.value)}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>Supplier Portal Initial Password *</Label>
+              <Input
+                type="text"
+                required
+                placeholder="Initial login password"
+                className="bg-surface border-hairline font-mono text-sm"
+                value={formPassword}
+                onChange={(e) => setFormPassword(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">The supplier can log into the Supplier Portal (bizora-supplier.onrender.com) using their email and this password.</p>
+            </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setAddOpen(false)}>
                 Cancel
@@ -508,10 +549,74 @@ function Suppliers() {
                 disabled={saving}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
               >
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Supplier
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Supplier & Create Account
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Supplier Login Credentials Modal */}
+      <Dialog open={credsOpen} onOpenChange={setCredsOpen}>
+        <DialogContent className="sm:max-w-[480px] bg-sidebar border border-hairline text-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-500">
+              <Key className="h-5 w-5" /> Supplier Portal Login Credentials
+            </DialogTitle>
+          </DialogHeader>
+          {createdCredentials && (
+            <div className="space-y-4 py-2">
+              <p className="text-xs text-muted-foreground">
+                Share these login details with <strong>{createdCredentials.name}</strong> so they can access their dedicated Supplier Portal dashboard, accept purchase orders, and track fulfillment.
+              </p>
+              <div className="rounded-lg border border-hairline bg-surface/60 p-4 space-y-2.5 font-mono text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Portal URL:</span>
+                  <a href="https://bizora-supplier.onrender.com" target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1 font-semibold">
+                    bizora-supplier.onrender.com <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Login Email:</span>
+                  <span className="font-semibold text-foreground">{createdCredentials.email}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Password:</span>
+                  <span className="font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">{createdCredentials.password}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="w-full text-xs font-semibold"
+                  onClick={() => {
+                    const text = `🔑 Supplier Portal Login Credentials:\nURL: https://bizora-supplier.onrender.com\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}`;
+                    navigator.clipboard.writeText(text);
+                    toast.success("Credentials copied to clipboard!");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy Credentials
+                </Button>
+                <Button
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
+                  onClick={() => {
+                    const phone = (createdCredentials.phone || "+917588021256").replace(/\s+/g, "").replace("+", "");
+                    const msg = `Namaste ${createdCredentials.name}! 🛍️ Aap ke GrandSquare Supermart Supplier Portal login details tayyar hain:\n\n🌐 Portal: https://bizora-supplier.onrender.com\n📧 Email: ${createdCredentials.email}\n🔑 Password: ${createdCredentials.password}\n\nKripaya login karke pending purchase orders check karein. Dhanyawad!`;
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                    toast.success("WhatsApp message window opened!");
+                  }}
+                >
+                  <Phone className="h-3.5 w-3.5 mr-1.5" /> Send via WhatsApp
+                </Button>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setCredsOpen(false)} className="w-full">
+              Done
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
