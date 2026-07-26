@@ -150,54 +150,49 @@ Also output your response as valid JSON matching the following contract:
 
     let response: AIResponseContract;
 
+    const dynamicActions: any[] = [];
+    if (lowStockProducts.length > 0) {
+      dynamicActions.push({
+        title: `Reorder Low-Stock Items (${lowStockProducts.length} SKUs)`,
+        description: `Generate draft Purchase Orders for items below safety threshold.`,
+        priority: "high",
+        estimatedImpact: "Prevents stockouts on top SKUs",
+        actionType: "CREATE_PO",
+        entityId: lowStockProducts[0]?.id || "reorder"
+      });
+    }
+    if (activeAnomalies.length > 0) {
+      dynamicActions.push({
+        title: `Investigate Anomaly (${activeAnomalies[0]?.metric || "Telemetry Spike"})`,
+        description: activeAnomalies[0]?.cause || "Inspect operational telemetry spike.",
+        priority: "medium",
+        estimatedImpact: "Prevents cost leaks",
+        actionType: "INVESTIGATE_ANOMALY",
+        entityId: activeAnomalies[0]?.id || "anomaly"
+      });
+    }
+
     if (isProfitQuery) {
       response = {
-        answer: `### 📊 Profitability & Margin Analysis Report\n\n` +
-          `Net profit margins were compressed over the recent period despite a **+15.6% spike in gross sales order volume**. The AI engine diagnosed three primary contributing factors:\n\n` +
-          `1. **Overnight HVAC Utility Surge (Zone B)**: Electricity draw spiked **+163%** between 1:00 AM and 4:00 AM due to a compressor valve leak. This generates an unbudgeted overhead of **₹1,280 daily** (equating to **₹38,400 monthly** in cash leakage).\n` +
-          `2. **Markdown Margin Compression**: 15%–20% promotional discounts across Beauty & Fashion expanded volume but compressed average unit profit margins by **5%**.\n` +
-          `3. **Sony India Lead Time Delays**: Average lead times increased to **7.4 days** (vs 4.6 days industry benchmark), causing out-of-stock events on high-margin electronics and shifting customer baskets toward lower-margin grocery items.`,
-        summary: `Gross revenue rose to ₹${grossRevenue || 142850}, but net profit was compressed by HVAC utility leaks and markdown margins.`,
+        answer: `### 📊 Profitability & Margin Analysis Report\n\nNet profit margins were analyzed across recent transactions. Gross sales revenue stands at **₹${grossRevenue.toLocaleString('en-IN')}** across **${recentTransactionsCount} orders**.`,
+        summary: `Gross sales ₹${grossRevenue.toLocaleString('en-IN')} across ${recentTransactionsCount} orders.`,
         evidence: [
-          { label: "Gross Sales Revenue", value: `₹${grossRevenue || 142850}` },
-          { label: "HVAC Zone B Excess Cost", value: "₹1,280/day (₹38.4K/mo)" },
-          { label: "Sony India SLA Lead Time", value: "7.4 days vs 4.6 days std" },
-          { label: "Markdown Margin Impact", value: "-5% Unit Margin" }
+          { label: "Gross Sales Revenue", value: `₹${grossRevenue.toLocaleString('en-IN')}` },
+          { label: "Orders Processed", value: `${recentTransactionsCount}` },
+          { label: "Low Stock SKUs", value: `${lowStockProducts.length}` }
         ],
         reasoning: [
-          "Correlated hourly HVAC compressor power draw logs with store utility bills.",
-          "Evaluated category profit margins across Grocery, Electronics, Beauty, and Fashion.",
-        const dynamicActions: any[] = [];
-        if (lowStockProducts.length > 0) {
-          dynamicActions.push({
-            title: `Reorder Low-Stock Items (${lowStockProducts.length} SKUs)`,
-            description: `Generate draft Purchase Orders for items below safety threshold.`,
-            priority: "high",
-            estimatedImpact: "Prevents stockouts on top SKUs",
-            actionType: "CREATE_PO",
-            entityId: lowStockProducts[0]?.id || "reorder"
-          });
-        }
-        if (activeAnomalies.length > 0) {
-          dynamicActions.push({
-            title: `Investigate Anomaly (${activeAnomalies[0]?.metric || "Telemetry Spike"})`,
-            description: activeAnomalies[0]?.cause || "Inspect operational telemetry spike.",
-            priority: "medium",
-            estimatedImpact: "Prevents cost leaks",
-            actionType: "INVESTIGATE_ANOMALY",
-            entityId: activeAnomalies[0]?.id || "anomaly"
-          });
-        }
-
+          "Evaluated real-time category profit margins and store utility telemetry."
+        ],
         recommendedActions: dynamicActions,
         risks: lowStockProducts.length > 0 ? [{ title: `${lowStockProducts.length} SKUs nearing depletion`, severity: "high" }] : [],
         confidence: 0.98
       };
     } else if (isStockQuery) {
-      const dynamicActions: any[] = [];
+      const stockActions: any[] = [];
       if (lowStockProducts.length > 0) {
         lowStockProducts.forEach((p: any) => {
-          dynamicActions.push({
+          stockActions.push({
             title: `Reorder ${p.name || "Product"}`,
             description: `Generate PO for ${p.supplier?.name || "Supplier"} to replenish safety stock.`,
             priority: "high",
@@ -221,15 +216,15 @@ Also output your response as valid JSON matching the following contract:
         reasoning: [
           "Calculated daily sales velocity against current stock levels from Prisma database."
         ],
-        recommendedActions: dynamicActions,
+        recommendedActions: stockActions,
         risks: lowStockProducts.length > 0 ? [{ title: "Stockout on depleted inventory", severity: "high" }] : [],
         confidence: 0.96
       };
     } else if (isEnergyQuery) {
-      const dynamicActions: any[] = [];
+      const energyActions: any[] = [];
       if (activeAnomalies.length > 0) {
         activeAnomalies.forEach((a: any) => {
-          dynamicActions.push({
+          energyActions.push({
             title: `Resolve ${a.metric || "Grid Anomaly"}`,
             description: a.cause || "Inspect telemetry anomaly.",
             priority: "high",
@@ -251,31 +246,11 @@ Also output your response as valid JSON matching the following contract:
         reasoning: [
           "Monitored real-time telemetry meters against baseline thresholds."
         ],
-        recommendedActions: dynamicActions,
+        recommendedActions: energyActions,
         risks: activeAnomalies.length > 0 ? [{ title: "Ongoing excess utility overhead", severity: "high" }] : [],
         confidence: 0.97
       };
     } else {
-      const dynamicActions: any[] = [];
-      if (lowStockProducts.length > 0) {
-        dynamicActions.push({
-          title: `Reorder Low-Stock Items (${lowStockProducts.length} SKUs)`,
-          description: `Review and approve draft POs for low stock items.`,
-          priority: "high",
-          actionType: "CREATE_PO",
-          entityId: lowStockProducts[0]?.id || "reorder"
-        });
-      }
-      if (activeAnomalies.length > 0) {
-        dynamicActions.push({
-          title: `Resolve Operational Anomaly`,
-          description: activeAnomalies[0]?.cause || "Inspect active telemetry anomaly.",
-          priority: "medium",
-          actionType: "INVESTIGATE_ANOMALY",
-          entityId: activeAnomalies[0]?.id || "anomaly"
-        });
-      }
-
       response = {
         answer: `### 🏢 OmniMind Executive Health & Operational Summary\n\nA full telemetry audit of your store operations highlights healthy performance:\n\n` +
           `- **Sales Volume**: **${recentTransactionsCount} orders** processed generating **₹${grossRevenue.toLocaleString('en-IN')} gross sales**.\n` +
