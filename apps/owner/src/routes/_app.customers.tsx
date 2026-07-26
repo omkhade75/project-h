@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
 import { useAuth } from "@/lib/auth-context";
@@ -11,7 +11,7 @@ import {
   archiveCustomerServer,
   type CustomerListItem,
 } from "@/lib/server-customers";
-import { initiateVapiCallServer } from "@/lib/api-vapi";
+import Vapi from "@vapi-ai/web";
 import {
   Bar,
   BarChart,
@@ -44,8 +44,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Archive, Loader2, PhoneCall, Sparkles, Send } from "lucide-react";
+import { Plus, Search, Edit, Archive, Loader2, PhoneCall, Sparkles, Send, Phone, PhoneOff, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
+
+// Vapi Web SDK public key — used for browser-based WebRTC voice calls
+const VAPI_PUBLIC_KEY = "e3322c27-c9ac-45cb-9c58-e49c8f423a1f";
 
 export const Route = createFileRoute("/_app/customers")({
   head: () => ({
@@ -108,6 +111,35 @@ export function CustomersPage() {
   const [vapiPhone, setVapiPhone] = useState("+91 98765 43210");
   const [vapiScript, setVapiScript] = useState("Namaste Om Khade! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.");
   const [vapiDialing, setVapiDialing] = useState(false);
+  const [vapiCallStatus, setVapiCallStatus] = useState<"idle" | "connecting" | "active" | "ended">("idle");
+  const [vapiCallDuration, setVapiCallDuration] = useState(0);
+  const vapiRef = useRef<Vapi | null>(null);
+  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup Vapi on unmount
+  useEffect(() => {
+    return () => {
+      if (vapiRef.current) {
+        try { vapiRef.current.stop(); } catch (e) {}
+      }
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+    };
+  }, []);
+
+  const stopVapiCall = useCallback(() => {
+    if (vapiRef.current) {
+      try { vapiRef.current.stop(); } catch (e) {}
+      vapiRef.current = null;
+    }
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+    }
+    setVapiCallStatus("ended");
+    setVapiDialing(false);
+    toast.info("📞 Voice call ended.");
+    setTimeout(() => setVapiCallStatus("idle"), 3000);
+  }, []);
 
   // Form state
   const [formFirstName, setFormFirstName] = useState("");
@@ -240,7 +272,7 @@ export function CustomersPage() {
     }
   };
 
-  // Dispatch Real Outbound Telephony + Web Audio Voice Call
+  // Initiate REAL voice call — uses tel: protocol to open device dialer
   const handleInitiateVapiCall = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = vapiPhone.trim().replace(/\s+/g, "");
@@ -250,45 +282,84 @@ export function CustomersPage() {
     }
 
     setVapiDialing(true);
+    setVapiCallStatus("connecting");
 
-    // 1. Play real Web Audio AI Voice Assistant in browser immediately
+    // METHOD 1: Open the device's native phone dialer using tel: protocol
+    // This works on all mobile phones and desktop systems with a telephony app
+    const telLink = document.createElement("a");
+    telLink.href = `tel:${cleanPhone}`;
+    telLink.style.display = "none";
+    document.body.appendChild(telLink);
+    telLink.click();
+    document.body.removeChild(telLink);
+
+    // METHOD 2: Start Vapi Web SDK browser voice AI call (WebRTC)
+    // This creates a real 2-way voice conversation with the AI in the browser
     try {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(
-          vapiScript || `Namaste ${vapiName || "Customer"}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`
-        );
-        utterance.lang = "hi-IN";
-        utterance.rate = 0.95;
-        window.speechSynthesis.speak(utterance);
+      if (vapiRef.current) {
+        try { vapiRef.current.stop(); } catch (e) {}
       }
-    } catch (e) {}
 
-    // 2. Dispatch Vapi AI Outbound Call via Backend REST API
-    try {
-      await initiateVapiCallServer({
-        data: {
-          phoneNumber: cleanPhone,
-          recipientName: vapiName.trim() || "Customer",
-          messageContext: vapiScript,
+      const vapi = new Vapi(VAPI_PUBLIC_KEY);
+      vapiRef.current = vapi;
+
+      vapi.on("call-start", () => {
+        setVapiCallStatus("active");
+        setVapiCallDuration(0);
+        callTimerRef.current = setInterval(() => {
+          setVapiCallDuration((d) => d + 1);
+        }, 1000);
+        toast.success(`📞 LIVE AI VOICE CALL CONNECTED!`, {
+          description: `Speaking with AI Voice Agent for ${vapiName}. Talk through your microphone!`,
+          duration: 5000,
+        });
+      });
+
+      vapi.on("call-end", () => {
+        stopVapiCall();
+      });
+
+      vapi.on("error", (err) => {
+        console.error("[Vapi SDK Error]:", err);
+        setVapiCallStatus("ended");
+        setVapiDialing(false);
+        if (callTimerRef.current) clearInterval(callTimerRef.current);
+      });
+
+      // Start the Vapi voice assistant call in-browser via WebRTC
+      await vapi.start({
+        model: {
+          provider: "openai",
+          model: "gpt-4o-mini",
+          temperature: 0.4,
+          messages: [
+            {
+              role: "system",
+              content: `You are Bizora AI Voice Assistant for GrandSquare Supermart. You speak fluent Hindi and Hinglish. You are calling customer ${vapiName} (phone: ${cleanPhone}). Your task: ${vapiScript}. Be polite, use "Namaste", "Ji", "Dhanyawad". Keep responses brief (1-2 sentences).`,
+            },
+          ],
         },
+        voice: {
+          provider: "11labs",
+          voiceId: "21m00Tcm4TlvDq8ikWAM",
+        },
+        firstMessage: vapiScript || `Namaste ${vapiName}! Main Bizora AI Voice Assistant bol raha hoon. GrandSquare Supermart se aap ke liye ek special offer hai.`,
+        name: `Call to ${vapiName}`,
       });
 
-      toast.success(`📞 LIVE VAPI AI VOICE CALL CONNECTED!`, {
-        description: `Vapi Voice Agent is dialing ${cleanPhone} (${vapiName}). Web audio voice assistant active!`,
-        duration: 7000,
+      toast.success(`📞 DIALING ${cleanPhone}...`, {
+        description: `Phone dialer opened + Browser AI Voice Agent starting for ${vapiName}. Allow microphone access!`,
+        duration: 5000,
       });
-
-      // 3. Open tel: protocol link to trigger mobile/PC phone dialer
-      window.location.href = `tel:${cleanPhone}`;
-      setVapiModalOpen(false);
     } catch (err: any) {
-      toast.success(`📞 VAPI AI CALL DISPATCHED TO ${cleanPhone}!`, {
-        description: `Voice Agent assistant dialing ${cleanPhone}.`,
+      console.error("[Vapi Web SDK Error]:", err);
+      // Even if Vapi SDK fails, the tel: link already triggered the phone dialer
+      toast.success(`📞 PHONE DIALER OPENED FOR ${cleanPhone}!`, {
+        description: `Native phone dialer opened for ${vapiName}. Complete the call from your device!`,
         duration: 6000,
       });
-      window.location.href = `tel:${cleanPhone}`;
-      setVapiModalOpen(false);
+      setVapiCallStatus("ended");
+      setTimeout(() => setVapiCallStatus("idle"), 3000);
     } finally {
       setVapiDialing(false);
     }
@@ -639,61 +710,87 @@ export function CustomersPage() {
       </SectionCard>
 
       {/* Vapi Outbound AI Phone Call Modal */}
-      <Dialog open={vapiModalOpen} onOpenChange={setVapiModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      <Dialog open={vapiModalOpen} onOpenChange={(open) => { if (!open && vapiCallStatus === "active") return; setVapiModalOpen(open); }}>
+        <DialogContent className="sm:max-w-[460px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
-              <PhoneCall className="h-5 w-5 text-[#007AFF]" /> Initiate Live Vapi AI Phone Call
+              <PhoneCall className="h-5 w-5 text-[#007AFF]" />
+              {vapiCallStatus === "active" ? "🟢 Live AI Voice Call" : vapiCallStatus === "connecting" ? "Connecting..." : "Initiate Phone Call"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleInitiateVapiCall} className="space-y-4 py-2 text-xs">
-            <div className="space-y-1.5">
-              <Label htmlFor="vapi-name">Customer Name</Label>
-              <Input
-                id="vapi-name"
-                className="bg-surface border-hairline"
-                value={vapiName}
-                onChange={(e) => setVapiName(e.target.value)}
-                placeholder="e.g. Om Khade"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="vapi-phone">Target Phone Number (Mobile)</Label>
-              <Input
-                id="vapi-phone"
-                className="bg-surface border-hairline font-mono font-bold text-sm"
-                value={vapiPhone}
-                onChange={(e) => setVapiPhone(e.target.value)}
-                placeholder="+91 98765 43210"
-                required
-              />
-              <p className="text-[10px] text-muted-foreground">Enter full mobile number with country code (e.g. +919876543210).</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="vapi-script">Vapi AI Call Prompt & Offer Script</Label>
-              <Textarea
-                id="vapi-script"
-                className="bg-surface border-hairline text-xs"
-                rows={3}
-                value={vapiScript}
-                onChange={(e) => setVapiScript(e.target.value)}
-              />
-            </div>
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="ghost" onClick={() => setVapiModalOpen(false)}>
-                Cancel
-              </Button>
+
+          {vapiCallStatus === "active" ? (
+            <div className="py-4 space-y-4">
+              <div className="text-center space-y-2">
+                <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center animate-pulse">
+                  <Phone className="h-8 w-8 text-green-400" />
+                </div>
+                <p className="text-lg font-bold text-foreground">{vapiName}</p>
+                <p className="text-sm text-muted-foreground font-mono">{vapiPhone}</p>
+                <p className="text-xl font-mono font-bold text-green-400">
+                  {String(Math.floor(vapiCallDuration / 60)).padStart(2, "0")}:{String(vapiCallDuration % 60).padStart(2, "0")}
+                </p>
+                <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1.5">
+                  <Mic className="h-3 w-3 text-green-400" /> AI Voice Agent Active — Speak into your microphone
+                </p>
+              </div>
               <Button
-                type="submit"
-                disabled={vapiDialing}
-                className="bg-[#007AFF] hover:bg-[#0066CC] text-white font-bold flex items-center gap-2"
+                onClick={stopVapiCall}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold flex items-center justify-center gap-2 h-11"
               >
-                {vapiDialing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {vapiDialing ? "Dialing Vapi..." : "📞 DIAL PHONE NOW WITH VAPI AI"}
+                <PhoneOff className="h-5 w-5" /> END CALL
               </Button>
-            </DialogFooter>
-          </form>
+            </div>
+          ) : (
+            <form onSubmit={handleInitiateVapiCall} className="space-y-4 py-2 text-xs">
+              <div className="space-y-1.5">
+                <Label htmlFor="vapi-name">Customer Name</Label>
+                <Input
+                  id="vapi-name"
+                  className="bg-surface border-hairline"
+                  value={vapiName}
+                  onChange={(e) => setVapiName(e.target.value)}
+                  placeholder="e.g. Om Khade"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vapi-phone">Target Phone Number (Mobile)</Label>
+                <Input
+                  id="vapi-phone"
+                  className="bg-surface border-hairline font-mono font-bold text-sm"
+                  value={vapiPhone}
+                  onChange={(e) => setVapiPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  required
+                />
+                <p className="text-[10px] text-muted-foreground">Your device's phone dialer will open to call this number directly.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vapi-script">AI Voice Agent Script</Label>
+                <Textarea
+                  id="vapi-script"
+                  className="bg-surface border-hairline text-xs"
+                  rows={3}
+                  value={vapiScript}
+                  onChange={(e) => setVapiScript(e.target.value)}
+                />
+              </div>
+              <DialogFooter className="pt-2 flex-col gap-2 sm:flex-col">
+                <Button
+                  type="submit"
+                  disabled={vapiDialing}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold flex items-center justify-center gap-2 h-11"
+                >
+                  {vapiDialing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-5 w-5" />}
+                  {vapiDialing ? "Connecting..." : `📞 CALL ${vapiName.toUpperCase()} NOW`}
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  Opens your phone dialer + starts browser AI voice assistant. Allow microphone access when prompted.
+                </p>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
