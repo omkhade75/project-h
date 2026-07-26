@@ -195,36 +195,15 @@ export class CommsService {
       logId = log.id;
     } catch (dbErr) {}
 
-    // Dispatch real outbound phone call via Vapi REST API with Indian Hindi/Hinglish Voice Override
+    // Dispatch real outbound phone call via Vapi REST API
     try {
-      const firstGreeting = `Namaste ${recipientName}! Main Bizora AI Voice Assistant bol raha hu. ${contextMsg}`;
-
       const vapiPayload = {
         phoneNumberId: config.vapiPhoneId,
         assistantId: config.vapiAgentId,
         customer: {
           number: phone,
           name: recipientName,
-        },
-        assistantOverrides: {
-          firstMessage: firstGreeting,
-          model: {
-            provider: "openai",
-            model: "gpt-4o-mini",
-            temperature: 0.3,
-            systemPrompt: "You are Bizora AI, an extremely fast, polite, and articulate Indian AI Calling Assistant. You speak natural, fluent Hindi and Hinglish with an authentic Indian regional tone and polite Indian mannerisms (Namaste, Ji, Dhanyawad). Keep responses concise (1-2 sentences), professional, ultra-fast, and helpful for store owners, suppliers, and customers. Always respond instantly and speak warmly in clear Indian Hindi/Hinglish."
-          },
-          voice: {
-            provider: "azure",
-            voiceId: "hi-IN-SwaraNeural",
-          },
-          variableValues: {
-            messageContext: contextMsg,
-            recipientName: recipientName,
-            language: "Hindi / Hinglish",
-            accent: "Indian Regional",
-          },
-        },
+        }
       };
 
       const vapiResponse = await fetch("https://api.vapi.ai/call/phone", {

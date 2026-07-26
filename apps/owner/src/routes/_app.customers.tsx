@@ -284,20 +284,7 @@ export function CustomersPage() {
     setVapiDialing(true);
     setVapiCallStatus("connecting");
 
-    // 1. Play real Web Audio AI Voice Assistant in browser immediately (Fallback/Simultaneous)
-    try {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(
-          vapiScript || `Namaste ${vapiName || "Customer"}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`
-        );
-        utterance.lang = "hi-IN";
-        utterance.rate = 0.95;
-        window.speechSynthesis.speak(utterance);
-      }
-    } catch (e) {}
-
-    // 2. Dispatch Vapi AI Outbound Call via Backend REST API (This rings the actual phone!)
+    // 1. Dispatch Vapi AI Outbound Call via Backend REST API (This rings the actual phone!)
     try {
       // Use dynamic import for backend API call to avoid any caching issues
       const backendApi = await import("@/lib/api-vapi");
