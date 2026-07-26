@@ -299,24 +299,15 @@ export function CustomersPage() {
 
       console.log("Vapi Call Backend Response:", response);
 
-      toast.success(`📞 LIVE VAPI AI VOICE CALL DISPATCHED!`, {
-        description: `Vapi Voice Agent is dialing ${cleanPhone} (${vapiName})!`,
-        duration: 7000,
+      toast.success(`📞 OUTBOUND AI CALL DISPATCHED!`, {
+        description: `AI Voice Agent is calling ${cleanPhone} (${vapiName}) now. Check your phone!`,
+        duration: 8000,
       });
 
-      // Keep UI active to simulate the call in the browser
-      setVapiCallStatus("active");
-      setVapiCallDuration(0);
+      // Close modal cleanly after call is dispatched
+      setVapiCallStatus("idle");
+      setVapiModalOpen(false);
       if (callTimerRef.current) clearInterval(callTimerRef.current);
-      callTimerRef.current = setInterval(() => setVapiCallDuration((d) => d + 1), 1000);
-
-      // 3. Open tel: protocol link to trigger mobile/PC phone dialer simultaneously
-      const telLink = document.createElement("a");
-      telLink.href = `tel:${cleanPhone}`;
-      telLink.style.display = "none";
-      document.body.appendChild(telLink);
-      telLink.click();
-      document.body.removeChild(telLink);
 
     } catch (err: any) {
       console.error("Failed to dispatch Vapi backend call:", err);
@@ -691,29 +682,6 @@ export function CustomersPage() {
             </DialogTitle>
           </DialogHeader>
 
-          {vapiCallStatus === "active" ? (
-            <div className="py-4 space-y-4">
-              <div className="text-center space-y-2">
-                <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center animate-pulse">
-                  <Phone className="h-8 w-8 text-green-400" />
-                </div>
-                <p className="text-lg font-bold text-foreground">{vapiName}</p>
-                <p className="text-sm text-muted-foreground font-mono">{vapiPhone}</p>
-                <p className="text-xl font-mono font-bold text-green-400">
-                  {String(Math.floor(vapiCallDuration / 60)).padStart(2, "0")}:{String(vapiCallDuration % 60).padStart(2, "0")}
-                </p>
-                <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1.5">
-                  <Mic className="h-3 w-3 text-green-400" /> AI Voice Agent Active — Speak into your microphone
-                </p>
-              </div>
-              <Button
-                onClick={stopVapiCall}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold flex items-center justify-center gap-2 h-11"
-              >
-                <PhoneOff className="h-5 w-5" /> END CALL
-              </Button>
-            </div>
-          ) : (
             <form onSubmit={handleInitiateVapiCall} className="space-y-4 py-2 text-xs">
               <div className="space-y-1.5">
                 <Label htmlFor="vapi-name">Customer Name</Label>
@@ -736,10 +704,10 @@ export function CustomersPage() {
                   placeholder="+91 98765 43210"
                   required
                 />
-                <p className="text-[10px] text-muted-foreground">Your device's phone dialer will open to call this number directly.</p>
+                <p className="text-[10px] text-muted-foreground">Outbound AI call will be placed directly to this phone number.</p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="vapi-script">AI Voice Agent Script</Label>
+                <Label htmlFor="vapi-script">AI Voice Agent Script & Offer</Label>
                 <Textarea
                   id="vapi-script"
                   className="bg-surface border-hairline text-xs"
@@ -755,14 +723,13 @@ export function CustomersPage() {
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-bold flex items-center justify-center gap-2 h-11"
                 >
                   {vapiDialing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-5 w-5" />}
-                  {vapiDialing ? "Connecting..." : `📞 CALL ${vapiName.toUpperCase()} NOW`}
+                  {vapiDialing ? "Dispatching Call..." : `📞 CALL ${vapiName.toUpperCase()} NOW`}
                 </Button>
                 <p className="text-[10px] text-center text-muted-foreground">
-                  Opens your phone dialer + starts browser AI voice assistant. Allow microphone access when prompted.
+                  Dispatches an automated AI phone call to the customer's mobile line.
                 </p>
               </DialogFooter>
             </form>
-          )}
         </DialogContent>
       </Dialog>
 
