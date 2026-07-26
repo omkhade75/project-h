@@ -54,7 +54,7 @@ export function LogisticsPage() {
     {
       id: "ORD-9021",
       customerName: "Om Khade",
-      customerPhone: "+91 98765 43210",
+      customerPhone: "+91 75880 21256",
       address: "18th Road, Bandra West (800m away)",
       items: ["Fresh Amul Milk 1L", "Whole Wheat Bread", "Amul Butter 200g"],
       totalAmount: 340,

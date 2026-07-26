@@ -76,7 +76,7 @@ const defaultRegisteredCustomer: CustomerListItem = {
   firstName: "Om",
   lastName: "Khade",
   email: "khade8915@gmail.com",
-  phone: "+91 98765 43210",
+  phone: "+91 75880 21256",
   segment: "VIP Champions",
   loyaltyTier: "Gold",
   ordersCount: 14,
@@ -108,7 +108,7 @@ export function CustomersPage() {
   // Vapi Voice Call Modal State
   const [vapiModalOpen, setVapiModalOpen] = useState(false);
   const [vapiName, setVapiName] = useState("Om Khade");
-  const [vapiPhone, setVapiPhone] = useState("+91 98765 43210");
+  const [vapiPhone, setVapiPhone] = useState("+91 75880 21256");
   const [vapiScript, setVapiScript] = useState("Namaste Om Khade! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.");
   const [vapiDialing, setVapiDialing] = useState(false);
   const [vapiCallStatus, setVapiCallStatus] = useState<"idle" | "connecting" | "active" | "ended">("idle");

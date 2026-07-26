@@ -26,8 +26,8 @@ export class CommsService {
     twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || "",
     twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || "",
     twilioWhatsAppSender: process.env.TWILIO_WHATSAPP_SENDER || "whatsapp:+14155238886",
-    ownerWhatsAppNumber: process.env.OWNER_WHATSAPP_NUMBER || "+919876543210",
-    managerWhatsAppNumber: process.env.MANAGER_WHATSAPP_NUMBER || "+919876543211",
+    ownerWhatsAppNumber: process.env.OWNER_WHATSAPP_NUMBER || "+917588021256",
+    managerWhatsAppNumber: process.env.MANAGER_WHATSAPP_NUMBER || "+917588021256",
   };
 
   private memoryVapiConfigCache: VapiConfig = {
