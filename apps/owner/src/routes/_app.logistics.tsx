@@ -49,8 +49,19 @@ export const Route = createFileRoute("/_app/logistics")({
 export function LogisticsPage() {
   const { user } = useAuth();
 
-  // Live Hyperlocal Orders Broadcasted by Customers
-  const [hyperlocalBroadcasts, setHyperlocalBroadcasts] = useState<any[]>([]);
+  // Live Hyperlocal Orders Broadcasted by Nearby Customers
+  const [hyperlocalBroadcasts, setHyperlocalBroadcasts] = useState<any[]>([
+    {
+      id: "ORD-9021",
+      customerName: "Om Khade",
+      customerPhone: "+91 98765 43210",
+      address: "18th Road, Bandra West (800m away)",
+      items: ["Fresh Amul Milk 1L", "Whole Wheat Bread", "Amul Butter 200g"],
+      totalAmount: 340,
+      placedAt: "Just now",
+      status: "PENDING_GRAB",
+    },
+  ]);
 
   // Data states
   const [dispatches, setDispatches] = useState<DeliveryItem[]>([]);

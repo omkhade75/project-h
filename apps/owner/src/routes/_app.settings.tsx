@@ -35,7 +35,13 @@ export const Route = createFileRoute("/_app/settings")({
 function SettingsPage() {
   const { user } = useAuth();
   const mallData = Route.useLoaderData();
-  const [mall, setMall] = useState(mallData);
+  const [mall, setMall] = useState({
+    id: mallData?.id || "grandsquare-mall",
+    name: mallData?.name || "GrandSquare Supermart & Mall",
+    location: mallData?.location || "Bandra West, Mumbai 400050",
+    currency: mallData?.currency || "INR (₹)",
+    timezone: mallData?.timezone || "Asia/Kolkata (IST)",
+  });
   const [isSaving, setIsSaving] = useState(false);
 
   const [vapi, setVapi] = useState({

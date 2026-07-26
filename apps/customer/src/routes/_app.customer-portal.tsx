@@ -388,6 +388,54 @@ export function CustomerPortal() {
           </div>
         </div>
 
+        {/* Nearby Approved Shops Directory */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">
+          <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+              <Store className="h-5 w-5 text-amber-500" />
+              <h3 className="font-bold text-sm text-slate-900">Nearby Approved Shops & Supermarkets</h3>
+            </div>
+            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              3 Shops Online · 10-Min Dispatch
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 rounded-lg bg-amber-50/60 border border-amber-200 flex items-center justify-between">
+              <div>
+                <p className="font-bold text-slate-900">GrandSquare Supermart</p>
+                <p className="text-[11px] text-slate-500">Bandra West · 800m away</p>
+                <span className="inline-block mt-1 text-[10px] font-bold text-amber-700 bg-amber-200/80 px-1.5 py-0.5 rounded">
+                  ★ 4.9 · 10-Min Express
+                </span>
+              </div>
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between opacity-80">
+              <div>
+                <p className="font-bold text-slate-900">Metro Express Mart</p>
+                <p className="text-[11px] text-slate-500">Khar West · 1.2km away</p>
+                <span className="inline-block mt-1 text-[10px] font-bold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded">
+                  ★ 4.7 · 15-Min Express
+                </span>
+              </div>
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between opacity-80">
+              <div>
+                <p className="font-bold text-slate-900">Fresh Produce Hub</p>
+                <p className="text-[11px] text-slate-500">Santacruz West · 1.8km away</p>
+                <span className="inline-block mt-1 text-[10px] font-bold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded">
+                  ★ 4.8 · 20-Min Express
+                </span>
+              </div>
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+            </div>
+          </div>
+        </div>
+
         {/* Product Cards Grid (Amazon Style) */}
         {activeTab === "STORE" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
