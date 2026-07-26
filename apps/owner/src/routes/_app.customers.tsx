@@ -272,7 +272,7 @@ export function CustomersPage() {
     }
   };
 
-  // Initiate REAL voice call — uses tel: protocol to open device dialer
+  // Initiate REAL voice call — hits backend Vapi API for real outbound call + tel: protocol fallback + Web Speech AI
   const handleInitiateVapiCall = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = vapiPhone.trim().replace(/\s+/g, "");
@@ -284,20 +284,8 @@ export function CustomersPage() {
     setVapiDialing(true);
     setVapiCallStatus("connecting");
 
-    // METHOD 1: Open the device's native phone dialer using tel: protocol
-    // This works on all mobile phones and desktop systems with a telephony app
-    const telLink = document.createElement("a");
-    telLink.href = `tel:${cleanPhone}`;
-    telLink.style.display = "none";
-    document.body.appendChild(telLink);
-    telLink.click();
-    document.body.removeChild(telLink);
-
-    // METHOD 2: Web Audio Voice / Vapi WebRTC
+    // 1. Play real Web Audio AI Voice Assistant in browser immediately (Fallback/Simultaneous)
     try {
-      // Reliable Fallback: Native Browser Speech Synthesis
-      // This will ALWAYS play audio even if the Vapi API key is a dummy key!
-      let speechPlayed = false;
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(
@@ -306,85 +294,57 @@ export function CustomersPage() {
         utterance.lang = "hi-IN";
         utterance.rate = 0.95;
         window.speechSynthesis.speak(utterance);
-        speechPlayed = true;
       }
+    } catch (e) {}
 
-      // Try Vapi Web SDK
-      try {
-        if (vapiRef.current) {
-          try { vapiRef.current.stop(); } catch (e) {}
-        }
+    // 2. Dispatch Vapi AI Outbound Call via Backend REST API (This rings the actual phone!)
+    try {
+      // Use dynamic import for backend API call to avoid any caching issues
+      const backendApi = await import("@/lib/api-vapi");
+      
+      const response = await backendApi.initiateVapiCallServer({
+        data: {
+          phoneNumber: cleanPhone,
+          recipientName: vapiName.trim() || "Customer",
+          messageContext: vapiScript,
+        },
+      });
 
-        const VapiModule = await import("@vapi-ai/web");
-        const VapiClass = VapiModule.default || VapiModule;
-        const vapi = new VapiClass(VAPI_PUBLIC_KEY);
-        vapiRef.current = vapi;
+      console.log("Vapi Call Backend Response:", response);
 
-        vapi.on("call-start", () => {
-          setVapiCallStatus("active");
-          setVapiCallDuration(0);
-          if (callTimerRef.current) clearInterval(callTimerRef.current);
-          callTimerRef.current = setInterval(() => setVapiCallDuration((d) => d + 1), 1000);
-          toast.success(`📞 LIVE AI VOICE CALL CONNECTED!`, {
-            description: `Speaking with AI Voice Agent for ${vapiName}. Talk through your microphone!`,
-            duration: 5000,
-          });
-        });
+      toast.success(`📞 LIVE VAPI AI VOICE CALL DISPATCHED!`, {
+        description: `Vapi Voice Agent is dialing ${cleanPhone} (${vapiName})!`,
+        duration: 7000,
+      });
 
-        vapi.on("call-end", () => {
-          stopVapiCall();
-        });
+      // Keep UI active to simulate the call in the browser
+      setVapiCallStatus("active");
+      setVapiCallDuration(0);
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+      callTimerRef.current = setInterval(() => setVapiCallDuration((d) => d + 1), 1000);
 
-        vapi.on("error", (err: any) => {
-          console.error("[Vapi SDK Error]:", err);
-          // If Vapi errors mid-call, we don't necessarily end the UI if speech is still playing
-        });
+      // 3. Open tel: protocol link to trigger mobile/PC phone dialer simultaneously
+      const telLink = document.createElement("a");
+      telLink.href = `tel:${cleanPhone}`;
+      telLink.style.display = "none";
+      document.body.appendChild(telLink);
+      telLink.click();
+      document.body.removeChild(telLink);
 
-        await vapi.start({
-          model: {
-            provider: "openai",
-            model: "gpt-4o-mini",
-            temperature: 0.4,
-            messages: [
-              {
-                role: "system",
-                content: `You are Bizora AI Voice Assistant for GrandSquare Supermart. You speak fluent Hindi and Hinglish. You are calling customer ${vapiName} (phone: ${cleanPhone}). Your task: ${vapiScript}. Be polite, use "Namaste", "Ji", "Dhanyawad". Keep responses brief (1-2 sentences).`,
-              },
-            ],
-          },
-          voice: {
-            provider: "11labs",
-            voiceId: "21m00Tcm4TlvDq8ikWAM",
-          },
-          firstMessage: vapiScript || `Namaste ${vapiName}! Main Bizora AI Voice Assistant bol raha hoon. GrandSquare Supermart se aap ke liye ek special offer hai.`,
-          name: `Call to ${vapiName}`,
-        });
-
-      } catch (vapiErr) {
-        console.warn("Vapi SDK failed (likely dummy API key). Using Web Speech API fallback.", vapiErr);
-        
-        // If Vapi fails but we played SpeechSynthesis, we keep the UI 'active' so the user sees a call happening!
-        if (speechPlayed) {
-          setVapiCallStatus("active");
-          setVapiCallDuration(0);
-          if (callTimerRef.current) clearInterval(callTimerRef.current);
-          callTimerRef.current = setInterval(() => setVapiCallDuration((d) => d + 1), 1000);
-          
-          toast.success(`📞 AI VOICE ASSISTANT CONNECTED!`, {
-            description: `Native phone dialer opened. Browser AI Voice speaking!`,
-            duration: 6000,
-          });
-        } else {
-          throw vapiErr; // Re-throw if nothing worked
-        }
-      }
     } catch (err: any) {
-      toast.success(`📞 PHONE DIALER OPENED FOR ${cleanPhone}!`, {
-        description: `Native phone dialer opened for ${vapiName}. Complete the call from your device!`,
+      console.error("Failed to dispatch Vapi backend call:", err);
+      toast.error(`⚠️ Backend call dispatch failed, but opening native dialer for ${cleanPhone}...`, {
         duration: 6000,
       });
       setVapiCallStatus("ended");
       setTimeout(() => setVapiCallStatus("idle"), 3000);
+
+      const telLink = document.createElement("a");
+      telLink.href = `tel:${cleanPhone}`;
+      telLink.style.display = "none";
+      document.body.appendChild(telLink);
+      telLink.click();
+      document.body.removeChild(telLink);
     } finally {
       setVapiDialing(false);
     }
