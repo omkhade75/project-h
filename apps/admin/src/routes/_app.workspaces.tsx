@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_app/workspaces")({
     }
   },
   head: () => ({
-    meta: [{ title: "Store Workspaces — OmniMind Super Admin" }],
+    meta: [{ title: "Store Workspaces — Bizora Super Admin" }],
   }),
   component: WorkspacesPage,
 });

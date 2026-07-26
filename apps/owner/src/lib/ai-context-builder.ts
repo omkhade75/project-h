@@ -361,7 +361,7 @@ export function localQueryFallback(
   roleScope?: string,
 ): AIResponseContract {
   console.warn(
-    "OmniMind Warn: Falling back to local in-memory simulation because server connection was lost or credentials failed. Active Demo mode: true.",
+    "Bizora Warn: Falling back to local in-memory simulation because server connection was lost or credentials failed. Active Demo mode: true.",
   );
 
   const raw = executeLocalQueryFallbackRaw(query, activeDate, roleScope);

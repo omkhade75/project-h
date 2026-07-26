@@ -24,7 +24,7 @@ import {
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — OmniMind AI" },
+      { title: "Settings — Bizora AI" },
       { name: "description", content: "Workspace, roles, and integration settings." },
     ],
   }),

@@ -52,7 +52,7 @@ import {
 export const Route = createFileRoute("/_app/income")({
   head: () => ({
     meta: [
-      { title: "Consolidated Income — OmniMind AI" },
+      { title: "Consolidated Income — Bizora AI" },
       {
         name: "description",
         content: "Income dashboard showing real-time sales, rent, and ancillary revenue streams.",

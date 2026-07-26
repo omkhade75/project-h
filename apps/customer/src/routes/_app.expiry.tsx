@@ -11,7 +11,7 @@ import { getExpiryIntelligenceServer } from "@/lib/server-inventory";
 export const Route = createFileRoute("/_app/expiry")({
   head: () => ({
     meta: [
-      { title: "Expiry Intelligence — OmniMind AI" },
+      { title: "Expiry Intelligence — Bizora AI" },
       {
         name: "description",
         content: "Perishable goods with expiry deadlines and AI markdown/transfer recommendations.",

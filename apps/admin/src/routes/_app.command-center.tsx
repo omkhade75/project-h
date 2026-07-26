@@ -45,7 +45,7 @@ import { getMessageLogsServer } from "@/lib/server-whatsapp-logs";
 export const Route = createFileRoute("/_app/command-center")({
   head: () => ({
     meta: [
-      { title: "Command Center — OmniMind AI" },
+      { title: "Command Center — Bizora AI" },
       {
         name: "description",
         content:

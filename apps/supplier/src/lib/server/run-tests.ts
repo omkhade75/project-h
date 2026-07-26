@@ -1,4 +1,4 @@
-// Automated Test Suite for OmniMind AI Integrity Decision Engine
+// Automated Test Suite for Bizora AI Integrity Decision Engine
 import { prisma } from "./prisma";
 import {
   resolveDateRange,

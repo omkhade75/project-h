@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_app/audits")({
     }
   },
   head: () => ({
-    meta: [{ title: "System Audits — OmniMind Super Admin" }],
+    meta: [{ title: "System Audits — Bizora Super Admin" }],
   }),
   component: AuditsPage,
 });

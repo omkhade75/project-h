@@ -61,7 +61,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/inventory")({
   head: () => ({
     meta: [
-      { title: "Inventory Intelligence — OmniMind AI" },
+      { title: "Inventory Intelligence — Bizora AI" },
       {
         name: "description",
         content: "Inventory value, low stock, stockouts, overstock, and predicted risk.",

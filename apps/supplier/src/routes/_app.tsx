@@ -375,11 +375,11 @@ function AppShell() {
 
         <div className="relative hairline-b flex items-center gap-3 px-4 py-5">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-transparent overflow-hidden">
-            <img src="/logo.png" className="h-full w-full object-contain" alt="OmniMind AI" />
+            <img src="/logo.png" className="h-full w-full object-contain" alt="Bizora AI" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-base font-bold tracking-tight">{"OmniMind AI"}</p>
+              <p className="truncate text-base font-bold tracking-tight">{"Bizora AI"}</p>
               <p className="truncate text-[11px] text-muted-foreground">{MALL.name}</p>
             </div>
           )}
@@ -505,7 +505,7 @@ function AppShell() {
             </button>
 
             <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-              <span>OmniMind</span>
+              <span>Bizora</span>
               <ChevronRight className="h-3 w-3" />
               <span className="truncate font-medium text-foreground">{currentLabel}</span>
             </div>
@@ -995,7 +995,7 @@ function AppShell() {
                 onClick={() => navigate({ to: "/ai-decisions" })}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Ask OmniMind</span>
+                <span className="hidden sm:inline">Ask Bizora</span>
               </Button>
             </div>
           </div>

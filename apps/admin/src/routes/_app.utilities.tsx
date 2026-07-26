@@ -40,7 +40,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/utilities")({
   head: () => ({
     meta: [
-      { title: "Utilities Intelligence — OmniMind AI" },
+      { title: "Utilities Intelligence — Bizora AI" },
       {
         name: "description",
         content: "Electricity and water usage analytics, anomaly detection, and cost forecasting.",

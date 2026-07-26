@@ -129,7 +129,7 @@ export function DataImportPage() {
           <Sparkles className="h-4 w-4" /> AI Document & Image OCR Parser Enabled
         </div>
         <p className="text-muted-foreground leading-relaxed">
-          Upload any file format: <span className="font-semibold text-foreground">Photos/Screenshots (.png, .jpg)</span>, <span className="font-semibold text-foreground">PDF Invoices & Bills (.pdf)</span>, or <span className="font-semibold text-foreground">Excel Worksheets (.xlsx, .xls, .csv)</span>. OmniMind AI automatically scans, parses line items, and updates your inventory and sales ledger.
+          Upload any file format: <span className="font-semibold text-foreground">Photos/Screenshots (.png, .jpg)</span>, <span className="font-semibold text-foreground">PDF Invoices & Bills (.pdf)</span>, or <span className="font-semibold text-foreground">Excel Worksheets (.xlsx, .xls, .csv)</span>. Bizora AI automatically scans, parses line items, and updates your inventory and sales ledger.
         </p>
       </div>
 

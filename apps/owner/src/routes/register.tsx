@@ -12,10 +12,10 @@ import { GoogleMapsPicker } from "@/components/google-maps-picker";
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
-      { title: "Register Company — OmniMind AI" },
+      { title: "Register Company — Bizora AI" },
       {
         name: "description",
-        content: "Register your enterprise for OmniMind AI.",
+        content: "Register your enterprise for Bizora AI.",
       },
     ],
   }),
@@ -108,7 +108,7 @@ function RegisterPage() {
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             Your registration request has been submitted successfully.
             <br /><br />
-            The OmniMind administrator has been notified. You will receive an email after approval.
+            The Bizora administrator has been notified. You will receive an email after approval.
           </p>
           <Button className="mt-8 w-full" onClick={() => navigate({ to: "/login" })}>
             Return to Login
@@ -158,7 +158,7 @@ function RegisterPage() {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-tight">OmniMind AI</p>
+            <p className="text-sm font-semibold tracking-tight">Bizora AI</p>
             <p className="text-[11px] text-muted-foreground">Enterprise Registration</p>
           </div>
         </div>

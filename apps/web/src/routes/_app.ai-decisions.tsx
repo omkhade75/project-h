@@ -35,7 +35,7 @@ import { useBusinessData } from "@/lib/business-context";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR, fmtNum } from "@/lib/mock-data";
 import { toast } from "sonner";
-import { askOmniMindServer } from "@/lib/server-ai";
+import { askBizoraServer } from "@/lib/server-ai";
 import type { AIResponseContract } from "@/lib/tool-types";
 import { initiateVapiCallServer } from "@/lib/server-vapi";
 import { buildAIContext, localQueryFallback } from "@/lib/ai-context-builder";
@@ -43,11 +43,11 @@ import { buildAIContext, localQueryFallback } from "@/lib/ai-context-builder";
 export const Route = createFileRoute("/_app/ai-decisions")({
   head: () => ({
     meta: [
-      { title: "AI Decision Center — OmniMind AI" },
+      { title: "AI Decision Center — Bizora AI" },
       {
         name: "description",
         content:
-          "Move from reports to evidence-backed actions. Ask OmniMind, review recommendations, and orchestrate decisions.",
+          "Move from reports to evidence-backed actions. Ask Bizora, review recommendations, and orchestrate decisions.",
       },
     ],
   }),
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/_app/ai-decisions")({
 });
 
 const TABS = [
-  "Ask OmniMind",
+  "Ask Bizora",
   "Recommendations",
   "Investigations",
   "Decisions",
@@ -71,7 +71,7 @@ const SUGGESTIONS = [
 ];
 
 export function AIDecisions() {
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Ask OmniMind");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Ask Bizora");
   return (
     <div className="space-y-6">
       <PageHeader
@@ -96,7 +96,7 @@ export function AIDecisions() {
         ))}
       </div>
 
-      {tab === "Ask OmniMind" && <AskOmniMind />}
+      {tab === "Ask Bizora" && <AskBizora />}
       {tab === "Recommendations" && <RecList />}
       {tab === "Investigations" && (
         <ScaffoldTab
@@ -120,7 +120,7 @@ export function AIDecisions() {
   );
 }
 
-function AskOmniMind() {
+function AskBizora() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const {
@@ -159,7 +159,7 @@ function AskOmniMind() {
 
     try {
       // 1. Dispatch Gemini server action
-      const response = await askOmniMindServer({
+      const response = await askBizoraServer({
         data: {
           query: queryToSubmit,
           evidenceText: ctx.evidenceText,
@@ -318,7 +318,7 @@ function AskOmniMind() {
               <Brain className="h-4 w-4 text-primary-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold">Ask OmniMind AI</p>
+              <p className="text-sm font-semibold">Ask Bizora AI</p>
               <p className="text-[11px] text-muted-foreground">
                 Grounded on deterministic central mall records · Scoped under RBAC
               </p>
@@ -389,7 +389,7 @@ function AskOmniMind() {
           <div className="mt-8 flex flex-col items-center justify-center py-12 space-y-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-xs text-muted-foreground animate-pulse">
-              OmniMind is reasoning over database evidence...
+              Bizora is reasoning over database evidence...
             </p>
           </div>
         )}

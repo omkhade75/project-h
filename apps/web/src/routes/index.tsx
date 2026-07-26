@@ -17,11 +17,11 @@ import { useNavigate } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "OmniMind AI — Business Intelligence & Decision OS" },
+      { title: "Bizora AI — Business Intelligence & Decision OS" },
       {
         name: "description",
         content:
-          "OmniMind AI transforms business operations data into predictive insights, AI recommendations, and evidence-backed decisions.",
+          "Bizora AI transforms business operations data into predictive insights, AI recommendations, and evidence-backed decisions.",
       },
     ],
   }),
@@ -124,10 +124,10 @@ function LandingPage() {
         <header className="flex items-center justify-between px-6 py-4 sm:px-10 sm:py-6">
           <div className="flex items-center gap-2.5">
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-transparent overflow-hidden">
-              <img src="/logo.png" className="h-full w-full object-contain" alt="OmniMind AI" />
+              <img src="/logo.png" className="h-full w-full object-contain" alt="Bizora AI" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-tight">OmniMind AI</p>
+              <p className="text-sm font-semibold tracking-tight">Bizora AI</p>
               <p className="text-[10px] text-muted-foreground">Enterprise Intelligence OS</p>
             </div>
           </div>
@@ -156,7 +156,7 @@ function LandingPage() {
             From business data to <span className="gradient-text">intelligent decisions</span>.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            OmniMind AI unifies sales, inventory, customers, suppliers, and utilities into a single
+            Bizora AI unifies sales, inventory, customers, suppliers, and utilities into a single
             decision surface — with predictive analytics and evidence-backed AI recommendations
             designed for owners, admins, and store managers.
           </p>
@@ -250,7 +250,7 @@ function LandingPage() {
         {/* Footer CTA */}
         <footer className="border-t border-hairline bg-surface/30 py-8 text-center">
           <p className="text-xs text-muted-foreground">
-            © 2026 OmniMind AI · Enterprise Decision Intelligence OS
+            © 2026 Bizora AI · Enterprise Decision Intelligence OS
           </p>
         </footer>
       </div>

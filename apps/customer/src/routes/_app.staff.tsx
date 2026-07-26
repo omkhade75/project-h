@@ -27,7 +27,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/staff")({
   head: () => ({
     meta: [
-      { title: "Staff & Managers — OmniMind AI" },
+      { title: "Staff & Managers — Bizora AI" },
       { name: "description", content: "Team hierarchy, attendance, and department managers." },
     ],
   }),

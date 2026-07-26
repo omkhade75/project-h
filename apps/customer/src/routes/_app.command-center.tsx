@@ -56,7 +56,7 @@ import {
 export const Route = createFileRoute("/_app/command-center")({
   head: () => ({
     meta: [
-      { title: "Command Center — OmniMind AI" },
+      { title: "Command Center — Bizora AI" },
       {
         name: "description",
         content:
@@ -325,7 +325,7 @@ export function CommandCenter() {
               onClick={() => navigate({ to: "/ai-decisions" as never })}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Ask OmniMind
+              Ask Bizora
             </Button>
           </>
         }

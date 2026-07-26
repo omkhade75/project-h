@@ -19,10 +19,10 @@ export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => loginSearchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "Sign in — OmniMind AI" },
+      { title: "Sign in — Bizora AI" },
       {
         name: "description",
-        content: "Sign in to OmniMind AI, the mall intelligence and decision operating system.",
+        content: "Sign in to Bizora AI, the mall intelligence and decision operating system.",
       },
     ],
   }),
@@ -122,10 +122,10 @@ function LoginPage() {
         <div className="hidden flex-col justify-between p-10 lg:flex xl:p-14">
           <div className="flex items-center gap-2">
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-transparent overflow-hidden">
-              <img src="/logo.png" className="h-full w-full object-contain" alt="OmniMind AI" />
+              <img src="/logo.png" className="h-full w-full object-contain" alt="Bizora AI" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-tight">OmniMind AI</p>
+              <p className="text-sm font-semibold tracking-tight">Bizora AI</p>
               <p className="text-[11px] text-muted-foreground">Enterprise Intelligence OS</p>
             </div>
           </div>
@@ -138,7 +138,7 @@ function LoginPage() {
               From business data to <span className="gradient-text">intelligent decisions</span>.
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              OmniMind AI unifies sales, inventory, customers, suppliers, and utilities into a
+              Bizora AI unifies sales, inventory, customers, suppliers, and utilities into a
               single decision surface — with predictive analytics and evidence-backed AI
               recommendations designed for owners, admins, and store managers.
             </p>
@@ -169,7 +169,7 @@ function LoginPage() {
               <div className="grid h-9 w-9 place-items-center rounded-lg gradient-primary">
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
               </div>
-              <p className="text-sm font-semibold">OmniMind AI</p>
+              <p className="text-sm font-semibold">Bizora AI</p>
             </div>
 
             <div className="card-elevated p-6 sm:p-8">

@@ -29,7 +29,7 @@ function NotFoundComponent() {
             to="/"
             className="inline-flex items-center justify-center rounded-md gradient-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
-            Back to OmniMind
+            Back to Bizora
           </Link>
         </div>
       </div>
@@ -78,14 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "OmniMind AI — Business Intelligence & Decision OS" },
+      { title: "Bizora AI — Business Intelligence & Decision OS" },
       {
         name: "description",
         content:
-          "OmniMind AI transforms business operations data into predictive insights, AI recommendations, and evidence-backed decisions for owners, admins, and managers.",
+          "Bizora AI transforms business operations data into predictive insights, AI recommendations, and evidence-backed decisions for owners, admins, and managers.",
       },
-      { name: "author", content: "OmniMind AI" },
-      { property: "og:title", content: "OmniMind AI — Business Intelligence & Decision OS" },
+      { name: "author", content: "Bizora AI" },
+      { property: "og:title", content: "Bizora AI — Business Intelligence & Decision OS" },
       {
         property: "og:description",
         content:
@@ -93,21 +93,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "OmniMind AI — Business Intelligence & Decision OS" },
+      { name: "twitter:title", content: "Bizora AI — Business Intelligence & Decision OS" },
       {
         name: "description",
         content:
-          "OmniMind Insights is an AI-powered business intelligence platform for decision-making.",
+          "Bizora Insights is an AI-powered business intelligence platform for decision-making.",
       },
       {
         property: "og:description",
         content:
-          "OmniMind Insights is an AI-powered business intelligence platform for decision-making.",
+          "Bizora Insights is an AI-powered business intelligence platform for decision-making.",
       },
       {
         name: "twitter:description",
         content:
-          "OmniMind Insights is an AI-powered business intelligence platform for decision-making.",
+          "Bizora Insights is an AI-powered business intelligence platform for decision-making.",
       },
     ],
     links: [

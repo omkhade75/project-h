@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_app/locations")({
     }
   },
   head: () => ({
-    meta: [{ title: "Store Locations — OmniMind Super Admin" }],
+    meta: [{ title: "Store Locations — Bizora Super Admin" }],
   }),
   component: LocationsPage,
 });
@@ -120,7 +120,7 @@ export function LocationsPage() {
                 </div>
                 <h3 className="text-lg font-bold text-foreground">Global Store Geocoding Engine</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  OmniMind AI geocodes every onboarded SaaS store location to enable 10-minute hyperlocal order routing for nearby shoppers on <code>bizora-customer</code>.
+                  Bizora AI geocodes every onboarded SaaS store location to enable 10-minute hyperlocal order routing for nearby shoppers on <code>bizora-customer</code>.
                 </p>
               </div>
 

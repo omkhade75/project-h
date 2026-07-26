@@ -12,7 +12,7 @@ import { KpiCard } from "@/components/kpi-card";
 export const Route = createFileRoute("/_app/transactions")({
   head: () => ({
     meta: [
-      { title: "Transactions — OmniMind AI" },
+      { title: "Transactions — Bizora AI" },
       { name: "description", content: "All mall transactions with filters and drill-down." },
     ],
   }),

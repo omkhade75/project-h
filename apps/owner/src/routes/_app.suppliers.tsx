@@ -28,7 +28,7 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/_app/suppliers")({
   head: () => ({
     meta: [
-      { title: "Supplier Intelligence — OmniMind AI" },
+      { title: "Supplier Intelligence — Bizora AI" },
       {
         name: "description",
         content: "Supplier 360° with AI scoring across price, reliability, quality, and delivery.",

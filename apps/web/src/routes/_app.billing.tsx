@@ -51,7 +51,7 @@ import {
 export const Route = createFileRoute("/_app/billing")({
   head: () => ({
     meta: [
-      { title: "Billing (POS) — OmniMind AI" },
+      { title: "Billing (POS) — Bizora AI" },
       { name: "description", content: "Point of Sale and Billing interface." },
     ],
   }),
@@ -414,7 +414,7 @@ function RouteComponent() {
                 <CheckCircle2 className="h-8 w-8 text-emerald-500" />
                 <h2 className="text-2xl font-bold text-zinc-900">TAX INVOICE</h2>
               </div>
-              <p className="text-zinc-500">OmniMind Retail Solutions</p>
+              <p className="text-zinc-500">Bizora Retail Solutions</p>
               <p className="text-zinc-500">GSTIN: 27AAAAA0000A1Z5</p>
             </div>
             <div className="text-right">

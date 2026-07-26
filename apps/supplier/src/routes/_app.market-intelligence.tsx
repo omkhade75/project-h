@@ -50,7 +50,7 @@ import {
 export const Route = createFileRoute("/_app/market-intelligence")({
   head: () => ({
     meta: [
-      { title: "Market Intelligence & Investments — OmniMind AI" },
+      { title: "Market Intelligence & Investments — Bizora AI" },
       { name: "description", content: "Corporate treasury cash investment portal." },
     ],
   }),

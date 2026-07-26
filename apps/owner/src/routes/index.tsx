@@ -15,11 +15,11 @@ import { useAuth } from "@/lib/auth-context";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "OmniMind AI — Business Intelligence & Decision OS" },
+      { title: "Bizora AI — Business Intelligence & Decision OS" },
       {
         name: "description",
         content:
-          "OmniMind AI transforms business operations data into predictive insights, AI recommendations, and evidence-backed decisions.",
+          "Bizora AI transforms business operations data into predictive insights, AI recommendations, and evidence-backed decisions.",
       },
     ],
   }),
@@ -54,7 +54,7 @@ function LandingPage() {
               <Brain className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-tight">OmniMind AI</p>
+              <p className="text-sm font-semibold tracking-tight">Bizora AI</p>
               <p className="text-[10px] text-muted-foreground">Enterprise Storekeeper Operations</p>
             </div>
           </div>
@@ -77,7 +77,7 @@ function LandingPage() {
             Autonomous store intelligence & <span className="gradient-text">inventory control</span>.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            OmniMind AI powers multi-store POS checkouts, real-time inventory ledgering, automated purchase orders, and AI predictive analytics.
+            Bizora AI powers multi-store POS checkouts, real-time inventory ledgering, automated purchase orders, and AI predictive analytics.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -136,7 +136,7 @@ function LandingPage() {
         {/* Footer */}
         <footer className="border-t border-hairline bg-surface/30 py-8 text-center">
           <p className="text-xs text-muted-foreground">
-            © 2026 OmniMind AI · Storekeeper Enterprise Business Operations
+            © 2026 Bizora AI · Storekeeper Enterprise Business Operations
           </p>
         </footer>
       </div>

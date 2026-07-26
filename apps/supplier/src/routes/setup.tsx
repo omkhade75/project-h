@@ -105,7 +105,7 @@ function SetupWizardPage() {
           <div className="grid h-12 w-12 place-items-center rounded-xl gradient-primary mb-4 shadow-lg shadow-primary/20">
             <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">Welcome to OmniMind AI</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Welcome to Bizora AI</h1>
           <p className="mt-2 text-sm text-muted-foreground">Let's set up your new workspace.</p>
         </div>
 

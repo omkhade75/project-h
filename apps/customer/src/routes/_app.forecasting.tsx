@@ -22,7 +22,7 @@ import { getForecastingServer } from "@/lib/server-analytics";
 export const Route = createFileRoute("/_app/forecasting")({
   head: () => ({
     meta: [
-      { title: "Forecasting — OmniMind AI" },
+      { title: "Forecasting — Bizora AI" },
       {
         name: "description",
         content: "Revenue, footfall, inventory and expense forecasts with scenario planning.",

@@ -41,7 +41,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_app/expenses")({
   head: () => ({
     meta: [
-      { title: "Expense Intelligence — OmniMind AI" },
+      { title: "Expense Intelligence — Bizora AI" },
       {
         name: "description",
         content:

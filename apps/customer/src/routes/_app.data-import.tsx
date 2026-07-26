@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 export const Route = createFileRoute("/_app/data-import")({
   head: () => ({
     meta: [
-      { title: "Data Import — OmniMind AI" },
+      { title: "Data Import — Bizora AI" },
       { name: "description", content: "Connect data sources and upload historical records." },
     ],
   }),

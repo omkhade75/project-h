@@ -4,7 +4,7 @@ import { ScaffoldPage } from "@/components/scaffold-page";
 export const Route = createFileRoute("/_app/analytics")({
   head: () => ({
     meta: [
-      { title: "Analytics — OmniMind AI" },
+      { title: "Analytics — Bizora AI" },
       {
         name: "description",
         content: "Cross-domain analytics across revenue, customers, and operations.",
