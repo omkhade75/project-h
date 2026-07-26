@@ -1019,7 +1019,7 @@ function AppShell() {
             to="/command-center"
             className={cn(
               "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              routerState.location.pathname === "/command-center" && "text-primary font-bold bg-primary/10"
+              pathname === "/command-center" && "text-primary font-bold bg-primary/10"
             )}
           >
             <LayoutDashboard className="h-4.5 w-4.5" />
@@ -1030,7 +1030,7 @@ function AppShell() {
             to="/products"
             className={cn(
               "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              routerState.location.pathname === "/products" && "text-primary font-bold bg-primary/10"
+              pathname === "/products" && "text-primary font-bold bg-primary/10"
             )}
           >
             <Package className="h-4.5 w-4.5" />
@@ -1041,7 +1041,7 @@ function AppShell() {
             to="/billing"
             className={cn(
               "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              routerState.location.pathname === "/billing" && "text-primary font-bold bg-primary/10"
+              pathname === "/billing" && "text-primary font-bold bg-primary/10"
             )}
           >
             <div className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30">
@@ -1054,7 +1054,7 @@ function AppShell() {
             to="/customers"
             className={cn(
               "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              routerState.location.pathname === "/customers" && "text-primary font-bold bg-primary/10"
+              pathname === "/customers" && "text-primary font-bold bg-primary/10"
             )}
           >
             <Users className="h-4.5 w-4.5" />
