@@ -186,6 +186,7 @@ function Expenses() {
                 <YAxis
                   tickLine={false}
                   axisLine={false}
+                  domain={total === 0 ? [0, 1000] : ["auto", "auto"]}
                   tickFormatter={(v: any) => {
                     const num = Number(v);
                     if (num === 0) return "₹0";

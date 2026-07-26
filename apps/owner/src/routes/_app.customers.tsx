@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect, useMemo } from "react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
 import { useAuth } from "@/lib/auth-context";
@@ -23,7 +24,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
