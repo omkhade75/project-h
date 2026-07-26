@@ -11,7 +11,7 @@ import {
   archiveCustomerServer,
   type CustomerListItem,
 } from "@/lib/server-customers";
-import Vapi from "@vapi-ai/web";
+// Vapi Web SDK loaded dynamically at runtime to avoid SSR crash
 import {
   Bar,
   BarChart,
@@ -113,7 +113,7 @@ export function CustomersPage() {
   const [vapiDialing, setVapiDialing] = useState(false);
   const [vapiCallStatus, setVapiCallStatus] = useState<"idle" | "connecting" | "active" | "ended">("idle");
   const [vapiCallDuration, setVapiCallDuration] = useState(0);
-  const vapiRef = useRef<Vapi | null>(null);
+  const vapiRef = useRef<any>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Cleanup Vapi on unmount
@@ -294,13 +294,15 @@ export function CustomersPage() {
     document.body.removeChild(telLink);
 
     // METHOD 2: Start Vapi Web SDK browser voice AI call (WebRTC)
-    // This creates a real 2-way voice conversation with the AI in the browser
+    // Dynamically imported to avoid SSR crash
     try {
       if (vapiRef.current) {
         try { vapiRef.current.stop(); } catch (e) {}
       }
 
-      const vapi = new Vapi(VAPI_PUBLIC_KEY);
+      const VapiModule = await import("@vapi-ai/web");
+      const VapiClass = VapiModule.default || VapiModule;
+      const vapi = new VapiClass(VAPI_PUBLIC_KEY);
       vapiRef.current = vapi;
 
       vapi.on("call-start", () => {
@@ -319,7 +321,7 @@ export function CustomersPage() {
         stopVapiCall();
       });
 
-      vapi.on("error", (err) => {
+      vapi.on("error", (err: any) => {
         console.error("[Vapi SDK Error]:", err);
         setVapiCallStatus("ended");
         setVapiDialing(false);
