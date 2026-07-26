@@ -143,9 +143,10 @@ function Products() {
           email: user?.email || "",
         },
       });
-      setProducts(list);
-      if (list.length > 0) {
-        setSelected(list[0]);
+      const safeList = Array.isArray(list) ? list : Array.isArray((list as any)?.data) ? (list as any).data : [];
+      setProducts(safeList);
+      if (safeList.length > 0) {
+        setSelected(safeList[0]);
       } else {
         setSelected(null);
       }
@@ -164,16 +165,21 @@ function Products() {
           email: user?.email || "",
         },
       });
-      setCategories(opts.categories);
-      setDepartments(opts.departments);
-      setSuppliers(opts.suppliers);
-      setLocations(opts.locations);
+      const safeCategories = Array.isArray(opts?.categories) ? opts.categories : [];
+      const safeDepartments = Array.isArray(opts?.departments) ? opts.departments : [];
+      const safeSuppliers = Array.isArray(opts?.suppliers) ? opts.suppliers : [];
+      const safeLocations = Array.isArray(opts?.locations) ? opts.locations : [];
+
+      setCategories(safeCategories);
+      setDepartments(safeDepartments);
+      setSuppliers(safeSuppliers);
+      setLocations(safeLocations);
 
       // Select default options
-      if (opts.categories.length > 0) setFormCategory(opts.categories[0].id);
-      if (opts.departments.length > 0) setFormDepartment(opts.departments[0].id);
-      if (opts.suppliers.length > 0) setFormSupplier(opts.suppliers[0].id);
-      if (opts.locations.length > 0) setFormLocation(opts.locations[0].id);
+      if (safeCategories.length > 0) setFormCategory(safeCategories[0].id);
+      if (safeDepartments.length > 0) setFormDepartment(safeDepartments[0].id);
+      if (safeSuppliers.length > 0) setFormSupplier(safeSuppliers[0].id);
+      if (safeLocations.length > 0) setFormLocation(safeLocations[0].id);
     } catch (e) {
       console.error("Failed to load form options", e);
     }
@@ -183,6 +189,22 @@ function Products() {
     loadProducts();
     loadOptions();
   }, [user]);
+
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeCategories = Array.isArray(categories) ? categories : [];
+  const safeDepartments = Array.isArray(departments) ? departments : [];
+  const safeSuppliers = Array.isArray(suppliers) ? suppliers : [];
+  const safeLocations = Array.isArray(locations) ? locations : [];
+
+  const filtered = safeProducts.filter(
+    (p) =>
+      p &&
+      ((p.name || "").toLowerCase().includes(q.toLowerCase()) ||
+        (p.sku || "").toLowerCase().includes(q.toLowerCase()) ||
+        (p.dept || "").toLowerCase().includes(q.toLowerCase())),
+  );
+
+  const lowStockCount = safeProducts.filter((p) => p && Number(p.stock || 0) <= Number(p.reorder || 0)).length;
 
   const resetForm = () => {
     setFormName("");
@@ -323,15 +345,6 @@ function Products() {
     setFormReorderLevel(selected.reorder.toString());
     setEditOpen(true);
   };
-
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      p.sku.toLowerCase().includes(q.toLowerCase()) ||
-      p.dept.toLowerCase().includes(q.toLowerCase()),
-  );
-
-  const lowStockCount = products.filter((p) => p.stock <= p.reorder).length;
 
   return (
     <div className="space-y-6">

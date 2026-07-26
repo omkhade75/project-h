@@ -78,13 +78,19 @@ function Expenses() {
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [scopedExpenses]);
 
-  // Construct a trend based on actual database entries
+  // Construct a trend based strictly on actual database entries
   const trend = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => ({
-      m: ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"][i],
-      v: Math.round(18000 + Math.sin(i / 2) * 5000 + total * 0.1),
-    }));
-  }, [total]);
+    const months = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"];
+    if (scopedExpenses.length === 0) {
+      return months.map((m) => ({ m, v: 0 }));
+    }
+    return months.map((m, idx) => {
+      const monthPrefix = `2026-0${idx + 1}`;
+      const monthExps = scopedExpenses.filter((e) => e.date && e.date.startsWith(monthPrefix));
+      const monthTotal = monthExps.reduce((sum, e) => sum + (e.amount || 0), 0);
+      return { m, v: monthTotal };
+    });
+  }, [scopedExpenses]);
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();

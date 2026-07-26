@@ -76,9 +76,9 @@ function Utilities() {
           data: { role: user?.role || "owner", email: user?.email || "", activeDate },
         };
         const data = await getUtilitiesServer(payload);
-        setElectricityToday(data.electricityToday);
-        setWaterToday(data.waterToday);
-        setDbAnomaly(data.isAnomaly);
+        setElectricityToday(Number(data?.electricityToday || 0));
+        setWaterToday(Number(data?.waterToday || 0));
+        setDbAnomaly(Boolean(data?.isAnomaly));
       } catch (err) {
         console.error("Failed to load utilities", err);
       }
@@ -106,18 +106,18 @@ function Utilities() {
     return Array.from({ length: 3 }, (_, i) => {
       const monthPrefix = `2026-0${3 + i}`;
       const elecReadings = utilities.filter(
-        (u) => u.date.startsWith(monthPrefix) && u.type === "Electricity",
+        (u) => u.date && u.date.startsWith(monthPrefix) && u.type === "Electricity",
       );
       const waterReadings = utilities.filter(
-        (u) => u.date.startsWith(monthPrefix) && u.type === "Water",
+        (u) => u.date && u.date.startsWith(monthPrefix) && u.type === "Water",
       );
       return {
         m: ["March", "April", "May"][i],
         electricity: Math.round(
-          (elecReadings.reduce((sum, u) => sum + u.consumption, 0) || (isGrandSquare ? 360000 : 0)) / 1000,
+          (elecReadings.reduce((sum, u) => sum + (u.consumption || 0), 0) || (isGrandSquare ? 360000 : 0)) / 1000,
         ), // kWh in thousands
         water: Math.round(
-          (waterReadings.reduce((sum, u) => sum + u.consumption, 0) || (isGrandSquare ? 240000 : 0)) / 1000,
+          (waterReadings.reduce((sum, u) => sum + (u.consumption || 0), 0) || (isGrandSquare ? 240000 : 0)) / 1000,
         ), // Liters in thousands
       };
     });
@@ -348,10 +348,10 @@ function Utilities() {
                     </span>
                   </td>
                   <td className="py-2 text-right font-semibold">
-                    {u.consumption.toLocaleString("en-IN")} {u.type === "Electricity" ? "kWh" : "L"}
+                    {Number(u.consumption || 0).toLocaleString("en-IN")} {u.type === "Electricity" ? "kWh" : "L"}
                   </td>
                   <td className="py-2 text-right font-semibold text-foreground">
-                    {fmtINR(u.cost)}
+                    {fmtINR(Number(u.cost || 0))}
                   </td>
                   <td className="py-2 pl-4 text-muted-foreground">Telemetry</td>
                   <td className="py-2 text-right">
