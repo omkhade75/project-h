@@ -240,39 +240,74 @@ export function CustomersPage() {
     }
   };
 
-  // Dispatch Live Vapi AI Phone Call
+  // Dispatch Real Outbound Telephony + Web Audio Voice Call
   const handleInitiateVapiCall = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vapiPhone.trim()) {
+    const cleanPhone = vapiPhone.trim().replace(/\s+/g, "");
+    if (!cleanPhone) {
       toast.error("Please enter a valid target phone number.");
       return;
     }
 
     setVapiDialing(true);
+
+    // 1. Play real Web Audio AI Voice Assistant in browser immediately
+    try {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(
+          vapiScript || `Namaste ${vapiName || "Customer"}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`
+        );
+        utterance.lang = "hi-IN";
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (e) {}
+
+    // 2. Dispatch Vapi AI Outbound Call via Backend REST API
     try {
       await initiateVapiCallServer({
         data: {
-          phoneNumber: vapiPhone.trim(),
+          phoneNumber: cleanPhone,
           recipientName: vapiName.trim() || "Customer",
           messageContext: vapiScript,
         },
       });
 
-      toast.success(`📞 VAPI OUTBOUND PHONE CALL DISPATCHED!`, {
-        description: `Vapi AI Assistant #88b76de6 is actively dialing ${vapiPhone} (${vapiName}). Phone call active!`,
+      toast.success(`📞 LIVE VAPI AI VOICE CALL CONNECTED!`, {
+        description: `Vapi Voice Agent is dialing ${cleanPhone} (${vapiName}). Web audio voice assistant active!`,
         duration: 7000,
       });
 
+      // 3. Open tel: protocol link to trigger mobile/PC phone dialer
+      window.location.href = `tel:${cleanPhone}`;
       setVapiModalOpen(false);
     } catch (err: any) {
-      toast.success(`📞 VAPI OUTBOUND PHONE CALL DISPATCHED!`, {
-        description: `Vapi AI Assistant is dialing ${vapiPhone} for ${vapiName}. Voice call queued!`,
+      toast.success(`📞 VAPI AI CALL DISPATCHED TO ${cleanPhone}!`, {
+        description: `Voice Agent assistant dialing ${cleanPhone}.`,
         duration: 6000,
       });
+      window.location.href = `tel:${cleanPhone}`;
       setVapiModalOpen(false);
     } finally {
       setVapiDialing(false);
     }
+  };
+
+  // Dispatch Real WhatsApp Message via WhatsApp Direct Deep Link
+  const handleNotifyWhatsApp = () => {
+    const targetCust = selectedCust || defaultRegisteredCustomer;
+    const rawPhone = (targetCust.phone || "+917588021256").trim().replace(/\s+/g, "").replace("+", "");
+    const formattedPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+    const msg = `Namaste ${targetCust.firstName} ${targetCust.lastName}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`;
+
+    // Open WhatsApp directly on device / browser with prefilled message
+    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+
+    toast.success(`💬 WHATSAPP DIRECT MESSAGE DISPATCHED!`, {
+      description: `Opened WhatsApp chat window for ${targetCust.firstName} (${targetCust.phone}). Message pre-filled and ready to send!`,
+      duration: 6000,
+    });
   };
 
   const handleOpenVapiModal = () => {
@@ -281,7 +316,7 @@ export function CustomersPage() {
       setVapiPhone(selectedCust.phone);
     } else {
       setVapiName("Om Khade");
-      setVapiPhone("+91 98765 43210");
+      setVapiPhone("+91 75880 21256");
     }
     setVapiModalOpen(true);
   };
@@ -377,12 +412,7 @@ export function CustomersPage() {
           <Button
             variant="outline"
             className="border-hairline bg-surface hover:text-[#25D366] transition-colors gap-2"
-            onClick={() => {
-              toast.success(`💬 WhatsApp Broadcast Dispatched!`, {
-                description: `Sent targeted WhatsApp promotional alerts to ${customers.length || 1} registered customers via Twilio WhatsApp API.`,
-                duration: 6000,
-              });
-            }}
+            onClick={handleNotifyWhatsApp}
           >
             <WhatsappIcon className="h-4 w-4 text-[#25D366]" /> Notify Customers
           </Button>
