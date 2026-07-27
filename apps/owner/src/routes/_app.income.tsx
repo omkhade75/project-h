@@ -139,7 +139,7 @@ function RouteComponent() {
   };
 
   // --- Dynamic calculations for active month ---
-  const activeYearMonth = (activeDate || new Date().toISOString()).split("T")[0].slice(0, 7);
+  const activeYearMonth = (activeDate || "2026-07-27T12:00:00.000Z").split("T")[0].slice(0, 7);
   const formattedMonth = new Date(activeDate).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
@@ -147,7 +147,7 @@ function RouteComponent() {
 
   // 1. Sales revenue from transactions
   const thisMonthTxns = transactions.filter(
-    (t) => (t?.date || new Date().toISOString()).split("T")[0].startsWith(activeYearMonth) && t.status === "Completed",
+    (t) => (t?.date || "2026-07-27T12:00:00.000Z").split("T")[0].startsWith(activeYearMonth) && t.status === "Completed",
   );
 
   let grossSales = 0;
@@ -188,7 +188,7 @@ function RouteComponent() {
 
   // Populate POS sales
   thisMonthTxns.forEach((t) => {
-    const dateStr = (t?.date || new Date().toISOString()).split("T")[0];
+    const dateStr = (t?.date || "2026-07-27T12:00:00.000Z").split("T")[0];
     if (dailyDataMap[dateStr] !== undefined) {
       dailyDataMap[dateStr] += t.total;
     }

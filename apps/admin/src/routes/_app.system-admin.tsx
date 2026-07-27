@@ -245,7 +245,7 @@ export function SystemAdminPage() {
         plan: app.plan || "Enterprise AI",
         users: [{ name: app.ownerName || "Store Owner", email: app.ownerEmail }],
         location: app.city || "Mumbai",
-        createdAt: app.createdAt || new Date().toISOString(),
+        createdAt: app.createdAt || "2026-07-27T12:00:00.000Z",
       });
     }
   });

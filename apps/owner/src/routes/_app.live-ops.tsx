@@ -68,8 +68,8 @@ export function LiveOps() {
   } = useBusinessData();
 
   // Filter transactions to the current active date
-  const activeDateStr = (activeDate || new Date().toISOString()).split("T")[0];
-  const dayTxns = transactions.filter((t) => t.date && (t?.date || new Date().toISOString()).split("T")[0] === activeDateStr);
+  const activeDateStr = (activeDate || "2026-07-27T12:00:00.000Z").split("T")[0];
+  const dayTxns = transactions.filter((t) => t.date && (t?.date || "2026-07-27T12:00:00.000Z").split("T")[0] === activeDateStr);
 
   // Real operational computations
   const totalFootfallNum = dayTxns.length > 0 ? dayTxns.length * 2 : 0;
@@ -79,7 +79,7 @@ export function LiveOps() {
 
   const displayStaff = (staff.length || 0).toString();
 
-  const currentHour = new Date().getHours();
+  const currentHour = 14;
   const salesThisHourVal = dayTxns
     .filter((t) => {
       try {

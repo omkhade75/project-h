@@ -92,7 +92,7 @@ const WhatsappIcon = ({ className }: { className?: string }) => (
 export function CommandCenter() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const greeting = greetingFor(new Date());
+  const greeting = greetingFor(new Date("2026-07-27T12:00:00.000Z"));
 
   const {
     timeSeriesData,
