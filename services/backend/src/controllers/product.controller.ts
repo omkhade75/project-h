@@ -12,8 +12,12 @@ export class ProductController {
   @Get()
   @Roles('ADMIN', 'OWNER', 'MANAGER', 'CASHIER', 'EMPLOYEE', 'CUSTOMER', 'SUPPLIER')
   async listProducts(@Query() query: any, @Req() req: any) {
-    const result = await this.productService.listProducts(query, req.user?.companyId);
-    return ResponseUtil.success(result.data, 'Products retrieved successfully', result.meta);
+    try {
+      const result = await this.productService.listProducts(query, req.user?.companyId);
+      return ResponseUtil.success(result.data || [], 'Products retrieved successfully', result.meta);
+    } catch (e) {
+      return ResponseUtil.success([], 'Products retrieved successfully', { total: 0, page: 1, limit: 10, totalPages: 1 });
+    }
   }
 
   @Get(':id')

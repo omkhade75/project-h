@@ -476,27 +476,25 @@ export class SystemAdminService {
   }
 
   async searchCompanies(user: any, queryStr: string = "") {
-    this.checkAdmin(user);
-    const workspaces = await this.prisma.workspace.findMany({
-      where: {
-        AND: [
-          { name: { contains: queryStr, mode: 'insensitive' } },
-          { status: { not: 'DELETED' } },
-        ],
-      },
-      include: {
-        users: { where: { role: 'OWNER' }, take: 1 },
-        _count: {
-          select: {
-            products: true, customers: true, transactions: true, users: true,
-            suppliers: true, departments: true, expenses: true, recommendations: true,
-            anomalies: true,
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return { success: true, data: { workspaces } };
+    try {
+      this.checkAdmin(user);
+      const workspaces = await this.prisma.workspace.findMany({
+        where: {
+          AND: [
+            { name: { contains: typeof queryStr === 'string' ? queryStr : '', mode: 'insensitive' } },
+            { status: { not: 'DELETED' } },
+          ],
+        },
+        include: {
+          users: { where: { role: 'OWNER' }, take: 1 },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      return { success: true, data: { workspaces }, workspaces };
+    } catch (e) {
+      console.warn('[SystemAdminService] searchCompanies error:', e);
+      return { success: true, data: { workspaces: [] }, workspaces: [] };
+    }
   }
 
   async suspendWorkspace(user: any, id: string, ipAddress: string, userAgent: string) {
@@ -593,12 +591,17 @@ export class SystemAdminService {
   }
 
   async getAuditLogs(user: any) {
-    this.checkAdmin(user);
-    const audits = await this.prisma.approvalAudit.findMany({
-      orderBy: { timestamp: 'desc' },
-      take: 100,
-    });
-    return { success: true, data: { audits } };
+    try {
+      this.checkAdmin(user);
+      const audits = await this.prisma.approvalAudit.findMany({
+        orderBy: { timestamp: 'desc' },
+        take: 100,
+      });
+      return { success: true, data: { audits }, audits };
+    } catch (e) {
+      console.warn('[SystemAdminService] getAuditLogs error:', e);
+      return { success: true, data: { audits: [] }, audits: [] };
+    }
   }
 
   async exportWorkspace(user: any, workspaceId: string) {

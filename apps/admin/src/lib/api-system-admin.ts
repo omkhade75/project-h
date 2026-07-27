@@ -10,7 +10,10 @@ export const approveRegistrationServer = async (data?: any) => handleResponse(aw
 export const rejectRegistrationServer = async (data?: any) => handleResponse(await fetchApi('/api/system-admin/reject', { method: 'POST', body: JSON.stringify(data?.data || data) }));
 export const suspendRegistrationServer = async (data?: any) => handleResponse(await fetchApi('/api/system-admin/suspend', { method: 'POST', body: JSON.stringify(data?.data || data) }));
 export const deleteRegistrationServer = async (data?: any) => handleResponse(await fetchApi('/api/system-admin/delete', { method: 'POST', body: JSON.stringify(data?.data || data) }));
-export const searchCompaniesServer = async (query?: string) => handleResponse(await fetchApi(`/api/system-admin/companies${query ? `?query=${encodeURIComponent(query)}` : ''}`, { method: 'GET' }));
+export const searchCompaniesServer = async (queryParam?: any) => {
+  const qStr = typeof queryParam === 'string' ? queryParam : (queryParam?.data?.query || queryParam?.query || '');
+  return handleResponse(await fetchApi(`/api/system-admin/companies${qStr ? `?query=${encodeURIComponent(qStr)}` : ''}`, { method: 'GET' }));
+};
 export const suspendWorkspaceServer = async (data?: any) => handleResponse(await fetchApi('/api/system-admin/suspend-workspace', { method: 'POST', body: JSON.stringify(data?.data || data) }));
 export const reactivateWorkspaceServer = async (data?: any) => handleResponse(await fetchApi('/api/system-admin/reactivate-workspace', { method: 'POST', body: JSON.stringify(data?.data || data) }));
 export const deleteWorkspaceServer = async (data?: any) => handleResponse(await fetchApi('/api/system-admin/delete-workspace', { method: 'POST', body: JSON.stringify(data?.data || data) }));
