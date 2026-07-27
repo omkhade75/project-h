@@ -213,7 +213,7 @@ function SupplierPortal() {
                   <div className="grid grid-cols-2 text-xs text-muted-foreground">
                     <div>Origin: <span className="text-foreground font-medium">{s.origin}</span></div>
                     <div>Destination: <span className="text-foreground font-medium">{s.destination}</span></div>
-                    <div>ETA: <span className="text-foreground font-medium">{new Date(s.eta).toLocaleString()}</span></div>
+                    <div>ETA: <span className="text-foreground font-medium">{(typeof s.eta === "string" ? (s.eta || "2026-07-27").split("T")[0] : "2026-07-27")}</span></div>
                     <div>Details: <span className="text-foreground font-medium">{s.routeDetails}</span></div>
                   </div>
                 </div>

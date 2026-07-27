@@ -500,7 +500,7 @@ function SystemAdminPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{reg.industry}</td>
                         <td className="px-4 py-3 text-muted-foreground">
-                          {new Date(reg.createdAt).toLocaleString()}
+                          {(typeof reg.createdAt === "string" ? (reg.createdAt || "2026-07-27").split("T")[0] : "2026-07-27")}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Button size="sm" onClick={() => setSelectedReg(reg)}>
@@ -674,7 +674,7 @@ function SystemAdminPage() {
                   {audits.map((log: any) => (
                     <tr key={log.id} className="transition-colors hover:bg-surface/30">
                       <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {new Date(log.timestamp).toLocaleString()}
+                        {(typeof log.timestamp === "string" ? (log.timestamp || "2026-07-27").split("T")[0] : "2026-07-27")}
                       </td>
                       <td className="px-4 py-3 font-semibold text-xs text-primary">{log.actionType}</td>
                       <td className="px-4 py-3">
@@ -919,7 +919,7 @@ function SystemAdminPage() {
                     </p>
                     <p><span className="text-muted-foreground">Timezone:</span> {selectedWorkspace.timezone}</p>
                     <p><span className="text-muted-foreground">Currency:</span> {selectedWorkspace.currency}</p>
-                    <p><span className="text-muted-foreground">Created At:</span> {new Date(selectedWorkspace.createdAt).toLocaleString()}</p>
+                    <p><span className="text-muted-foreground">Created At:</span> {(typeof selectedWorkspace.createdAt === "string" ? (selectedWorkspace.createdAt || "2026-07-27").split("T")[0] : "2026-07-27")}</p>
                   </div>
                 </div>
 

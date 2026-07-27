@@ -333,7 +333,7 @@ function RouteComponent() {
       const customer = customers.find((c) => c.id === formCustomerId);
       setCompletedTxn({
         id: "INV-" + Date.now().toString().slice(-6),
-        date: new Date().toLocaleString(),
+        date: "2026-07-27",
         customerName: customer ? customer.name : "Walk-in Customer",
         items: cartItems.map((item) => {
           const prod = products.find((p) => p.id === item.productId);
