@@ -143,6 +143,332 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const localNow = new Date(now.getTime() - offset * 60 * 1000);
     setActiveDate(localNow.toISOString().split("T")[0]);
   }, []);
+
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("omnimind_time_range");
+      if (saved) setTimeRange(saved as TimeRange);
+    }
+  }, []);
+
+  const [dbRev, setDbRev] = useState(0);
+  const forceRefresh = () => setDbRev((r) => r + 1);
+
+  const [isOffline, setIsOffline] = useState(false);
+  const [investments, setInvestments] = useState<InvestmentItem[]>([]);
+  const [logistics, setLogistics] = useState<DeliveryItem[]>([]);
+  const [staff, setStaff] = useState<StaffListItem[]>([]);
+  const [syncRev, setSyncRev] = useState(0);
+
+  // Synchronize database records from backend APIs
+  useEffect(() => {
+    let intervalId: any;
+
+    async function syncData() {
+      if (!user) return;
+      try {
+        const payload = {
+          data: {
+            role: user.role,
+            email: user.email,
+            activeDate,
+            timeRange,
+          },
+        };
+
+        const [prods, txns, custs, supps, exps, pos, recs, anoms, utils, invs, logs, stf] =
+          await Promise.all([
+            getProductsServer(payload).catch(() => []),
+            getTransactionsServer(payload).catch(() => []),
+            getCustomersServer(payload).catch(() => []),
+            getSuppliers(payload).catch(() => []),
+            getExpensesServer(payload).catch(() => []),
+            getPurchaseOrders(payload).catch(() => []),
+            getRecommendationsServer(payload).catch(() => []),
+            getAnomaliesServer(payload).catch(() => []),
+            getUtilitiesServer(payload).catch(() => ({ readings: [] })),
+            getInvestmentsServer(payload).catch(() => []),
+            getLogisticsDispatchesServer(payload).catch(() => []),
+            getStaffServer(payload).catch(() => []),
+          ]);
+
+        const safeProds = Array.isArray(prods) ? prods : [];
+        const safeTxns = Array.isArray(txns) ? txns : [];
+        const safeCusts = Array.isArray(custs) ? custs : [];
+        const safeSupps = Array.isArray(supps) ? supps : [];
+        const safeExps = Array.isArray(exps) ? exps : [];
+        const safePOs = Array.isArray(pos) ? pos : [];
+        const safeRecs = Array.isArray(recs) ? recs : [];
+        const safeAnoms = Array.isArray(anoms) ? anoms : [];
+        const safeUtils = Array.isArray(utils?.readings) ? utils.readings : [];
+
+        const mappedProducts = safeProds.map((p) => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          dept: p.dept || "General",
+          category: p.category || "General",
+          price: p.price,
+          cost: p.cost,
+          stock: p.stock,
+          reorder: p.reorderLevel,
+          status: p.status as any,
+          batches: p.batches || [],
+          locationBreakdown: p.locationBreakdown || { warehouse: p.stock, retailFloor: 0 },
+        }));
+
+        const mappedTransactions = safeTxns.map((t) => ({
+          id: t.id,
+          date: t.date,
+          time: t.time || "12:00",
+          dept: t.dept || "General",
+          customerId: t.customerId || "CUST-0",
+          customerName: t.customerName || "Walk-in Customer",
+          subtotal: t.subtotal,
+          tax: t.tax,
+          discount: t.discount,
+          total: t.total,
+          paymentMethod: t.paymentMethod as any,
+          status: t.status as any,
+          cashier: t.cashier || "System",
+          items: t.items || [],
+        }));
+
+        const mappedCustomers = safeCusts.map((c) => ({
+          id: c.id,
+          name: c.name,
+          phone: c.phone,
+          tier: c.tier as any,
+          totalSpend: c.totalSpend,
+          ordersCount: c.ordersCount,
+          lastPurchaseDate: c.lastPurchaseDate,
+          favDept: c.favDept || "General",
+          churnRiskScore: c.churnRiskScore,
+          notes: c.notes,
+        }));
+
+        const mappedSuppliers = safeSupps.map((s) => ({
+          id: s.id,
+          name: s.name,
+          contactName: s.contactPerson || s.contactName || "Contact Person",
+          phone: s.phone,
+          suppliedDepts: s.categories || ["General"],
+          leadTimeDays: s.leadTimeDays || 3,
+          onTimeDeliveryPct: s.onTimeDeliveryPct || 98,
+          qualityRating: s.qualityRating || 95,
+          activeOrders: s.activeOrders || 0,
+        }));
+
+        const mappedExpenses = safeExps.map((e) => ({
+          id: e.id,
+          date: e.date,
+          category: e.category,
+          desc: e.description,
+          vendor: e.vendor,
+          amount: e.amount,
+          status: e.status as any,
+          dept: "All",
+        }));
+
+        const mappedPurchaseOrders = safePOs.map((po) => ({
+          id: po.id,
+          productId: po.productId,
+          productName: po.productName,
+          supplierId: po.supplierId,
+          supplierName: po.supplierName,
+          quantity: po.quantity,
+          unitCost: po.totalCost / (po.quantity || 1),
+          totalCost: po.totalCost,
+          status: po.status as any,
+          date: po.date,
+          source: po.source,
+        }));
+
+        const mappedRecommendations = safeRecs.map((r: any) => ({
+          id: r.id,
+          category: r.category,
+          title: r.title,
+          evidence: r.evidence,
+          impact: r.impact,
+          confidence: r.confidence,
+          priority: r.priority as any,
+          status: r.status as any,
+          generated: r.generated,
+          dept: r.category === "MARKDOWN" ? "Fashion" : "All",
+          severity: r.priority as any,
+          explanation: r.evidence,
+          suggestedAction: r.impact,
+        }));
+
+        const mappedAnomalies = safeAnoms.map((a: any) => ({
+          id: a.id,
+          severity: a.severity,
+          metric: a.metric,
+          expected: a.expected,
+          actual: a.actual,
+          deviation: a.deviation,
+          when: a.when,
+          cause: a.cause,
+          action: a.action,
+          status: a.status,
+          date: a.when === "Just now" ? new Date().toISOString().split("T")[0] : a.when,
+        }));
+
+        const mappedUtilities = safeUtils.map((u: any) => ({
+          id: u.id,
+          date: u.date,
+          type: (u.type === "ELECTRICITY" ? "Electricity" : "Water") as "Electricity" | "Water",
+          zone: u.zone,
+          consumption: u.value,
+          cost: u.cost,
+          baseline: 100,
+          anomalyScore: 0.05,
+        }));
+
+        const currentSchema = db.schema;
+        db.save({
+          ...currentSchema,
+          products: mappedProducts,
+          transactions: mappedTransactions,
+          customers: mappedCustomers,
+          suppliers: mappedSuppliers,
+          expenses: mappedExpenses,
+          purchaseOrders: mappedPurchaseOrders,
+          recommendations: mappedRecommendations,
+          anomalies: mappedAnomalies,
+          utilities: mappedUtilities,
+        });
+
+        setInvestments(Array.isArray(invs) ? invs : []);
+        setLogistics(Array.isArray(logs) ? logs : []);
+        setStaff(Array.isArray(stf) ? stf : []);
+
+        setSyncRev((prev) => prev + 1);
+      } catch (err) {
+        console.warn("Failed to sync with database.", err);
+        setIsOffline(true);
+      }
+    }
+
+    if (user && !isOffline) {
+      syncData();
+      intervalId = setInterval(syncData, 8000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [user, activeDate, timeRange, isOffline]);
+
+  const changeDate = (date: string) => {
+    setActiveDate(date);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("omnimind_active_date", date);
+    }
+  };
+
+  const changeTimeRange = (range: TimeRange) => {
+    setTimeRange(range);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("omnimind_time_range", range);
+    }
+  };
+
+  const acceptRecommendation = (id: string) => {
+    db.acceptRecommendation(id);
+    toast.success("AI Recommendation accepted!");
+    forceRefresh();
+  };
+
+  const rejectRecommendation = (id: string) => {
+    db.rejectRecommendation(id);
+    toast.info("AI Recommendation dismissed.");
+    forceRefresh();
+  };
+
+  const applyMarkdown = (productId: string, batchId: string, discountPercent: number) => {
+    db.applyMarkdown(productId, batchId, discountPercent);
+    toast.success(`Applied ${discountPercent}% markdown discount!`);
+    forceRefresh();
+  };
+
+  const addPurchaseOrder = (poInput: Omit<PurchaseOrder, "id" | "date">) => {
+    db.addPurchaseOrder({
+      ...poInput,
+      id: `PO-${Date.now().toString().slice(-6)}`,
+      date: activeDate,
+    });
+    toast.success("Purchase order added successfully!");
+    forceRefresh();
+  };
+
+  const resetDemoData = () => {
+    db.reset();
+    setActiveDate(new Date().toISOString().split("T")[0]);
+    setTimeRange("30d");
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("omnimind_active_date");
+      window.localStorage.removeItem("omnimind_time_range");
+    }
+    forceRefresh();
+    toast.success("Database cache reset.");
+  };
+
+  // Retrieve base records from DB
+  const products = db.getProducts();
+  const transactions = db.getTransactions();
+  const customers = db.getCustomers();
+  const suppliers = db.getSuppliers();
+  const expenses = db.getExpenses();
+  const utilities = db.getUtilityReadings();
+  const recommendations = db.getRecommendations();
+  const anomalies = db.getAnomalies();
+  const purchaseOrders = db.getPurchaseOrders();
+  const rawDailySnapshot = db.getDailySnapshot(activeDate);
+  const dailySnapshot = rawDailySnapshot;
+
+  const activeDateObj = new Date(activeDate);
+
+  const filterByTimeRange = <T extends { date: string }>(items: T[]): T[] => {
+    if (!Array.isArray(items)) return [];
+    if (timeRange === "today") {
+      return items.filter((item) => item.date === activeDate);
+    } else if (timeRange === "yesterday") {
+      const yesterday = new Date(activeDateObj);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+      return items.filter((item) => item.date === yesterdayStr);
+    } else if (timeRange === "7d") {
+      const limit = new Date(activeDateObj);
+      limit.setDate(limit.getDate() - 7);
+      return items.filter((item) => {
+        const itemDate = new Date(item.date);
+        return itemDate >= limit && itemDate <= activeDateObj;
+      });
+    } else if (timeRange === "30d") {
+      const limit = new Date(activeDateObj);
+      limit.setDate(limit.getDate() - 30);
+      return items.filter((item) => {
+        const itemDate = new Date(item.date);
+        return itemDate >= limit && itemDate <= activeDateObj;
+      });
+    }
+    return items.filter((item) => new Date(item.date) <= activeDateObj);
+  };
+
+  let scopedTransactions = filterByTimeRange(transactions);
+  let scopedProducts = products;
+  let scopedCustomers = customers;
+  let scopedExpenses = filterByTimeRange(expenses);
+  let scopedRecommendations = recommendations;
+  let scopedAnomalies = anomalies.filter((a) => new Date(a.date) <= activeDateObj);
+
+  // Derived Metrics
+  const totalRevenue = scopedTransactions.reduce(
+    (sum, t) => (t.status === "Completed" ? sum + t.total : sum),
+    0,
+  );
   const totalOrders = scopedTransactions.length;
   const totalExpenses = scopedExpenses.reduce((sum, e) => sum + e.amount, 0);
   const averageOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
