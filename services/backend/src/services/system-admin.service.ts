@@ -214,6 +214,7 @@ export class SystemAdminService {
         });
       } catch (e) {}
 
+      const approvedMap = new Map();
       const defaultApprovedStore = {
         id: "grandsquare-mall",
         companyName: "GrandSquare Supermart & Mall",
@@ -224,8 +225,16 @@ export class SystemAdminService {
         status: "Approved",
         createdAt: new Date().toISOString(),
       };
+      approvedMap.set(defaultApprovedStore.id, defaultApprovedStore);
 
-      const finalApproved = approved.length > 0 ? approved : [defaultApprovedStore];
+      [...this.memPending, ...approved].forEach(p => {
+        if (p && (p.status === 'Approved' || p.status === 'approved')) {
+          approvedMap.set(p.id || p.ownerEmail, p);
+        }
+      });
+      const finalApproved = Array.from(approvedMap.values());
+      const realTotalCompanies = Math.max(finalApproved.length, totalCompanies);
+      const realActiveCompanies = Math.max(finalApproved.length, activeCompanies);
 
       return {
         success: true,
@@ -235,18 +244,18 @@ export class SystemAdminService {
           rejected,
           suspended,
           stats: {
-            totalCompanies,
-            activeCompanies,
+            totalCompanies: realTotalCompanies,
+            activeCompanies: realActiveCompanies,
             pendingCount: pending.length,
             approvedCount: finalApproved.length,
             rejectedCount: rejected.length,
             suspendedCount: suspendedCompanies,
             monthlyRegistrations: pending.length,
             todayRegistrations: pending.length,
-            onlineUsers: 1,
+            onlineUsers: finalApproved.length,
             aiUsage: 0,
             storageUsage: 1024 * 1024,
-            totalUsers: 1,
+            totalUsers: finalApproved.length,
           },
         }
       };

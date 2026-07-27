@@ -229,12 +229,38 @@ export function SystemAdminPage() {
   const safeApproved = Array.isArray(data?.approved) && data.approved.length > 0 ? data.approved : [defaultActiveWorkspace];
   const safeRejected = Array.isArray(data?.rejected) ? data.rejected : [];
   const safeSuspended = Array.isArray(data?.suspended) ? data.suspended : [];
-  const safeWorkspaces = Array.isArray(workspaces) && workspaces.length > 0 ? workspaces : [defaultActiveWorkspace];
   const safeAudits = Array.isArray(audits) ? audits : [];
 
+  const combinedWorkspacesMap = new Map();
+  combinedWorkspacesMap.set(defaultActiveWorkspace.id, defaultActiveWorkspace);
+
+  safeApproved.forEach((app: any) => {
+    if (app && app.companyName) {
+      combinedWorkspacesMap.set(app.id || app.ownerEmail || app.companyName, {
+        id: app.id || "ws-" + (app.companyName || "store").toLowerCase().replace(/[^a-z0-9]/g, "-"),
+        name: app.companyName || app.name || "Approved Store Workspace",
+        ownerName: app.ownerName || "Store Owner",
+        ownerEmail: app.ownerEmail || app.email || "owner@store.com",
+        status: "ACTIVE",
+        plan: app.plan || "Enterprise AI",
+        users: [{ name: app.ownerName || "Store Owner", email: app.ownerEmail }],
+        location: app.city || "Mumbai",
+        createdAt: app.createdAt || new Date().toISOString(),
+      });
+    }
+  });
+
+  if (Array.isArray(workspaces)) {
+    workspaces.forEach((ws: any) => {
+      if (ws && ws.name) combinedWorkspacesMap.set(ws.id || ws.name, ws);
+    });
+  }
+
+  const safeWorkspaces = Array.from(combinedWorkspacesMap.values());
+
   // Real Database Metrics with Active Store Workspace
-  const totalActiveStores = Math.max(1, data?.stats?.activeCompanies || safeWorkspaces.filter(w => w.status === "ACTIVE").length);
-  const totalUsersCount = Math.max(1, data?.stats?.onlineUsers || 1);
+  const totalActiveStores = Math.max(safeWorkspaces.length, data?.stats?.activeCompanies || 1);
+  const totalUsersCount = Math.max(safeWorkspaces.length, data?.stats?.onlineUsers || 1);
   const totalStorageOccupiedMB = Math.max(12.4, Number(((data?.stats?.storageUsage || 0) / 1024).toFixed(1)));
 
   if (loading) {
