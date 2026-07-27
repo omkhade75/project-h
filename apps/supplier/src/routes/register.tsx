@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { registerCompanyServer } from "@/lib/server-registration";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { GoogleMapsPicker } from "@/components/google-maps-picker";
 
 export const Route = createFileRoute("/register")({
   head: () => ({
@@ -72,6 +73,16 @@ function RegisterPage() {
 
   const handleCheckbox = (name: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  const handleAddressFromMap = (fullAddr: string, details?: { city?: string; state?: string; country?: string }) => {
+    setFormData((prev) => ({
+      ...prev,
+      address: fullAddr,
+      city: details?.city || prev.city || "Mumbai",
+      state: details?.state || prev.state || "Maharashtra",
+      country: details?.country || prev.country || "India",
+    }));
   };
 
   const nextStep = () => {
@@ -244,15 +255,19 @@ function RegisterPage() {
               </div>
             )}
 
-            {/* STEP 3: ADDRESS */}
+            {/* STEP 3: ADDRESS WITH GOOGLE MAPS AUTO-SELECT */}
             {step === 3 && (
               <div className="animate-in fade-in slide-in-from-right-4 space-y-4">
-                <h3 className="mb-4 text-lg font-semibold">Business Address</h3>
-                <div className="space-y-1.5">
-                  <Label htmlFor="address">Full Address *</Label>
-                  <Input id="address" name="address" value={formData.address} onChange={handleChange} required placeholder="e.g. Shop 12, Main Street" />
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <h3 className="mb-2 text-lg font-semibold">Business Address</h3>
+
+                <GoogleMapsPicker
+                  address={formData.address}
+                  onAddressChange={handleAddressFromMap}
+                  label="Full Business Address (Auto-Select from Live Map)"
+                  placeholder="Type shop location or click '📍 Auto-Select Address from Map'..."
+                />
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="city">City *</Label>
                     <Input id="city" name="city" value={formData.city} onChange={handleChange} required placeholder="Mumbai" />

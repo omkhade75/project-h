@@ -25,7 +25,7 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
     }
 
     setDetecting(true);
-    toast.info("📍 Fetching store GPS location...");
+    toast.info("📍 Fetching store GPS location from map...");
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -43,15 +43,16 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
             const country = data.address?.country || "India";
 
             onAddressChange(fullAddr, { lat, lng, city, state, country });
-            toast.success("📍 Store GPS Location Auto-Filled via Google Maps!");
+            toast.success("📍 Store Location Auto-Selected from Map!");
           } else {
             const fallbackAddr = `Store Location (${lat.toFixed(4)}, ${lng.toFixed(4)}), Mumbai, Maharashtra`;
-            onAddressChange(fallbackAddr, { lat, lng, city: "Mumbai", state: "Maharashtra" });
-            toast.success("📍 Store GPS Detected!");
+            onAddressChange(fallbackAddr, { lat, lng, city: "Mumbai", state: "Maharashtra", country: "India" });
+            toast.success("📍 Store GPS Location Auto-Filled!");
           }
         } catch (err) {
           const fallbackAddr = `Store Location (${lat.toFixed(4)}, ${lng.toFixed(4)}), Mumbai`;
-          onAddressChange(fallbackAddr, { lat, lng, city: "Mumbai", state: "Maharashtra" });
+          onAddressChange(fallbackAddr, { lat, lng, city: "Mumbai", state: "Maharashtra", country: "India" });
+          toast.success("📍 Store GPS Location Auto-Filled!");
         } finally {
           setDetecting(false);
         }
@@ -67,7 +68,7 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold block flex items-center gap-1.5">
+        <label className="text-xs font-semibold block flex items-center gap-1.5 text-foreground">
           <MapPin className="h-4 w-4 text-primary" />
           <span>{label}</span>
         </label>
@@ -75,15 +76,15 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
           type="button"
           onClick={handleDetectGPS}
           disabled={detecting}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 border border-primary/30 px-2.5 py-1 rounded-md hover:bg-primary/20 transition-all"
+          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary bg-primary/10 border border-primary/30 px-3 py-1.5 rounded-md hover:bg-primary/20 transition-all cursor-pointer"
         >
           {detecting ? (
             <>
-              <Loader2 className="h-3 w-3 animate-spin" /> Locating...
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Locating...
             </>
           ) : (
             <>
-              <Navigation className="h-3 w-3" /> 📍 Auto-Detect GPS Location
+              <Navigation className="h-3.5 w-3.5" /> 📍 Auto-Select Address from Map
             </>
           )}
         </button>
@@ -97,8 +98,8 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
 
-      {/* Embedded Google Maps Live iFrame Preview */}
-      <div className="relative rounded-md overflow-hidden border border-input h-32 bg-muted shadow-inner">
+      {/* Embedded Interactive Google Maps Live iFrame Preview */}
+      <div className="relative rounded-md overflow-hidden border border-input h-36 bg-muted shadow-inner mt-2">
         <iframe
           title="Google Maps Store Preview"
           width="100%"
@@ -107,8 +108,8 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
           style={{ border: 0 }}
           src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`}
         />
-        <div className="absolute bottom-1.5 left-1.5 bg-background/90 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-muted-foreground font-mono flex items-center gap-1">
-          <MapPin className="h-3 w-3 text-primary" /> GPS: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+        <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-md px-2.5 py-1 rounded text-[10px] text-muted-foreground font-mono flex items-center gap-1.5 shadow">
+          <MapPin className="h-3.5 w-3.5 text-primary" /> GPS Pin: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
         </div>
       </div>
     </div>
