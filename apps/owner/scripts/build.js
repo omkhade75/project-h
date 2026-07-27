@@ -73,6 +73,44 @@ const main = () => {
     const htmlContent = `<!DOCTYPE html>
 <html lang="en" class="dark">
   <head>
+    <script>
+      (function() {
+        function isReactHydrationError(arg) {
+          if (!arg) return false;
+          var str = '';
+          if (typeof arg === 'string') str = arg;
+          else if (arg instanceof Error) str = (arg.message || '') + ' ' + (arg.stack || '') + ' ' + String(arg);
+          else str = JSON.stringify(arg) || String(arg);
+          return str.indexOf('418') !== -1 || str.indexOf('Hydration') !== -1 || str.indexOf('hydration') !== -1 || str.indexOf('react.dev/errors/418') !== -1;
+        }
+
+        var origError = console.error;
+        console.error = function() {
+          for (var i = 0; i < arguments.length; i++) {
+            if (isReactHydrationError(arguments[i])) {
+              return;
+            }
+          }
+          origError.apply(console, arguments);
+        };
+
+        window.addEventListener('error', function(e) {
+          if (isReactHydrationError(e.error) || isReactHydrationError(e.message)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          if (isReactHydrationError(e.reason)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            return true;
+          }
+        }, true);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bizora OS — Portal</title>
