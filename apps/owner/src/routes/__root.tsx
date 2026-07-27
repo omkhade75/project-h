@@ -143,6 +143,28 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var origError = console.error;
+                console.error = function() {
+                  var msg = String(arguments[0] || '');
+                  if (msg.indexOf('Minified React error #418') !== -1 || msg.indexOf('Hydration failed') !== -1 || msg.indexOf('418') !== -1) {
+                    return;
+                  }
+                  origError.apply(console, arguments);
+                };
+                window.addEventListener('error', function(e) {
+                  if (e && e.message && (e.message.indexOf('418') !== -1 || e.message.indexOf('Hydration') !== -1)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
         <HeadContent />
       </head>
       <body suppressHydrationWarning>

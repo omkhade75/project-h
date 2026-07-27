@@ -222,7 +222,7 @@ export function SystemAdminPage() {
     status: "ACTIVE",
     subscriptionTier: "Enterprise AI",
     location: "Bandra West, Mumbai 400050",
-    createdAt: new Date().toISOString(),
+    createdAt: "2026-01-01T00:00:00.000Z",
   };
 
   const safePending = Array.isArray(data?.pending) ? data.pending : [];
