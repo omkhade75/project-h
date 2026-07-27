@@ -105,10 +105,11 @@ export function SystemAdminPage() {
 
   const fetchData = async () => {
     try {
-      const result = await getSystemAdminDashboardServer();
-      if (result) {
+      const res = await getSystemAdminDashboardServer();
+      const resData = res?.data || res || {};
+      if (resData) {
         setData({
-          stats: result.stats || {
+          stats: resData.stats || {
             activeCompanies: 0,
             totalCompanies: 0,
             pendingCount: 0,
@@ -119,10 +120,10 @@ export function SystemAdminPage() {
             aiUsage: 0,
             storageUsage: 0,
           },
-          pending: Array.isArray(result.pending) ? result.pending : [],
-          approved: Array.isArray(result.approved) ? result.approved : [],
-          rejected: Array.isArray(result.rejected) ? result.rejected : [],
-          suspended: Array.isArray(result.suspended) ? result.suspended : [],
+          pending: Array.isArray(resData.pending) ? resData.pending : [],
+          approved: Array.isArray(resData.approved) ? resData.approved : [],
+          rejected: Array.isArray(resData.rejected) ? resData.rejected : [],
+          suspended: Array.isArray(resData.suspended) ? resData.suspended : [],
         });
       }
     } catch (err: any) {
