@@ -133,7 +133,7 @@ export function CommandCenter() {
         if (t && t.date && t.time) {
           const date = new Date(t.date);
           const dayName = dayMap[date.getDay()];
-          const hour = parseInt(t.time.split(":")[0], 10);
+          const hour = parseInt((t?.time || "12:00").split(":")[0], 10);
           if (dayName && hour >= 9 && hour <= 22) {
             counts[`${dayName}-${hour}`] = (counts[`${dayName}-${hour}`] || 0) + 1;
           }

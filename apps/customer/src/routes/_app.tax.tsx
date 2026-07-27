@@ -135,7 +135,7 @@ function RouteComponent() {
   };
 
   // --- Dynamic calculations for active month ---
-  const activeYearMonth = activeDate.split("T")[0].slice(0, 7);
+  const activeYearMonth = (activeDate || new Date().toISOString()).split("T")[0].slice(0, 7);
   const formattedMonth = new Date(activeDate).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
@@ -143,7 +143,7 @@ function RouteComponent() {
 
   // 1. GST Collected (from completed sales tax fields)
   const thisMonthSales = transactions.filter(
-    (t) => t.date.split("T")[0].startsWith(activeYearMonth) && t.status === "Completed",
+    (t) => (t?.date || new Date().toISOString()).split("T")[0].startsWith(activeYearMonth) && t.status === "Completed",
   );
   const gstCollected = thisMonthSales.reduce((sum, t) => sum + (t.tax || 0), 0);
 

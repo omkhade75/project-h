@@ -152,7 +152,7 @@ export function CommandCenter() {
       try {
         const date = new Date(t.date);
         const dayName = dayMap[date.getDay()];
-        const hour = parseInt(t.time.split(":")[0], 10);
+        const hour = parseInt((t?.time || "12:00").split(":")[0], 10);
         if (dayName && hour >= 9 && hour <= 22) {
           counts[`${dayName}-${hour}`] = (counts[`${dayName}-${hour}`] || 0) + 1;
         }
@@ -288,7 +288,7 @@ export function CommandCenter() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`${greeting}, ${user?.name.split(" ")[0] ?? "Owner"}`}
+        title={`${greeting}, ${(user?.name || "User").split(" ")[0] ?? "Owner"}`}
         subtitle={
           user?.role === "manager"
             ? "Here is what is happening across your Fashion department today."

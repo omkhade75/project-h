@@ -68,8 +68,8 @@ export function LiveOps() {
   } = useBusinessData();
 
   // Filter transactions to the current active date
-  const activeDateStr = activeDate.split("T")[0];
-  const dayTxns = transactions.filter((t) => t.date && t.date.split("T")[0] === activeDateStr);
+  const activeDateStr = (activeDate || new Date().toISOString()).split("T")[0];
+  const dayTxns = transactions.filter((t) => t.date && (t?.date || new Date().toISOString()).split("T")[0] === activeDateStr);
 
   // Real operational computations
   const totalFootfallNum = dayTxns.length > 0 ? dayTxns.length * 2 : 0;

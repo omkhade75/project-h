@@ -322,7 +322,7 @@ function MarketIntelligencePage() {
                     </span>
                   </div>
                   <h4 className="font-semibold text-base text-foreground truncate">
-                    {c.name.split(" (")[0]}
+                    {(c?.name || "Item").split(" (")[0]}
                   </h4>
                   <div className="mt-1 flex items-baseline gap-1.5">
                     <span className="font-bold text-foreground">{fmtINR(c.price)}</span>

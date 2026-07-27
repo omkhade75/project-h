@@ -69,8 +69,8 @@ export function LiveOps() {
   } = useBusinessData();
 
   // Filter transactions to the current active date (defaults to today's local date)
-  const activeDateStr = activeDate.split("T")[0];
-  const dayTxns = transactions.filter((t) => t.date.split("T")[0] === activeDateStr);
+  const activeDateStr = (activeDate || new Date().toISOString()).split("T")[0];
+  const dayTxns = transactions.filter((t) => (t?.date || new Date().toISOString()).split("T")[0] === activeDateStr);
 
   // 1. Footfall & Checkouts pseudo-fluctuations
   const footfallFluctuation = isGrandSquare

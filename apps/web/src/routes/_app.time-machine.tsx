@@ -58,7 +58,7 @@ export function TimeMachine() {
     return baseCells.map((cell) => {
       if (!cell) return null;
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
-      const dayTxns = transactions.filter((t: any) => t.date.split("T")[0] === dateStr);
+      const dayTxns = transactions.filter((t: any) => (t?.date || new Date().toISOString()).split("T")[0] === dateStr);
       
       const actualRevenue = dayTxns.reduce(
         (sum: number, t: any) => (t.status === "Completed" ? sum + t.total : sum),
