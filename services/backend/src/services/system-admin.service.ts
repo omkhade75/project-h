@@ -17,6 +17,8 @@ export class SystemAdminService {
     return user || { id: 'admin123', email: process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com' };
   }
 
+  private memPending: any[] = [];
+
   private async sendResendEmail(toEmail: string, subject: string, htmlContent: string) {
     const apiKey = process.env.RESEND_API_KEY || "re_aKZeAQDH_915aDwRpwS1JdaWsMrikuRah";
     try {
@@ -27,7 +29,7 @@ export class SystemAdminService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "OmniMind AI System Admin <onboarding@resend.dev>",
+          from: "Bizora AI System Admin <onboarding@resend.dev>",
           to: [toEmail],
           subject,
           html: htmlContent,
@@ -84,11 +86,18 @@ export class SystemAdminService {
       pendingRecord = {
         id: "preg-" + Date.now(),
         companyName,
+        businessType,
         ownerName,
-        ownerEmail,
+        ownerEmail: ownerEmail.toLowerCase(),
+        mobileNumber,
+        city,
+        createdAt: new Date().toISOString(),
         status: "Pending",
       };
     }
+
+    // Save in memory fallback so registration always shows up in Super Admin UI
+    this.memPending.unshift(pendingRecord);
 
     // 1. Dispatch Instant WhatsApp Alert to Super Admin
     const adminAlertMsg = `🔔 [NEW COMPANY REGISTRATION ALERT]\n\n🏢 Company: ${companyName}\n👤 Owner: ${ownerName}\n📱 Mobile: ${mobileNumber}\n✉️ Email: ${ownerEmail}\n📍 Location: ${city}\n\n👉 Review & Approve in Super Admin Dashboard: bizora-admin.onrender.com/system-admin`;
@@ -107,7 +116,7 @@ export class SystemAdminService {
     const emailHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 32px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h2 style="color: #818cf8; margin: 0; font-size: 24px; font-weight: 700;">OmniMind AI — Super Admin</h2>
+          <h2 style="color: #818cf8; margin: 0; font-size: 24px; font-weight: 700;">Bizora AI — Super Admin</h2>
           <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">New Store Owner Registration Notification</p>
         </div>
         <div style="background-color: #1e293b; border-radius: 12px; padding: 24px; border: 1px solid #334155;">
@@ -146,10 +155,21 @@ export class SystemAdminService {
   async getDashboard(user: any) {
     this.checkAdmin(user);
 
-    const pending = await this.prisma.pendingRegistration.findMany({
-      where: { status: 'Pending' },
-      orderBy: { createdAt: 'desc' },
+    let dbPending: any[] = [];
+    try {
+      dbPending = await this.prisma.pendingRegistration.findMany({
+        where: { status: 'Pending' },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (e) {}
+
+    const pendingMap = new Map();
+    [...this.memPending, ...dbPending].forEach(p => {
+      if (p && (p.status === 'Pending' || p.status === 'pending')) {
+        pendingMap.set(p.id || p.ownerEmail, p);
+      }
     });
+    const pending = Array.from(pendingMap.values());
 
     const approved = await this.prisma.pendingRegistration.findMany({
       where: { status: 'Approved' },
