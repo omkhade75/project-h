@@ -75,7 +75,8 @@ function Utilities() {
         const payload = {
           data: { role: user?.role || "owner", email: user?.email || "", activeDate },
         };
-        const data = await getUtilitiesServer(payload);
+        const res = await getUtilitiesServer(payload);
+        const data = res?.data || res || {};
         setElectricityToday(Number(data?.electricityToday || 0));
         setWaterToday(Number(data?.waterToday || 0));
         setDbAnomaly(Boolean(data?.isAnomaly));

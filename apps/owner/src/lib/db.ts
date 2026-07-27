@@ -1263,19 +1263,13 @@ class SeededDatabase {
     // Expenses
     const expenses = exps.reduce((sum, e) => sum + e.amount, 0);
 
-    // Footfall estimation (derived seed based)
-    const seedVal = dateSeed(date);
-    const rng = lcg(seedVal);
-    const isWeekend = new Date(date).getDay() === 5 || new Date(date).getDay() === 6;
-    const footfall =
-      date === "2026-05-05" ? 18420 : Math.round(4000 + rng() * (isWeekend ? 8000 : 3000));
-
-    // New customers
-    const newCustomers = date === "2026-05-05" ? 14 : Math.floor(1 + rng() * 8);
+    const hasData = orders > 0 || exps.length > 0;
+    const footfall = hasData ? Math.round(orders * 4.2) : 0;
+    const newCustomers = hasData ? Math.max(1, Math.floor(orders * 0.15)) : 0;
     const returningCustomers = Math.max(0, orders - newCustomers);
 
     const aov = orders > 0 ? Math.round(grossRevenue / orders) : 0;
-    const netProfit = Math.round(grossRevenue * 0.16) - expenses; // Simplified margin-based profit calculation
+    const netProfit = grossRevenue > 0 ? Math.round(grossRevenue * 0.16) - expenses : 0;
 
     return {
       date,

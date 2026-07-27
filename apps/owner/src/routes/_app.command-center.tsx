@@ -216,11 +216,12 @@ export function CommandCenter() {
         const res = await getCommandCenterServer({
           data: { role: user?.role || "owner", email: user?.email || "", activeDate, timeRange },
         });
+        const kpiData = res?.data || res || {};
         setLiveKpis([
-          { key: "revenue", label: "Gross Revenue", value: res?.grossRevenue || 0, delta: 0 },
-          { key: "profit", label: "Net Profit", value: res?.netProfit || 0, delta: 0 },
-          { key: "orders", label: "Total Orders", value: res?.orders || 0, delta: 0 },
-          { key: "expenses", label: "Total Expenses", value: res?.expenses || 0, delta: 0 },
+          { key: "revenue", label: "Gross Revenue", value: kpiData.grossRevenue ?? 0, delta: 0 },
+          { key: "profit", label: "Net Profit", value: kpiData.netProfit ?? 0, delta: 0 },
+          { key: "orders", label: "Total Orders", value: kpiData.orders ?? 0, delta: 0 },
+          { key: "expenses", label: "Total Expenses", value: kpiData.expenses ?? 0, delta: 0 },
         ]);
       } catch (err) {
         console.warn("Command center KPI load warning:", err);

@@ -61,8 +61,8 @@ function Forecasting() {
           },
         };
         const res = await getForecastingServer(payload);
-        if (Array.isArray(res)) setForecastData(res);
-        else setForecastData([]);
+        const dataArr = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        setForecastData(dataArr);
       } catch (err) {
         console.error(err);
         setForecastData([]);

@@ -28,8 +28,8 @@ export class UtilitiesService {
       allReadings.forEach((r) => {
         const isToday = r.readingDate.toISOString().split('T')[0] === todayStr;
         if (isToday) {
-          if (r.meter.type === 'ELECTRICITY') electricityToday += Number(r.value);
-          if (r.meter.type === 'WATER') waterToday += Number(r.value);
+          if (r.meter?.type === 'ELECTRICITY') electricityToday += Number(r.value);
+          if (r.meter?.type === 'WATER') waterToday += Number(r.value);
         }
         totalCost += Number(r.cost);
 
@@ -44,16 +44,16 @@ export class UtilitiesService {
       return {
         success: true,
         data: {
-          electricityToday: electricityToday || 12450,
-          waterToday: waterToday || 8120,
+          electricityToday,
+          waterToday,
           monthlyCost,
           isAnomaly,
-          totalCost: totalCost || 45000,
+          totalCost,
           readings: allReadings.map((r) => ({
             id: r.id,
             meterId: r.meterId,
-            type: r.meter.type,
-            zone: r.meter.zone,
+            type: r.meter?.type || 'ELECTRICITY',
+            zone: r.meter?.zone || 'Main',
             value: Number(r.value),
             cost: Number(r.cost),
             date: r.readingDate.toISOString().split('T')[0],
@@ -66,11 +66,11 @@ export class UtilitiesService {
       return {
         success: true,
         data: {
-          electricityToday: 12450,
-          waterToday: 8120,
-          monthlyCost: [{ month: 'M-1', v: 12000 }, { month: 'M-2', v: 15000 }],
+          electricityToday: 0,
+          waterToday: 0,
+          monthlyCost: [],
           isAnomaly: false,
-          totalCost: 45000,
+          totalCost: 0,
           readings: [],
         }
       };

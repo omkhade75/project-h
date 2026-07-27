@@ -1115,105 +1115,8 @@ export function seedDatabase(): Schema {
     },
   ];
 
-  // Setup static recommendations
-  const recommendations: AIRecommendation[] = [
-    {
-      id: "REC-01",
-      title: "Reorder Amul Taaza Milk (240 units)",
-      severity: "High",
-      category: "Inventory",
-      impact: "₹16.3K revenue at risk",
-      confidence: 94,
-      dept: "Grocery",
-      evidence:
-        "Current stock 128 units. 30-day avg daily sales 42 units. Predicted stockout in 3.4 days.",
-      explanation:
-        "Amul Milk sales have spiked by 18% over the last week due to secondary supermarket closure nearby. Current inventory buffer will deplete in 3 days, leading to stockouts.",
-      suggestedAction:
-        "Place automatic order of 240 units with Amul Foods Ltd (Lead time: 2.1 days).",
-      status: "New",
-      generated: "24 min ago",
-      relatedEntityId: "SKU-10021",
-    },
-    {
-      id: "REC-02",
-      title: "Add 4 checkout counters Sat 6–9 PM",
-      severity: "High",
-      category: "Operations",
-      impact: "+₹1.82L per weekend",
-      confidence: 89,
-      dept: "All",
-      evidence: "Avg queue length 14 customers Saturday evenings. Abandonment risk 8.4%.",
-      explanation:
-        "Footfall peaks heavily between 6 PM and 9 PM on Saturdays. Opening 4 additional registers will reduce checkout queues to under 3 people.",
-      suggestedAction: "Schedule 4 backup cashiers for Saturday shifts.",
-      status: "New",
-      generated: "1 hr ago",
-    },
-    {
-      id: "REC-03",
-      title: "Investigate HVAC Zone B overnight draw",
-      severity: "Critical",
-      category: "Utilities",
-      impact: "₹38.4K/mo savings",
-      confidence: 96,
-      dept: "Operations",
-      evidence: "23% higher electricity 1–4 AM despite mall closed. Anomaly persistent 11 days.",
-      explanation:
-        "Power draw remains at 22.1 kW during non-operating hours in Zone B. This is consistent with a stuck ventilation damper or failed thermostat control.",
-      suggestedAction: "Send CoolTech maintenance crew to inspect HVAC dampers in Zone B.",
-      status: "New",
-      generated: "3 hr ago",
-      relatedEntityId: "AN-01",
-    },
-    {
-      id: "REC-04",
-      title: "Apply 20% markdown on 42 yogurt units",
-      severity: "Medium",
-      category: "Expiry",
-      impact: "Recover ₹2,940",
-      confidence: 91,
-      dept: "Grocery",
-      evidence: "Batch B-2604-N expires in 2 days. Historic markdown clearance 78%.",
-      explanation:
-        "Nestlé Yogurt batch expires on May 7. Current stock velocity is too slow to clear full stock by expiry.",
-      suggestedAction: "Approve 20% markdown discount on yogurt in Grocery section.",
-      status: "New",
-      generated: "5 hr ago",
-      relatedEntityId: "SKU-11023",
-    },
-    {
-      id: "REC-05",
-      title: "Contact 84 high-value churn-risk customers",
-      severity: "Medium",
-      category: "Customers",
-      impact: "Retain ₹6.4L LTV",
-      confidence: 82,
-      dept: "All",
-      evidence: "No visit in 45+ days. Avg historical spend ₹7,600.",
-      explanation:
-        "84 VIP segment customers have missed their normal monthly visit cadence. Their churn probability has increased to 68%.",
-      suggestedAction: "Send SMS discount vouchers for grand opening event this weekend.",
-      status: "New",
-      generated: "6 hr ago",
-    },
-    {
-      id: "REC-06",
-      title: "Renegotiate Sony India lead time",
-      severity: "Medium",
-      category: "Suppliers",
-      impact: "Reduce stockouts 32%",
-      confidence: 78,
-      dept: "Electronics",
-      evidence: "Avg lead 7.4 days vs 4.6 industry. On-time 76%.",
-      explanation:
-        "Sony India electronics supply lead times are highly variable, averaging 7.4 days. This forces a larger safety buffer than required.",
-      suggestedAction: "Initiate contract review to establish SLA penalty for delayed shipments.",
-      status: "New",
-      generated: "8 hr ago",
-      relatedEntityId: "SUP-007",
-    },
-  ];
+  // Initialize empty recommendations state (computed dynamically from live database state)
+  const recommendations: AIRecommendation[] = [];
 
   return {
     products,
@@ -1360,19 +1263,13 @@ class SeededDatabase {
     // Expenses
     const expenses = exps.reduce((sum, e) => sum + e.amount, 0);
 
-    // Footfall estimation (derived seed based)
-    const seedVal = dateSeed(date);
-    const rng = lcg(seedVal);
-    const isWeekend = new Date(date).getDay() === 5 || new Date(date).getDay() === 6;
-    const footfall =
-      date === "2026-05-05" ? 18420 : Math.round(4000 + rng() * (isWeekend ? 8000 : 3000));
-
-    // New customers
-    const newCustomers = date === "2026-05-05" ? 14 : Math.floor(1 + rng() * 8);
+    const hasData = orders > 0 || exps.length > 0;
+    const footfall = hasData ? Math.round(orders * 4.2) : 0;
+    const newCustomers = hasData ? Math.max(1, Math.floor(orders * 0.15)) : 0;
     const returningCustomers = Math.max(0, orders - newCustomers);
 
     const aov = orders > 0 ? Math.round(grossRevenue / orders) : 0;
-    const netProfit = Math.round(grossRevenue * 0.16) - expenses; // Simplified margin-based profit calculation
+    const netProfit = grossRevenue > 0 ? Math.round(grossRevenue * 0.16) - expenses : 0;
 
     return {
       date,
