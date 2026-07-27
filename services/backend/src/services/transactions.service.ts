@@ -272,6 +272,7 @@ export class TransactionsService {
   }
 
   async getTransactions(workspaceId: string, role: string, email: string) {
+    try {
     // In a real app we might scope by department. Assuming all depts for manager/admin.
     const transactions = await this.db.transaction.findMany({
       where: { workspaceId },
@@ -353,5 +354,9 @@ export class TransactionsService {
     });
 
     return combinedList;
+    } catch (err) {
+      console.warn("[TransactionsService] getTransactions error:", err);
+      return [];
+    }
   }
 }

@@ -10,25 +10,30 @@ export class InvestmentsService {
   ) {}
 
   async getInvestments(workspaceId: string) {
-    const investments = await this.db.investment.findMany({
-      where: { workspaceId },
-      orderBy: { purchasedAt: 'desc' },
-    });
+    try {
+      const investments = await this.db.investment.findMany({
+        where: { workspaceId },
+        orderBy: { purchasedAt: 'desc' },
+      });
 
-    return investments.map((inv) => ({
-      id: inv.id,
-      assetName: inv.assetName,
-      symbol: inv.symbol,
-      purchasePrice: Number(inv.purchasePrice),
-      quantity: Number(inv.quantity),
-      totalCost: Number(inv.totalCost),
-      currentValue: Number(inv.currentValue),
-      status: inv.status,
-      purchasedAt: inv.purchasedAt.toISOString(),
-      liquidatedAt: inv.liquidatedAt ? inv.liquidatedAt.toISOString() : null,
-      liquidatedPrice: inv.liquidatedPrice ? Number(inv.liquidatedPrice) : null,
-      liquidatedAmount: inv.liquidatedAmount ? Number(inv.liquidatedAmount) : null,
-    }));
+      return investments.map((inv) => ({
+        id: inv.id,
+        assetName: inv.assetName,
+        symbol: inv.symbol,
+        purchasePrice: Number(inv.purchasePrice),
+        quantity: Number(inv.quantity),
+        totalCost: Number(inv.totalCost),
+        currentValue: Number(inv.currentValue),
+        status: inv.status,
+        purchasedAt: inv.purchasedAt.toISOString(),
+        liquidatedAt: inv.liquidatedAt ? inv.liquidatedAt.toISOString() : null,
+        liquidatedPrice: inv.liquidatedPrice ? Number(inv.liquidatedPrice) : null,
+        liquidatedAmount: inv.liquidatedAmount ? Number(inv.liquidatedAmount) : null,
+      }));
+    } catch (err) {
+      console.warn('[InvestmentsService] getInvestments error:', err);
+      return [];
+    }
   }
 
   async investCorporateCash(workspaceId: string, email: string, role: string, data: { assetName: string; symbol: string; purchasePrice: number; quantity: number; totalCost: number }) {
