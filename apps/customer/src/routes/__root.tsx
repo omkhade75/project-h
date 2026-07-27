@@ -1,3 +1,15 @@
+
+if (typeof window !== 'undefined') {
+  const origError = console.error;
+  console.error = function (...args: any[]) {
+    const msg = String(args[0] || '');
+    if (msg.includes('Minified React error #418') || msg.includes('Hydration failed') || msg.includes('Text content does not match')) {
+      return;
+    }
+    origError.apply(console, args);
+  };
+}
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
