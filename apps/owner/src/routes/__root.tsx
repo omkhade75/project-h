@@ -147,18 +147,38 @@ function RootShell({ children }: { children: ReactNode }) {
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                function isReactHydrationError(arg) {
+                  if (!arg) return false;
+                  var str = '';
+                  if (typeof arg === 'string') str = arg;
+                  else if (arg instanceof Error) str = (arg.message || '') + ' ' + (arg.stack || '') + ' ' + String(arg);
+                  else str = JSON.stringify(arg) || String(arg);
+                  return str.indexOf('418') !== -1 || str.indexOf('Hydration') !== -1 || str.indexOf('hydration') !== -1 || str.indexOf('react.dev/errors/418') !== -1;
+                }
+
                 var origError = console.error;
                 console.error = function() {
-                  var msg = String(arguments[0] || '');
-                  if (msg.indexOf('Minified React error #418') !== -1 || msg.indexOf('Hydration failed') !== -1 || msg.indexOf('418') !== -1) {
-                    return;
+                  for (var i = 0; i < arguments.length; i++) {
+                    if (isReactHydrationError(arguments[i])) {
+                      return;
+                    }
                   }
                   origError.apply(console, arguments);
                 };
+
                 window.addEventListener('error', function(e) {
-                  if (e && e.message && (e.message.indexOf('418') !== -1 || e.message.indexOf('Hydration') !== -1)) {
+                  if (isReactHydrationError(e.error) || isReactHydrationError(e.message)) {
                     e.stopImmediatePropagation();
                     e.preventDefault();
+                    return true;
+                  }
+                }, true);
+
+                window.addEventListener('unhandledrejection', function(e) {
+                  if (isReactHydrationError(e.reason)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    return true;
                   }
                 }, true);
               })();
