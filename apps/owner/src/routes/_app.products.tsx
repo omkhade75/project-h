@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search,
   Plus,
@@ -10,6 +10,9 @@ import {
   TrendingUp,
   Loader2,
   Sparkles,
+  ScanLine,
+  Camera,
+  X,
 } from "lucide-react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -107,6 +110,101 @@ function Products() {
   const [formBatchNo, setFormBatchNo] = useState("");
   const [formMfgDate, setFormMfgDate] = useState("");
   const [formExpDate, setFormExpDate] = useState("");
+
+  // Barcode Scanner State
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerActive, setScannerActive] = useState(false);
+  const [scannedBarcode, setScannedBarcode] = useState("");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Auto-generate SKU from product name
+  const autoGenerateSku = useCallback((name: string) => {
+    if (!name.trim()) return "";
+    const prefix = name.trim().replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase();
+    const suffix = String(Date.now()).slice(-5);
+    return `${prefix}-${suffix}`;
+  }, []);
+
+  // Start camera for barcode scanning
+  const startScanner = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setScannerActive(true);
+
+      // Use BarcodeDetector API if available
+      const hasBarcodeDetector = typeof (window as any).BarcodeDetector !== "undefined";
+
+      if (hasBarcodeDetector) {
+        const detector = new (window as any).BarcodeDetector({
+          formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"],
+        });
+
+        scanIntervalRef.current = setInterval(async () => {
+          if (!videoRef.current || videoRef.current.readyState < 2) return;
+          try {
+            const barcodes = await detector.detect(videoRef.current);
+            if (barcodes.length > 0) {
+              const code = barcodes[0].rawValue;
+              setScannedBarcode(code);
+              setFormBarcode(code);
+              if (!formSku) setFormSku(autoGenerateSku(code));
+              toast.success(`✅ Barcode scanned: ${code}`);
+              stopScanner();
+              setScannerOpen(false);
+              setAddOpen(true);
+            }
+          } catch (err) {
+            // detection frame error, continue
+          }
+        }, 300);
+      } else {
+        // Fallback: manual barcode entry prompt
+        toast.info("BarcodeDetector not supported in this browser. Please type the barcode manually or use Chrome on Android.", { duration: 5000 });
+      }
+    } catch (err: any) {
+      toast.error("Camera access denied. Please allow camera permission to scan barcodes.");
+      setScannerOpen(false);
+    }
+  }, [formSku, autoGenerateSku]);
+
+  // Stop camera stream
+  const stopScanner = useCallback(() => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setScannerActive(false);
+  }, []);
+
+  // Cleanup scanner on unmount
+  useEffect(() => {
+    return () => {
+      stopScanner();
+    };
+  }, [stopScanner]);
+
+  // Start scanner when modal opens
+  useEffect(() => {
+    if (scannerOpen) {
+      startScanner();
+    } else {
+      stopScanner();
+    }
+  }, [scannerOpen]);
 
   useEffect(() => {
     if (formName.trim().length < 3) {
@@ -229,33 +327,29 @@ function Products() {
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formName ||
-      !formSku ||
-      !formBarcode ||
-      !formSellingPrice ||
-      !formCostPrice ||
-      !formReorderLevel
-    ) {
-      toast.error("Please fill in all required fields.");
+    if (!formName || !formSellingPrice) {
+      toast.error("Please fill in Product Name and Selling Price.");
       return;
     }
+    // Auto-generate SKU and barcode if not provided
+    const finalSku = formSku || autoGenerateSku(formName);
+    const finalBarcode = formBarcode || `BAR-${String(Date.now()).slice(-8)}`;
     setSaving(true);
     try {
       await addProductServer({
         data: {
           name: formName,
-          sku: formSku,
-          barcode: formBarcode,
+          sku: finalSku,
+          barcode: finalBarcode,
           categoryId: formCategory,
           departmentId: formDepartment,
-          brand: formBrand,
+          brand: formBrand || "Generic",
           description: formDesc,
           sellingPrice: Number(formSellingPrice),
-          costPrice: Number(formCostPrice),
+          costPrice: Number(formCostPrice) || Math.round(Number(formSellingPrice) * 0.7),
           taxRate: Number(formTaxRate),
           unit: formUnit,
-          reorderLevel: Number(formReorderLevel),
+          reorderLevel: Number(formReorderLevel) || 5,
           initialStock: Number(formInitialStock) || 0,
           locationId: formLocation,
           supplierId: formSupplier || undefined,
@@ -266,7 +360,7 @@ function Products() {
           emailUser: user?.email || "",
         },
       });
-      toast.success(`Successfully registered SKU ${formSku}`);
+      toast.success(`Successfully registered SKU ${finalSku}`);
       setAddOpen(false);
       resetForm();
       loadProducts();
@@ -352,15 +446,29 @@ function Products() {
         title="Product Intelligence"
         subtitle="Deep visibility into every SKU: sales, demand, expiry, margins, and AI recommendations."
         actions={
-          <Button
-            onClick={() => {
-              resetForm();
-              setAddOpen(true);
-            }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" /> Add Product
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                setScannerOpen(true);
+              }}
+              className="border-hairline bg-surface hover:text-primary transition-colors gap-2 font-semibold"
+            >
+              <ScanLine className="h-4 w-4" /> Connect Scanner
+            </Button>
+            <Button
+              onClick={() => {
+                resetForm();
+                setFormSku(autoGenerateSku("PROD"));
+                setFormBarcode(`BAR-${String(Date.now()).slice(-8)}`);
+                setAddOpen(true);
+              }}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" /> Add Product
+            </Button>
+          </div>
         }
       />
 
@@ -504,254 +612,294 @@ function Products() {
         )}
       </div>
 
-      {/* Add Product Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-sidebar border border-hairline text-foreground overflow-y-auto max-h-[85vh]">
+      {/* Barcode Scanner Dialog */}
+      <Dialog open={scannerOpen} onOpenChange={(open) => { if (!open) stopScanner(); setScannerOpen(open); }}>
+        <DialogContent className="sm:max-w-[480px] bg-sidebar border border-hairline text-foreground">
           <DialogHeader>
-            <DialogTitle>Register New SKU</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5 text-primary" /> Barcode Scanner
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAddProduct} className="space-y-4 text-xs">
+          <div className="space-y-4">
+            <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                playsInline
+                muted
+                autoPlay
+              />
+              {scannerActive && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-64 h-32 border-2 border-primary/80 rounded-lg relative">
+                    <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl" />
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary rounded-tr" />
+                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary rounded-bl" />
+                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br" />
+                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-red-500/60 animate-pulse" />
+                  </div>
+                </div>
+              )}
+              {!scannerActive && (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" /> Initializing camera...
+                </div>
+              )}
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Point your camera at a product barcode. It will auto-detect and fill the barcode field.
+            </p>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Or type barcode manually..."
+                className="bg-surface border-hairline h-9 text-xs flex-1"
+                value={scannedBarcode}
+                onChange={(e) => setScannedBarcode(e.target.value)}
+              />
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (scannedBarcode.trim()) {
+                    setFormBarcode(scannedBarcode.trim());
+                    setFormSku(autoGenerateSku(scannedBarcode.trim()));
+                    toast.success(`Barcode set: ${scannedBarcode.trim()}`);
+                    stopScanner();
+                    setScannerOpen(false);
+                    setAddOpen(true);
+                  } else {
+                    toast.error("Please scan or enter a barcode first.");
+                  }
+                }}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+              >
+                Use Barcode
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Product Dialog — Simplified */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-[460px] bg-sidebar border border-hairline text-foreground overflow-y-auto max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle>Quick Add Product</DialogTitle>
+            <p className="text-[11px] text-muted-foreground">Only Name & Price are required. Everything else is auto-filled or optional.</p>
+          </DialogHeader>
+          <form onSubmit={handleAddProduct} className="space-y-3 text-xs">
+            {/* Essential Fields */}
+            <div className="space-y-1.5">
+              <Label htmlFor="add-name">Product Name *</Label>
+              <Input
+                id="add-name"
+                required
+                placeholder="e.g. Tata Salt 1kg"
+                className="bg-surface border-hairline h-9 text-xs"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+              />
+            </div>
+
+            {isCategorizing && (
+              <p className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                AI auto-categorizing...
+              </p>
+            )}
+
+            {!isCategorizing && autoCategoryResult && (
+              <div className="rounded border border-primary/20 bg-primary/5 p-2 text-[10px] text-muted-foreground flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-primary" />
+                <span className="font-semibold text-primary">Auto: {autoCategoryResult.categoryName}</span>
+                <span className="ml-auto">{(autoCategoryResult.confidence * 100).toFixed(0)}%</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="add-name">Product Name *</Label>
+                <Label htmlFor="add-sellprice">Selling Price (₹) *</Label>
                 <Input
-                  id="add-name"
+                  id="add-sellprice"
+                  type="number"
                   required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="e.g. 28"
+                  className="bg-surface border-hairline h-9 text-xs"
+                  value={formSellingPrice}
+                  onChange={(e) => setFormSellingPrice(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="add-brand">Brand Name *</Label>
+                <Label htmlFor="add-brand">Brand</Label>
                 <Input
                   id="add-brand"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
+                  placeholder="e.g. Tata"
+                  className="bg-surface border-hairline h-9 text-xs"
                   value={formBrand}
                   onChange={(e) => setFormBrand(e.target.value)}
                 />
               </div>
             </div>
 
-            {isCategorizing && (
-              <p className="text-[10px] text-muted-foreground animate-pulse flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                Analyzing product traits for automatic categorization...
-              </p>
-            )}
-
-            {!isCategorizing && autoCategoryResult && (
-              <div className="rounded border border-primary/20 bg-primary/5 p-2 text-[10px] text-muted-foreground flex flex-col gap-0.5">
-                <span className="font-semibold text-primary flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-primary animate-pulse" />
-                  Auto-categorized: {autoCategoryResult.categoryName}
-                </span>
-                <span>
-                  Confidence:{" "}
-                  <strong className="text-foreground">
-                    {(autoCategoryResult.confidence * 100).toFixed(0)}%
-                  </strong>{" "}
-                  · Method: <strong className="text-foreground">{autoCategoryResult.method}</strong>
-                </span>
+            {formBarcode && (
+              <div className="rounded border border-green-500/20 bg-green-500/5 p-2 text-[10px] text-green-400 flex items-center gap-1">
+                <ScanLine className="h-3 w-3" /> Scanned Barcode: <strong>{formBarcode}</strong>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-sku">Product SKU (Code) *</Label>
-                <Input
-                  id="add-sku"
-                  required
-                  placeholder="e.g. SKU-10021"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formSku}
-                  onChange={(e) => setFormSku(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-barcode">Product Barcode *</Label>
-                <Input
-                  id="add-barcode"
-                  required
-                  placeholder="e.g. BAR-10021"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formBarcode}
-                  onChange={(e) => setFormBarcode(e.target.value)}
-                />
-              </div>
-            </div>
+            {/* Collapsible More Details */}
+            <details className="border border-hairline rounded-lg">
+              <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors select-none">
+                ▸ More Details (optional)
+              </summary>
+              <div className="space-y-3 p-3 pt-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-sku">SKU Code</Label>
+                    <Input
+                      id="add-sku"
+                      placeholder="Auto-generated"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formSku}
+                      onChange={(e) => setFormSku(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-barcode">Barcode</Label>
+                    <Input
+                      id="add-barcode"
+                      placeholder="Auto-generated"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formBarcode}
+                      onChange={(e) => setFormBarcode(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Category *</Label>
-                <Select value={formCategory} onValueChange={setFormCategory}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Department *</Label>
-                <Select value={formDepartment} onValueChange={setFormDepartment}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-costprice">Cost Price (₹)</Label>
+                    <Input
+                      id="add-costprice"
+                      type="number"
+                      placeholder="Auto: 70% of selling"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formCostPrice}
+                      onChange={(e) => setFormCostPrice(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-initstock">Initial Stock</Label>
+                    <Input
+                      id="add-initstock"
+                      type="number"
+                      placeholder="0"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formInitialStock}
+                      onChange={(e) => setFormInitialStock(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-sellprice">Retail Price (₹) *</Label>
-                <Input
-                  id="add-sellprice"
-                  type="number"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formSellingPrice}
-                  onChange={(e) => setFormSellingPrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-costprice">Cost Price (₹) *</Label>
-                <Input
-                  id="add-costprice"
-                  type="number"
-                  required
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formCostPrice}
-                  onChange={(e) => setFormCostPrice(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-unit">Unit Type</Label>
-                <Input
-                  id="add-unit"
-                  placeholder="units, kg, packets..."
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formUnit}
-                  onChange={(e) => setFormUnit(e.target.value)}
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Category</Label>
+                    <Select value={formCategory} onValueChange={setFormCategory}>
+                      <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-hairline text-xs">
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Department</Label>
+                    <Select value={formDepartment} onValueChange={setFormDepartment}>
+                      <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-hairline text-xs">
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-2 border-t border-hairline pt-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-initstock">Initial Stock *</Label>
-                <Input
-                  id="add-initstock"
-                  type="number"
-                  placeholder="0"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formInitialStock}
-                  onChange={(e) => setFormInitialStock(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Stock Location</Label>
-                <Select value={formLocation} onValueChange={setFormLocation}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {locations.map((l) => (
-                      <SelectItem key={l.id} value={l.id}>
-                        {l.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-reorder">Reorder Threshold *</Label>
-                <Input
-                  id="add-reorder"
-                  type="number"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formReorderLevel}
-                  onChange={(e) => setFormReorderLevel(e.target.value)}
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-unit">Unit</Label>
+                    <Input
+                      id="add-unit"
+                      placeholder="units"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formUnit}
+                      onChange={(e) => setFormUnit(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-reorder">Reorder Level</Label>
+                    <Input
+                      id="add-reorder"
+                      type="number"
+                      placeholder="5"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formReorderLevel}
+                      onChange={(e) => setFormReorderLevel(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-tax">Tax %</Label>
+                    <Input
+                      id="add-tax"
+                      type="number"
+                      placeholder="18"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formTaxRate}
+                      onChange={(e) => setFormTaxRate(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-3 border-t border-hairline pt-3">
-              <div className="space-y-1.5">
-                <Label>Preferred Supplier</Label>
-                <Select value={formSupplier} onValueChange={setFormSupplier}>
-                  <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
-                    <SelectValue placeholder="Select Supplier" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-hairline text-xs">
-                    {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="add-exp">Expiry Date</Label>
+                    <Input
+                      id="add-exp"
+                      type="date"
+                      className="bg-surface border-hairline h-8 text-xs"
+                      value={formExpDate}
+                      onChange={(e) => setFormExpDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Supplier</Label>
+                    <Select value={formSupplier} onValueChange={setFormSupplier}>
+                      <SelectTrigger className="bg-surface border-hairline h-8 text-xs">
+                        <SelectValue placeholder="Optional" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-hairline text-xs">
+                        {suppliers.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-batchno">Batch Number</Label>
-                <Input
-                  id="add-batchno"
-                  placeholder="e.g. B-01"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formBatchNo}
-                  onChange={(e) => setFormBatchNo(e.target.value)}
-                />
-              </div>
-            </div>
+            </details>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-mfg">Mfg Date</Label>
-                <Input
-                  id="add-mfg"
-                  type="date"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formMfgDate}
-                  onChange={(e) => setFormMfgDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-exp">Expiry Date</Label>
-                <Input
-                  id="add-exp"
-                  type="date"
-                  className="bg-surface border-hairline h-8 text-xs"
-                  value={formExpDate}
-                  onChange={(e) => setFormExpDate(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="add-desc">Description</Label>
-              <Textarea
-                id="add-desc"
-                className="bg-surface border-hairline text-xs"
-                rows={2}
-                value={formDesc}
-                onChange={(e) => setFormDesc(e.target.value)}
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
+            <DialogFooter className="pt-1">
               <Button type="button" variant="ghost" onClick={() => setAddOpen(false)}>
                 Cancel
               </Button>
