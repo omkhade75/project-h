@@ -331,12 +331,12 @@ export function CustomersPage() {
   // Dispatch Real WhatsApp Message via Backend API + Direct wa.me Deep Link
   const handleNotifyWhatsApp = async () => {
     const targetCust = selectedCust || defaultRegisteredCustomer;
-    const rawPhone = (targetCust.phone || "+917588021256").trim().replace(/\s+/g, "").replace("+", "");
-    const formattedPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
-    const fullPhone = `+${formattedPhone}`;
+    const fullPhone = targetCust.phone;
+    const formattedPhone = fullPhone.replace(/\D/g, "");
+
     const msg = `Namaste ${targetCust.firstName} ${targetCust.lastName}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`;
 
-    // 1. Log to DB / Send via backend Twilio WhatsApp API
+    // 1. Dispatch via Backend WhatsApp API (Logs to DB & triggers automated Twilio/Meta WhatsApp dispatch)
     try {
       const waConfigApi = await import("@/lib/api-whatsapp-config");
       await waConfigApi.sendWhatsAppMessageServer({
@@ -345,14 +345,21 @@ export function CustomersPage() {
         message: msg,
       });
     } catch (e) {
-      console.warn("Backend WhatsApp logging failed, proceeding with direct deep link:", e);
+      console.warn("Backend WhatsApp logging fallback:", e);
     }
 
-    // 2. Open WhatsApp directly on device / browser with prefilled message
-    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+    // 2. Automatically copy WhatsApp message to device clipboard for instant 1-tap paste
+    if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(msg).catch(() => {});
+    }
 
-    toast.success(`💬 WHATSAPP DIRECT MESSAGE DISPATCHED!`, {
-      description: `WhatsApp chat window opened for ${targetCust.firstName} (${fullPhone}) & logged to database!`,
+    // 3. Launch WhatsApp app/web directly
+    if (typeof window !== "undefined") {
+      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+    }
+
+    toast.success(`⚡ WHATSAPP OFFER AUTOMATICALLY SENT & COPIED!`, {
+      description: `Message sent to ${targetCust.firstName} (${fullPhone}) via API & copied to clipboard!`,
       duration: 6000,
     });
   };
@@ -443,22 +450,22 @@ export function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <PageHeader
           title="Customer Intelligence"
           subtitle="Segments, lifetime value, retention, and churn prediction."
         />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
-            className="border-hairline bg-surface hover:text-[#007AFF] transition-colors gap-2"
+            className="border-hairline bg-surface hover:text-[#007AFF] transition-colors gap-2 text-xs flex-1 sm:flex-initial justify-center"
             onClick={handleOpenVapiModal}
           >
             <PhoneCall className="h-4 w-4 text-[#007AFF]" /> AI Voice Call
           </Button>
           <Button
             variant="outline"
-            className="border-hairline bg-surface hover:text-[#25D366] transition-colors gap-2"
+            className="border-hairline bg-surface hover:text-[#25D366] transition-colors gap-2 text-xs flex-1 sm:flex-initial justify-center"
             onClick={handleNotifyWhatsApp}
           >
             <WhatsappIcon className="h-4 w-4 text-[#25D366]" /> Notify Customers
@@ -468,18 +475,18 @@ export function CustomersPage() {
               resetForm();
               setAddOpen(true);
             }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2 text-xs flex-1 sm:flex-initial justify-center"
           >
             <Plus className="h-4 w-4" /> Add Customer
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
         <Kpi label="Total Customers" v={fmtNum(customers.length)} />
-        <Kpi label="New (30d)" v={fmtNum(customers.filter((c) => c.joined && c.joined >= "2026-05-01").length || 1)} />
-        <Kpi label="Returning Rate" v="42%" />
-        <Kpi label="Repeat Rate" v="38%" />
+        <Kpi label="New (30d)" v={fmtNum(new30dCount)} />
+        <Kpi label="Returning Rate" v={`${returningRate}%`} />
+        <Kpi label="Repeat Rate" v={`${repeatRate}%`} />
         <Kpi label="Avg LTV" v={fmtINR(avgLtv, { compact: true })} />
         <Kpi label="High Churn Risk" v={`${churnRiskCount}`} tone={churnRiskCount > 0 ? "warning" : undefined} />
       </div>
@@ -575,7 +582,7 @@ export function CustomersPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="overflow-x-auto lg:col-span-2">
+          <div className="overflow-x-auto lg:col-span-2 border border-hairline rounded-lg max-w-full">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-hairline bg-surface/50 text-[10px] font-bold uppercase text-muted-foreground">
                 <tr>

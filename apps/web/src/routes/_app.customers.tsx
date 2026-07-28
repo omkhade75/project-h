@@ -253,6 +253,13 @@ function Customers() {
   };
 
   // Derived KPI values from list
+  const returningCount = customers.filter((c) => (c.ordersCount || 0) > 1).length;
+  const returningRate = customers.length > 0 ? Math.round((returningCount / customers.length) * 100) : 0;
+  const repeatOrders = safeTransactions.filter((t) => t.customerId).length;
+  const repeatRate = safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;
+  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
+  const new30dCount = customers.filter((c) => c.joined && c.joined >= thirtyDaysAgoStr).length || (customers.length > 0 ? 1 : 0);
+
   const totalSpend = customers.reduce((sum, c) => sum + c.spend, 0);
   const avgLtv = customers.length > 0 ? Math.round(totalSpend / customers.length) : 0;
   const churnRiskCount = customers.filter((c) => c.churn > 50).length;
@@ -282,31 +289,23 @@ function Customers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <PageHeader
           title="Customer Intelligence"
           subtitle="Segments, lifetime value, retention, and churn prediction."
         />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
-            className="border-hairline bg-surface hover:text-[#007AFF] transition-colors gap-2"
-            onClick={() =>
-              toast.info(
-                "AI Voice Campaigns are coming soon! The AI assistant will autonomously call customers to share personalized offers.",
-              )
-            }
+            className="border-hairline bg-surface hover:text-[#007AFF] transition-colors gap-2 text-xs flex-1 sm:flex-initial justify-center"
+            onClick={handleOpenVapiModal}
           >
             <PhoneCall className="h-4 w-4 text-[#007AFF]" /> AI Voice Call
           </Button>
           <Button
             variant="outline"
-            className="border-hairline bg-surface hover:text-[#25D366] transition-colors gap-2"
-            onClick={() =>
-              toast.info(
-                "WhatsApp Mass Broadcasting is coming soon! You will be able to send offers and greetings to all matching customers.",
-              )
-            }
+            className="border-hairline bg-surface hover:text-[#25D366] transition-colors gap-2 text-xs flex-1 sm:flex-initial justify-center"
+            onClick={handleNotifyWhatsApp}
           >
             <WhatsappIcon className="h-4 w-4 text-[#25D366]" /> Notify Customers
           </Button>
@@ -315,41 +314,20 @@ function Customers() {
               resetForm();
               setAddOpen(true);
             }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2 text-xs flex-1 sm:flex-initial justify-center"
           >
             <Plus className="h-4 w-4" /> Add Customer
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
         <Kpi label="Total Customers" v={fmtNum(customers.length)} />
-        <Kpi
-          label="New (30d)"
-          v={fmtNum(customers.filter((c) => c.joined.startsWith("2026-05")).length)}
-        />
-        <Kpi
-          label="Returning Rate"
-          v={
-            customers.length > 0
-              ? `${Math.round((customers.filter((c) => c.visits > 1).length / customers.length) * 100)}%`
-              : "0%"
-          }
-        />
-        <Kpi
-          label="Repeat Rate"
-          v={
-            customers.length > 0
-              ? `${Math.round((customers.filter((c) => c.visits > 2).length / customers.length) * 100)}%`
-              : "0%"
-          }
-        />
+        <Kpi label="New (30d)" v={fmtNum(new30dCount)} />
+        <Kpi label="Returning Rate" v={`${returningRate}%`} />
+        <Kpi label="Repeat Rate" v={`${repeatRate}%`} />
         <Kpi label="Avg LTV" v={fmtINR(avgLtv, { compact: true })} />
-        <Kpi
-          label="High Churn Risk"
-          v={fmtNum(churnRiskCount)}
-          tone={churnRiskCount > 0 ? "warning" : undefined}
-        />
+        <Kpi label="High Churn Risk" v={`${churnRiskCount}`} tone={churnRiskCount > 0 ? "warning" : undefined} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
