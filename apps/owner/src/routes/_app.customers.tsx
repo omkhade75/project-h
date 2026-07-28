@@ -432,6 +432,13 @@ export function CustomersPage() {
   const { transactions } = useBusinessData();
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
+  const returningCount = customers.filter((c) => (c.ordersCount || 0) > 1).length;
+  const returningRate = customers.length > 0 ? Math.round((returningCount / customers.length) * 100) : 0;
+  const repeatOrders = safeTransactions.filter((t) => t.customerId).length;
+  const repeatRate = safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;
+  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
+  const new30dCount = customers.filter((c) => c.joined && c.joined >= thirtyDaysAgoStr).length || (customers.length > 0 ? 1 : 0);
+
   const acquisitionData = useMemo(() => {
     return Array.from({ length: 30 }, (_, i) => {
       const day = i + 1;
