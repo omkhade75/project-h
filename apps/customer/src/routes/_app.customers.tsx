@@ -236,10 +236,10 @@ function Customers() {
 
   const openEditDialog = () => {
     if (!selectedCust) return;
-    setFormFirstName(selectedCust.firstName);
-    setFormLastName(selectedCust.lastName);
-    setFormEmail(selectedCust.email);
-    setFormPhone(selectedCust.phone);
+    setFormFirstName(activeSelectedCust.firstName);
+    setFormLastName(activeSelectedCust.lastName);
+    setFormEmail(activeSelectedCust.email);
+    setFormPhone(activeSelectedCust.phone);
     setFormLoyaltyTier(selectedCust.segment);
     // map favDept back to id
     let deptId = "dept-fashion";
@@ -260,12 +260,37 @@ function Customers() {
   const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
   const new30dCount = customers.filter((c) => c.joined && c.joined >= thirtyDaysAgoStr).length || (customers.length > 0 ? 1 : 0);
 
-  const totalSpend = customers.reduce((sum, c) => sum + c.spend, 0);
+  
+  const processedCustomers = useMemo(() => {
+    return displayCustomers.map((c) => {
+      const custTxns = safeTransactions.filter((t: any) => t.customerId === c.id || (c.email && t.customerEmail === c.email));
+      const realOrders = custTxns.length;
+      const realSpend = custTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
+      const realTier = realSpend >= 50000 ? "Platinum" : realSpend >= 10000 ? "Gold" : (c.loyaltyTier || "Regular");
+      const realSegment = realSpend >= 50000 ? "VIP Champions" : realSpend >= 10000 ? "Loyal Regulars" : "New Customer";
+      return {
+        ...c,
+        ordersCount: realOrders,
+        spend: realSpend,
+        loyaltyTier: realTier,
+        segment: realSegment,
+        churn: realOrders > 0 ? c.churn : 0,
+      };
+    });
+  }, [customers, safeTransactions]);
+
+  const displayCustomers = processedCustomers;
+  const activeSelectedCust = useMemo(() => {
+    if (!selectedCust) return displayCustomers[0] || defaultRegisteredCustomer;
+    return displayCustomers.find((c) => c.id === selectedCust.id) || selectedCust;
+  }, [selectedCust, displayCustomers]);
+
+  const totalSpend = displayCustomers.reduce((sum, c) => sum + c.spend, 0);
   const avgLtv = customers.length > 0 ? Math.round(totalSpend / customers.length) : 0;
-  const churnRiskCount = customers.filter((c) => c.churn > 50).length;
+  const churnRiskCount = displayCustomers.filter((c) => c.churn > 50).length;
 
   // Segment breakdown
-  const segmentCounts = customers.reduce((acc: Record<string, number>, c) => {
+  const segmentCounts = displayCustomers.reduce((acc: Record<string, number>, c) => {
     acc[c.segment] = (acc[c.segment] || 0) + 1;
     return acc;
   }, {});
@@ -459,7 +484,7 @@ function Customers() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-hairline">
-                  {customers.map((c) => (
+                  {displayCustomers.map((c) => (
                     <tr
                       key={c.id}
                       onClick={() => setSelectedCust(c)}
@@ -551,15 +576,15 @@ function Customers() {
             }
           >
             <div className="grid grid-cols-2 gap-2 mt-2">
-              <Stat label="Total Spend" v={fmtINR(selectedCust.spend, { compact: true })} />
+              <Stat label="Total Spend" v={fmtINR(activeSelectedCust.spend, { compact: true })} />
               <Stat label="Avg Basket" v={fmtINR(selectedCust.aov)} />
               <Stat label="Visits" v={fmtNum(selectedCust.visits)} />
-              <Stat label="Joined Date" v={selectedCust.joined} />
+              <Stat label="Joined Date" v={activeSelectedCust.joined} />
               <Stat label="Segment" v={selectedCust.segment} />
               <Stat
                 label="Churn Risk"
-                v={`${selectedCust.churn}%`}
-                tone={selectedCust.churn > 60 ? "danger" : "default"}
+                v={`${activeSelectedCust.churn}%`}
+                tone={activeSelectedCust.churn > 60 ? "danger" : "default"}
               />
             </div>
 
@@ -567,21 +592,21 @@ function Customers() {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Email Address
               </p>
-              <p className="mt-1 text-sm font-semibold">{selectedCust.email}</p>
+              <p className="mt-1 text-sm font-semibold">{activeSelectedCust.email}</p>
             </div>
 
             <div className="mt-2">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Phone Number
               </p>
-              <p className="mt-1 text-sm font-semibold">{selectedCust.phone}</p>
+              <p className="mt-1 text-sm font-semibold">{activeSelectedCust.phone}</p>
             </div>
 
             <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs">
               <p className="font-semibold text-primary">CRM Retention Recommendation</p>
               <p className="mt-1 text-foreground/90">
-                {selectedCust.churn > 60
-                  ? `Trigger win-back email outreach targeting ${selectedCust.favDept}. Estimated LTV retention: ${fmtINR(selectedCust.spend)}.`
+                {activeSelectedCust.churn > 60
+                  ? `Trigger win-back email outreach targeting ${selectedCust.favDept}. Estimated LTV retention: ${fmtINR(activeSelectedCust.spend)}.`
                   : selectedCust.segment === "VIP"
                     ? "Invite to private Fashion showcase for next arrivals. Projected sales conversion: 22%."
                     : `Provide promotional bundle offer matching preferred department (${selectedCust.favDept}).`}

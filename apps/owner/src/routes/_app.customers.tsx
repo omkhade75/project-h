@@ -77,12 +77,12 @@ const defaultRegisteredCustomer: CustomerListItem = {
   lastName: "Khade",
   email: "khade8915@gmail.com",
   phone: "+91 75880 21256",
-  segment: "VIP Champions",
-  loyaltyTier: "Gold",
-  ordersCount: 14,
-  spend: 24850,
-  churn: 12,
-  joined: "2026-05-12",
+  segment: "New Customer",
+  loyaltyTier: "Regular",
+  ordersCount: 0,
+  spend: 0,
+  churn: 0,
+  joined: "2026-07-28",
   prefDept: "Grocery",
 };
 
@@ -366,8 +366,8 @@ export function CustomersPage() {
 
   const handleOpenVapiModal = () => {
     if (selectedCust) {
-      setVapiName(`${selectedCust.firstName} ${selectedCust.lastName}`);
-      setVapiPhone(selectedCust.phone);
+      setVapiName(`${activeSelectedCust.firstName} ${activeSelectedCust.lastName}`);
+      setVapiPhone(activeSelectedCust.phone);
     } else {
       setVapiName("Om Khade");
       setVapiPhone("+91 75880 21256");
@@ -415,11 +415,36 @@ export function CustomersPage() {
     setEditOpen(true);
   };
 
-  const totalSpend = customers.reduce((sum, c) => sum + c.spend, 0);
-  const avgLtv = customers.length > 0 ? Math.round(totalSpend / customers.length) : 0;
-  const churnRiskCount = customers.filter((c) => c.churn > 50).length;
+  
+  const processedCustomers = useMemo(() => {
+    return displayCustomers.map((c) => {
+      const custTxns = safeTransactions.filter((t: any) => t.customerId === c.id || (c.email && t.customerEmail === c.email));
+      const realOrders = custTxns.length;
+      const realSpend = custTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
+      const realTier = realSpend >= 50000 ? "Platinum" : realSpend >= 10000 ? "Gold" : (c.loyaltyTier || "Regular");
+      const realSegment = realSpend >= 50000 ? "VIP Champions" : realSpend >= 10000 ? "Loyal Regulars" : "New Customer";
+      return {
+        ...c,
+        ordersCount: realOrders,
+        spend: realSpend,
+        loyaltyTier: realTier,
+        segment: realSegment,
+        churn: realOrders > 0 ? c.churn : 0,
+      };
+    });
+  }, [customers, safeTransactions]);
 
-  const segmentCounts = customers.reduce((acc: Record<string, number>, c) => {
+  const displayCustomers = processedCustomers;
+  const activeSelectedCust = useMemo(() => {
+    if (!selectedCust) return displayCustomers[0] || defaultRegisteredCustomer;
+    return displayCustomers.find((c) => c.id === selectedCust.id) || selectedCust;
+  }, [selectedCust, displayCustomers]);
+
+  const totalSpend = displayCustomers.reduce((sum, c) => sum + c.spend, 0);
+  const avgLtv = customers.length > 0 ? Math.round(totalSpend / customers.length) : 0;
+  const churnRiskCount = displayCustomers.filter((c) => c.churn > 50).length;
+
+  const segmentCounts = displayCustomers.reduce((acc: Record<string, number>, c) => {
     acc[c.segment] = (acc[c.segment] || 0) + 1;
     return acc;
   }, {});
@@ -602,7 +627,7 @@ export function CustomersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {customers.map((c) => {
+                {displayCustomers.map((c) => {
                   const isSelected = selectedCust?.id === c.id;
                   return (
                     <tr
@@ -661,20 +686,20 @@ export function CustomersPage() {
               <div className="flex items-center justify-between border-b border-hairline pb-3">
                 <div>
                   <h4 className="text-base font-bold text-foreground">
-                    {selectedCust.firstName} {selectedCust.lastName}
+                    {activeSelectedCust.firstName} {activeSelectedCust.lastName}
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">{selectedCust.email}</p>
+                  <p className="text-[11px] text-muted-foreground">{activeSelectedCust.email}</p>
                 </div>
                 <StatusPill tone="emerald">Active VIP</StatusPill>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <Stat label="Phone" v={selectedCust.phone} />
-                <Stat label="Loyalty Tier" v={selectedCust.loyaltyTier || "Regular"} />
-                <Stat label="Total Orders" v={`${selectedCust.ordersCount}`} />
-                <Stat label="Total Spend" v={fmtINR(selectedCust.spend)} />
-                <Stat label="Churn Risk Score" v={`${selectedCust.churn}%`} tone={selectedCust.churn > 50 ? "danger" : "default"} />
-                <Stat label="Member Since" v={selectedCust.joined} />
+                <Stat label="Phone" v={activeSelectedCust.phone} />
+                <Stat label="Loyalty Tier" v={activeSelectedCust.loyaltyTier || "Regular"} />
+                <Stat label="Total Orders" v={`${activeSelectedCust.ordersCount}`} />
+                <Stat label="Total Spend" v={fmtINR(activeSelectedCust.spend)} />
+                <Stat label="Churn Risk Score" v={`${activeSelectedCust.churn}%`} tone={activeSelectedCust.churn > 50 ? "danger" : "default"} />
+                <Stat label="Member Since" v={activeSelectedCust.joined} />
               </div>
 
               <div className="pt-2 border-t border-hairline space-y-2">
@@ -684,14 +709,14 @@ export function CustomersPage() {
                     <Sparkles className="h-3.5 w-3.5 text-amber-400" /> Initiate Vapi AI Voice Re-engagement
                   </p>
                   <p className="text-[11px]">
-                    Customer has high LTV ({fmtINR(selectedCust.spend)}). Trigger autonomous AI voice call with 15% promotional discount.
+                    Customer has high LTV ({fmtINR(activeSelectedCust.spend)}). Trigger autonomous AI voice call with 15% promotional discount.
                   </p>
                 </div>
                 <Button
                   onClick={handleOpenVapiModal}
                   className="w-full bg-[#007AFF] hover:bg-[#0066CC] text-white font-bold text-xs h-9 flex items-center justify-center gap-2"
                 >
-                  <PhoneCall className="h-4 w-4" /> Dial {selectedCust.firstName} ({selectedCust.phone})
+                  <PhoneCall className="h-4 w-4" /> Dial {activeSelectedCust.firstName} ({activeSelectedCust.phone})
                 </Button>
               </div>
             </div>
