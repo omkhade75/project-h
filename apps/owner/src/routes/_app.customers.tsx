@@ -415,9 +415,12 @@ export function CustomersPage() {
     setEditOpen(true);
   };
 
-  
-  const processedCustomers = useMemo(() => {
-    return displayCustomers.map((c) => {
+
+  const { transactions } = useBusinessData();
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+
+  const displayCustomers = useMemo(() => {
+    return customers.map((c) => {
       const custTxns = safeTransactions.filter((t: any) => t.customerId === c.id || (c.email && t.customerEmail === c.email));
       const realOrders = custTxns.length;
       const realSpend = custTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
@@ -434,7 +437,6 @@ export function CustomersPage() {
     });
   }, [customers, safeTransactions]);
 
-  const displayCustomers = processedCustomers;
   const activeSelectedCust = useMemo(() => {
     if (!selectedCust) return displayCustomers[0] || defaultRegisteredCustomer;
     return displayCustomers.find((c) => c.id === selectedCust.id) || selectedCust;
@@ -454,10 +456,7 @@ export function CustomersPage() {
     v: segmentCounts[name],
   }));
 
-  const { transactions } = useBusinessData();
-  const safeTransactions = Array.isArray(transactions) ? transactions : [];
-
-  const returningCount = customers.filter((c) => (c.ordersCount || 0) > 1).length;
+  const returningCount = displayCustomers.filter((c) => (c.ordersCount || 0) > 1).length;
   const returningRate = customers.length > 0 ? Math.round((returningCount / customers.length) * 100) : 0;
   const repeatOrders = safeTransactions.filter((t) => t.customerId).length;
   const repeatRate = safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;

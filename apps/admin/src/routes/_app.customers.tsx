@@ -259,10 +259,11 @@ function Customers() {
   const repeatRate = safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;
   const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
   const new30dCount = customers.filter((c) => c.joined && c.joined >= thirtyDaysAgoStr).length || (customers.length > 0 ? 1 : 0);
+  const { transactions } = useBusinessData();
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
-  
-  const processedCustomers = useMemo(() => {
-    return displayCustomers.map((c) => {
+  const displayCustomers = useMemo(() => {
+    return customers.map((c) => {
       const custTxns = safeTransactions.filter((t: any) => t.customerId === c.id || (c.email && t.customerEmail === c.email));
       const realOrders = custTxns.length;
       const realSpend = custTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
@@ -278,9 +279,7 @@ function Customers() {
       };
     });
   }, [customers, safeTransactions]);
-
-  const displayCustomers = processedCustomers;
-  const activeSelectedCust = useMemo(() => {
+const activeSelectedCust = useMemo(() => {
     if (!selectedCust) return displayCustomers[0] || defaultRegisteredCustomer;
     return displayCustomers.find((c) => c.id === selectedCust.id) || selectedCust;
   }, [selectedCust, displayCustomers]);
