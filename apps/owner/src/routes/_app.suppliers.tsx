@@ -236,9 +236,9 @@ function Suppliers() {
         {(user?.role === "owner" || user?.role === "admin" || user?.role === "manager") && (
           <Button
             onClick={openAdd}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex items-center gap-1.5 text-xs"
           >
-            <Plus className="h-4 w-4" /> Add Supplier
+            <Key className="h-4 w-4 text-amber-400" /> + Add Supplier & Provision Credentials
           </Button>
         )}
       </div>

@@ -520,11 +520,12 @@ function AppShell() {
         <div className="relative hairline-t p-4">
           <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-violet text-sm font-bold text-primary-foreground shadow-md shadow-primary/20">
-              {user?.name
+              {(user?.name || "Store Owner")
                 .split(" ")
                 .map((p) => p[0])
+                .filter(Boolean)
                 .slice(0, 2)
-                .join("") ?? "U"}
+                .join("") || "SO"}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">

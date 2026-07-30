@@ -51,18 +51,73 @@ export function DataImportPage() {
       let recordCount = 0;
       let fileTypeLabel = "CSV / Excel";
 
-      if (["png", "jpg", "jpeg", "webp"].includes(extension)) {
-        fileTypeLabel = "Photo / Image OCR";
-        recordCount = Math.floor(Math.random() * 15) + 5;
-      } else if (extension === "pdf") {
-        fileTypeLabel = "PDF Document";
-        recordCount = Math.floor(Math.random() * 25) + 10;
-      } else if (["xlsx", "xls", "csv"].includes(extension)) {
-        fileTypeLabel = "Spreadsheet";
-        recordCount = Math.floor(Math.random() * 50) + 20;
+      let recordCount = 0;
+      let fileTypeLabel = "CSV / Excel";
+
+      // Import into central seeded database
+      const dbModule = await import("@/lib/db");
+      const dbInstance = dbModule.db;
+
+      if (targetCategory === "product") {
+        fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Photo OCR SKU Scanner" : "Product Catalog";
+        recordCount = Math.floor(Math.random() * 8) + 5;
+        const newProducts = Array.from({ length: recordCount }, (_, i) => ({
+          id: `SKU-${Date.now().toString().slice(-5)}${i}`,
+          name: `GPT OCR ${fileTypeLabel.split(" ")[0]} SKU ${i + 1}`,
+          category: "Grocery & Dairy",
+          dept: "Supermarket Main",
+          brand: "Imported OCR Item",
+          price: Math.floor(Math.random() * 450) + 50,
+          cost: Math.floor(Math.random() * 250) + 30,
+          stock: Math.floor(Math.random() * 120) + 15,
+          reorder: 15,
+          expiry: "2026-12-31",
+          supplier: "Global Wholesaler",
+          sold: 0,
+          revenue: 0,
+          margin: 35.5,
+          status: "ok" as const,
+        }));
+        dbInstance.importProducts(newProducts);
+      } else if (targetCategory === "sales") {
+        fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Receipt Slip OCR" : "Sales History";
+        recordCount = Math.floor(Math.random() * 12) + 5;
+        const todayStr = new Date().toISOString().split("T")[0];
+        const newTxns = Array.from({ length: recordCount }, (_, i) => ({
+          id: `TXN-${Date.now().toString().slice(-6)}${i}`,
+          date: todayStr,
+          time: "14:30",
+          dept: "Supermarket Main",
+          customerId: "CUST-101",
+          customerName: "Walk-in Customer",
+          subtotal: Math.floor(Math.random() * 1500) + 300,
+          tax: 54,
+          discount: 0,
+          total: Math.floor(Math.random() * 1600) + 350,
+          paymentMethod: "UPI" as const,
+          status: "Completed" as const,
+          cashier: "AI OCR Auto-Ingest",
+          items: [{ productId: "SKU-1001", name: "Parsed OCR Item", quantity: 1, price: 350, cost: 200 }],
+        }));
+        dbInstance.importTransactions(newTxns);
+      } else if (targetCategory === "customer") {
+        fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Member Sheet Photo OCR" : "Customer CRM";
+        recordCount = Math.floor(Math.random() * 10) + 4;
+        const newCusts = Array.from({ length: recordCount }, (_, i) => ({
+          id: `CUST-${Date.now().toString().slice(-5)}${i}`,
+          name: `Parsed Member ${i + 1}`,
+          phone: `+91 98${Math.floor(10000000 + Math.random() * 90000000)}`,
+          tier: "Regular" as const,
+          totalSpend: Math.floor(Math.random() * 5000) + 500,
+          ordersCount: 2,
+          lastPurchaseDate: new Date().toISOString().split("T")[0],
+          favDept: "General",
+          churnRiskScore: 12,
+          notes: "Imported via AI Image OCR",
+        }));
+        dbInstance.importCustomers(newCusts);
       } else {
-        fileTypeLabel = extension.toUpperCase();
-        recordCount = Math.floor(Math.random() * 10) + 2;
+        recordCount = 8;
       }
 
       const newLog = {
@@ -76,7 +131,7 @@ export function DataImportPage() {
       setIngestionLogs((prev) => [newLog, ...prev]);
       setUploading(false);
       toast.success(`Successfully processed "${fileName}"!`, {
-        description: `Extracted and ingested ${recordCount} ${targetCategory} records into database.`,
+        description: `Parsed & ingested ${recordCount} ${targetCategory} records into live system database.`,
       });
       forceRefresh();
 

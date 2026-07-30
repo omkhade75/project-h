@@ -1222,6 +1222,21 @@ class SeededDatabase {
     this.save({ ...this.schema, purchaseOrders: updated });
   }
 
+  public importProducts(newProds: Product[]) {
+    const updated = [...newProds, ...this.schema.products];
+    this.save({ ...this.schema, products: updated });
+  }
+
+  public importTransactions(newTxns: Transaction[]) {
+    const updated = [...newTxns, ...this.schema.transactions];
+    this.save({ ...this.schema, transactions: updated });
+  }
+
+  public importCustomers(newCusts: Customer[]) {
+    const updated = [...newCusts, ...this.schema.customers];
+    this.save({ ...this.schema, customers: updated });
+  }
+
   public updateProductStock(id: string, newStock: number) {
     const updated = this.schema.products.map((p) => (p.id === id ? { ...p, stock: newStock } : p));
     this.save({ ...this.schema, products: updated });

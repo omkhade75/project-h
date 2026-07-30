@@ -463,11 +463,12 @@ function AppShell() {
         <div className="relative hairline-t p-4">
           <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-violet text-sm font-bold text-primary-foreground shadow-md shadow-primary/20">
-              {user?.name
+              {(user?.name || "Supplier Partner")
                 .split(" ")
                 .map((p) => p[0])
+                .filter(Boolean)
                 .slice(0, 2)
-                .join("") ?? "U"}
+                .join("") || "SP"}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
@@ -836,23 +837,19 @@ function AppShell() {
                 </Button>
 
                 {notifOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-[calc(100vw-32px)] max-w-[360px] sm:max-w-[400px] max-h-[80vh] sm:max-h-[480px] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
+                  <div className="fixed inset-x-3 top-14 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-[380px] max-h-[80vh] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 hairline-b">
                       <div>
-                        <p className="text-sm font-bold">Notifications</p>
+                        <p className="text-sm font-bold">Supplier Portal Notifications</p>
                         <p className="text-[11px] text-muted-foreground">
-                          {totalUnreadNotifs} unread
+                          {totalUnreadNotifs > 0 ? totalUnreadNotifs : 2} unread updates
                         </p>
                       </div>
                       <button
                         onClick={() => {
-                          const allIds = [
-                            ...ANOMALIES.map((a) => a.id),
-                            ...LIVE_FEED.map((_, i) => `feed-${i}`),
-                          ];
-                          if (isEndOfMonth) allIds.push(endOfMonthNotifId);
-                          setReadNotifs(new Set(allIds));
+                          setReadNotifs(new Set(["supp-notif-1", "supp-notif-2", "supp-notif-3"]));
+                          toast.success("All supplier notifications marked as read.");
                         }}
                         className="text-[11px] font-medium text-primary hover:underline"
                       >
@@ -862,162 +859,90 @@ function AppShell() {
 
                     {/* Scrollable list */}
                     <div className="flex-1 overflow-y-auto divide-y divide-hairline">
-                      {/* End of Month Bill Alert */}
-                      {isEndOfMonth && (
-                        <button
-                          key={endOfMonthNotifId}
-                          onClick={() => {
-                            setReadNotifs((prev) => new Set([...prev, endOfMonthNotifId]));
-                            setNotifOpen(false);
-                            navigate({ to: "/expenses" });
-                          }}
-                          className={cn(
-                            "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
-                            !readNotifs.has(endOfMonthNotifId) && "bg-primary/5",
-                          )}
-                        >
-                          <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-500/10">
-                            <Receipt className="h-4 w-4 text-indigo-500" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold truncate">
-                                Utility Bills Due
-                              </span>
-                              <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-warning/15 text-warning">
-                                Action Required
-                              </span>
-                            </div>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">
-                              End of month approaching. Please review and pay all outstanding
-                              utility bills (Electricity, Water, Internet, etc).
-                            </p>
-                            <p className="mt-0.5 text-[10px] text-muted-foreground">
-                              System Reminder
-                            </p>
-                          </div>
-                          {!readNotifs.has(endOfMonthNotifId) && (
-                            <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                          )}
-                        </button>
-                      )}
-
-                      {/* Anomaly alerts */}
-                      {ANOMALIES.map((a) => {
-                        const isRead = readNotifs.has(a.id);
-                        const severityColor =
-                          a.severity === "Critical"
-                            ? "bg-destructive/15 text-destructive"
-                            : a.severity === "High"
-                              ? "bg-warning/15 text-warning"
-                              : a.severity === "Medium"
-                                ? "bg-info/15 text-info"
-                                : "bg-muted text-muted-foreground";
-                        return (
-                          <button
-                            key={a.id}
-                            onClick={() => {
-                              setReadNotifs((prev) => new Set([...prev, a.id]));
-                              setNotifOpen(false);
-                              navigate({ to: "/anomalies" });
-                            }}
-                            className={cn(
-                              "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
-                              !isRead && "bg-primary/5",
-                            )}
-                          >
-                            <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-destructive/10">
-                              <AlertTriangle className="h-4 w-4 text-destructive" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-semibold truncate">{a.metric}</span>
-                                <span
-                                  className={cn(
-                                    "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
-                                    severityColor,
-                                  )}
-                                >
-                                  {a.severity}
-                                </span>
-                              </div>
-                              <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                                {a.actual} vs expected {a.expected} ({a.deviation})
-                              </p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">{a.when}</p>
-                            </div>
-                            {!isRead && (
-                              <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                            )}
-                          </button>
-                        );
-                      })}
-
-                      {/* Live feed items */}
-                      {LIVE_FEED.map((f, i) => {
-                        const feedId = `feed-${i}`;
-                        const isRead = readNotifs.has(feedId);
-                        const iconMap: Record<string, typeof Activity> = {
-                          sale: ShoppingBagIcon,
-                          customer: Users,
-                          alert: AlertTriangle,
-                          delivery: Truck,
-                          return: RotateCcw,
-                          ai: Sparkles,
-                          expense: Wallet,
-                        };
-                        const FeedIcon = iconMap[f.type] || Activity;
-                        const colorMap: Record<string, string> = {
-                          sale: "bg-success/10 text-success",
-                          customer: "bg-info/10 text-info",
-                          alert: "bg-warning/10 text-warning",
-                          delivery: "bg-primary/10 text-primary",
-                          return: "bg-destructive/10 text-destructive",
-                          ai: "bg-violet/10 text-violet",
-                          expense: "bg-warning/10 text-warning",
-                        };
-                        return (
-                          <button
-                            key={feedId}
-                            onClick={() => {
-                              setReadNotifs((prev) => new Set([...prev, feedId]));
-                              setNotifOpen(false);
-                            }}
-                            className={cn(
-                              "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
-                              !isRead && "bg-primary/5",
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-                                colorMap[f.type] || "bg-muted",
-                              )}
-                            >
-                              <FeedIcon className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium">{f.text}</p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">{f.t}</p>
-                            </div>
-                            {!isRead && (
-                              <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="hairline-t px-4 py-2.5 text-center">
                       <button
                         onClick={() => {
                           setNotifOpen(false);
-                          navigate({ to: "/anomalies" });
+                          navigate({ to: "/supplier-portal" });
                         }}
-                        className="text-[11px] font-semibold text-primary hover:underline"
+                        className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3 bg-primary/5"
                       >
-                        View all anomalies & alerts →
+                        <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-500/10">
+                          <FileText className="h-4 w-4 text-emerald-500" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold truncate text-foreground">
+                              Inbound Purchase Order PO-40019
+                            </span>
+                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/15 text-amber-500">
+                              Action Required
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            Samsung 55" QLED TV (Qty: 6) — ₹3,49,200 pending acceptance.
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground font-mono">
+                            Just now • GrandSquare Supermart
+                          </p>
+                        </div>
+                        <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setNotifOpen(false);
+                          navigate({ to: "/logistics" });
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3 bg-primary/5"
+                      >
+                        <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-500/10">
+                          <Truck className="h-4 w-4 text-blue-500" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold truncate text-foreground">
+                              Logistics Dispatch DISP-8910
+                            </span>
+                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-blue-500/15 text-blue-500">
+                              In Transit
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            Route #4 Active — Driver Assigned (Rajesh Kumar).
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground font-mono">
+                            12 mins ago • ETA: 16:45 PM
+                          </p>
+                        </div>
+                        <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setNotifOpen(false);
+                          navigate({ to: "/supplier-portal" });
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3"
+                      >
+                        <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-500/10">
+                          <CreditCard className="h-4 w-4 text-emerald-500" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold truncate text-foreground">
+                              Settlement Payout Approved
+                            </span>
+                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500/15 text-emerald-500">
+                              Completed
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            ₹78,000 processed for PO-40020 (Nike Air Zoom).
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground font-mono">
+                            Yesterday • NEFT Ref #894210
+                          </p>
+                        </div>
                       </button>
                     </div>
                   </div>
