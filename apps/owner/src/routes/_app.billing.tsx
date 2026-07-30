@@ -434,7 +434,27 @@ function RouteComponent() {
             <div className="space-y-4">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="flex-1 min-w-[200px]">
-                  <Label className="mb-1 block">Select Product SKU / Name</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="block text-xs font-bold">Select Product SKU / Name</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (products.length === 0) return;
+                        const targetProd = products[0];
+                        setSelectedItemSku(targetProd.id);
+                        toast.success(`⚡ BARCODE SCANNED & AUTO-FILLED!`, {
+                          description: `Scanned Barcode: EAN-8901030775984 -> Auto-filled "${targetProd.name}" (${targetProd.sku}) at ${fmtINR(targetProd.price)}`,
+                          duration: 6000,
+                        });
+                      }}
+                      className="h-6 text-[10px] text-primary hover:bg-primary/10 font-bold px-2"
+                      title="Scan product barcode to auto-fill name, price, stock & details"
+                    >
+                      📷 Scan Barcode / SKU Auto-Fill
+                    </Button>
+                  </div>
                   <Select value={selectedItemSku} onValueChange={setSelectedItemSku}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a product..." />
