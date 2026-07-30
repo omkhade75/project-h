@@ -19,7 +19,10 @@ import {
   Phone,
   Key,
   ShieldCheck,
+  Globe,
+  Check,
 } from "lucide-react";
+import { INDIAN_LANGUAGES, useLanguage } from "@/lib/language-context";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({
@@ -34,6 +37,7 @@ export const Route = createFileRoute("/_app/settings")({
 
 function SettingsPage() {
   const { user } = useAuth();
+  const { currentLang, setLanguage } = useLanguage();
   const mallData = Route.useLoaderData();
   const [mall, setMall] = useState({
     id: mallData?.id || "grandsquare-mall",
@@ -248,6 +252,41 @@ function SettingsPage() {
                   </Button>
                 </div>
               )}
+            </div>
+          </SectionCard>
+
+          {/* Indian Regional Language Settings */}
+          <SectionCard
+            title="Regional Language & Localization"
+            subtitle="Select your preferred Indian regional language for all app portals"
+          >
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                All 12 major Indian languages are supported. Selecting a language instantly translates all interfaces, menus, reports, and data.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                {INDIAN_LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code)}
+                    className={cn(
+                      "flex items-center justify-between p-2.5 rounded-xl border text-xs transition-all text-left",
+                      currentLang === lang.code
+                        ? "border-primary bg-primary/10 text-primary font-bold shadow-sm"
+                        : "border-hairline bg-surface hover:bg-surface-2 text-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-base shrink-0">{lang.flag}</span>
+                      <div className="min-w-0">
+                        <span className="font-semibold block truncate leading-tight">{lang.nativeName}</span>
+                        <span className="text-[10px] text-muted-foreground block truncate leading-tight">{lang.name}</span>
+                      </div>
+                    </div>
+                    {currentLang === lang.code && <Check className="h-4 w-4 text-primary shrink-0 ml-1" />}
+                  </button>
+                ))}
+              </div>
             </div>
           </SectionCard>
 

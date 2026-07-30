@@ -1,3 +1,4 @@
+import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,
   Outlet,
@@ -849,6 +850,7 @@ function AppShell() {
               >
                 <CalendarDays className="h-4 w-4" />
               </Button>
+              <LanguageSelector className="mr-1" />
               {/* Theme toggle */}
               <Button
                 variant="ghost"

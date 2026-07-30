@@ -1,3 +1,4 @@
+import { LanguageProvider } from "../lib/language-context";
 
 if (typeof window !== 'undefined') {
   const origError = console.error;
@@ -214,12 +215,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
         <BusinessDataProvider>
           {mounted ? <Outlet /> : <div className="min-h-screen bg-background flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}
           <Toaster />
         </BusinessDataProvider>
       </AuthProvider>
+        </LanguageProvider>
     </QueryClientProvider>
   );
 }

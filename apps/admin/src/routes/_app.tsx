@@ -1,3 +1,4 @@
+import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,
   Outlet,
