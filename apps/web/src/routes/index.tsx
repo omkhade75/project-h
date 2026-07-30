@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sparkles,
   TrendingUp,
@@ -28,6 +28,7 @@ import {
   CreditCard,
   Sun,
   Moon,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { BizoraLogo } from "@/components/bizora-logo";
@@ -53,6 +54,24 @@ function RichLandingPage() {
   const navigate = useNavigate();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
+
+  useEffect(() => {
+    try {
+      const dismissed = sessionStorage.getItem("bizora-promo-dismissed");
+      if (!dismissed) {
+        const timer = setTimeout(() => setShowPromo(true), 1500);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {}
+  }, []);
+
+  const closePromo = () => {
+    setShowPromo(false);
+    try {
+      sessionStorage.setItem("bizora-promo-dismissed", "true");
+    } catch (e) {}
+  };
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -78,6 +97,94 @@ function RichLandingPage() {
 
   return (
     <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary">
+      {/* Vyapar-Style High-Converting Conversion Pop-Up Modal */}
+      {showPromo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in-50">
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-rose-500/40 bg-card shadow-2xl animate-in zoom-in-95">
+            {/* Close Button */}
+            <button
+              onClick={closePromo}
+              className="absolute right-3.5 top-3.5 z-20 grid h-8 w-8 place-items-center rounded-full bg-background/80 text-foreground hover:bg-background border border-hairline transition-colors shadow-md"
+              title="Close modal"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-12">
+              {/* Left Side Highlight Banner */}
+              <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-5">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[11px] font-extrabold uppercase tracking-wider mb-3">
+                    <Sparkles className="h-3.5 w-3.5" /> High-Profit Store Upgrade
+                  </div>
+                  <h3 className="font-display text-2xl sm:text-3xl font-black leading-tight tracking-tight">
+                    Still Making Paper Bills?
+                  </h3>
+                  <h4 className="font-display text-xl sm:text-2xl font-extrabold text-primary mt-1">
+                    Switch to Bizora AI OS
+                  </h4>
+                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                    <strong className="text-foreground">93% of retailers</strong> report <strong className="text-success font-bold">5X higher profits & 75% faster checkout</strong> after switching to Bizora AI!
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-around border-y border-hairline py-3">
+                  <div className="text-center">
+                    <p className="font-display text-base sm:text-lg font-extrabold text-foreground">10,000+</p>
+                    <p className="text-[10px] text-muted-foreground font-medium">Happy Stores</p>
+                  </div>
+                  <div className="h-8 w-px bg-hairline" />
+                  <div className="text-center">
+                    <div className="flex items-center justify-center text-amber-500 text-xs font-bold gap-0.5">
+                      4.9 <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-medium">Store Reviews</p>
+                  </div>
+                  <div className="h-8 w-px bg-hairline" />
+                  <div className="text-center">
+                    <p className="font-display text-base sm:text-lg font-extrabold text-indigo-500">12</p>
+                    <p className="text-[10px] text-muted-foreground font-medium">Languages</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Link
+                    to="/register"
+                    onClick={closePromo}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-600 px-6 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-xl hover:opacity-95 transition-all hover:scale-[1.01]"
+                  >
+                    Start Free Store Registration <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <p className="text-[10px] text-center text-muted-foreground font-medium">
+                    ⚡ No hardware gun required · Camera Barcode Scanning
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side Visual Contrast Graphic */}
+              <div className="hidden md:col-span-5 md:flex flex-col justify-between p-6 bg-gradient-to-br from-rose-500/10 via-purple-500/10 to-indigo-500/10 border-l border-hairline relative">
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-card/90 border border-hairline shadow-sm">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Old Paper Bill Book</p>
+                    <p className="text-xs text-destructive font-semibold mt-1">❌ Slow manual bills, lost stock & no tracking</p>
+                  </div>
+
+                  <div className="flex justify-center text-rose-500 font-extrabold text-xl animate-bounce">⚡ ➔ ⚡</div>
+
+                  <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/30 shadow-md">
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-wider">✨ Bizora AI Operating System</p>
+                    <p className="text-xs text-success font-bold mt-1">✅ Camera Scanner, WhatsApp Bills & Hindi Voice AI</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-hairline flex justify-center">
+                  <BizoraLogo variant="owner" size="sm" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Subtle Background Glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-0 h-[600px] w-[600px] animate-pulse-slow rounded-full bg-primary/10 blur-[140px]" />
