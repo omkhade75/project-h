@@ -47,10 +47,7 @@ export function DataImportPage() {
     const fileName = file.name;
     const extension = fileName.split(".").pop()?.toLowerCase() || "";
 
-    setTimeout(() => {
-      let recordCount = 0;
-      let fileTypeLabel = "CSV / Excel";
-
+    setTimeout(async () => {
       let recordCount = 0;
       let fileTypeLabel = "CSV / Excel";
 
