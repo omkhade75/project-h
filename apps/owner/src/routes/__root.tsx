@@ -141,12 +141,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                // Theme initialization — read from localStorage, default to light
+                var theme = 'light';
+                try { theme = localStorage.getItem('bizora-theme') || 'light'; } catch(e) {}
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+
                 function isReactHydrationError(arg) {
                   if (!arg) return false;
                   var str = '';

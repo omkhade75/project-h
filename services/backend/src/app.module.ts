@@ -26,6 +26,7 @@ import { UtilitiesController } from './controllers/utilities.controller';
 import { ReportsController } from './controllers/reports.controller';
 import { CommsController } from './controllers/comms.controller';
 import { RegistrationController } from './controllers/registration.controller';
+import { HealthController } from './controllers/health.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
@@ -49,6 +50,7 @@ import { LogisticsService } from './services/logistics.service';
 import { UtilitiesService } from './services/utilities.service';
 import { ReportsService } from './services/reports.service';
 import { CommsService } from './services/comms.service';
+import { HealthService } from './services/health.service';
 
 @Module({
   imports: [DatabaseModule, MongodbModule],
@@ -75,6 +77,7 @@ import { CommsService } from './services/comms.service';
     ReportsController,
     CommsController,
     RegistrationController,
+    HealthController,
   ],
   providers: [
     AppService,
@@ -99,6 +102,7 @@ import { CommsService } from './services/comms.service';
     UtilitiesService,
     ReportsService,
     CommsService,
+    HealthService,
   ],
 })
 export class AppModule {}

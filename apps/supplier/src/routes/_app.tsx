@@ -49,6 +49,8 @@ import {
   RotateCcw,
   Loader2,
   ArrowLeft,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { stopImpersonatingServer } from "@/lib/server-auth";
@@ -106,6 +108,7 @@ const NAV: NavSection[] = [
 function AppShell() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const [isDark, setIsDark] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -156,6 +159,12 @@ function AppShell() {
       navigate({ to: "/login", replace: true });
     }
   }, [loading, user, navigate]);
+
+  // Initialize theme state from localStorage
+  useEffect(() => {
+    const theme = localStorage.getItem('bizora-theme') || 'light';
+    setIsDark(theme === 'dark');
+  }, []);
 
   // Keyboard shortcut listener (Cmd/Ctrl + K to focus search, Esc to close)
   useEffect(() => {
@@ -784,6 +793,28 @@ function AppShell() {
                 onClick={() => navigate({ to: "/time-machine" as never })}
               >
                 <CalendarDays className="h-4 w-4" />
+              </Button>
+              {/* Theme toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground"
+                onClick={() => {
+                  const html = document.documentElement;
+                  const nowDark = html.classList.contains('dark');
+                  if (nowDark) {
+                    html.classList.remove('dark');
+                    localStorage.setItem('bizora-theme', 'light');
+                    setIsDark(false);
+                  } else {
+                    html.classList.add('dark');
+                    localStorage.setItem('bizora-theme', 'dark');
+                    setIsDark(true);
+                  }
+                }}
+                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
               {/* Notification bell with dropdown */}
               <div className="relative" ref={notifRef}>

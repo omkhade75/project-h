@@ -17,6 +17,8 @@ import {
   ChevronsLeft,
   X,
   AlertTriangle,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { stopImpersonatingServer } from "@/lib/server-auth";
@@ -48,6 +50,7 @@ const NAV: NavSection[] = [
     section: "Super Admin Platform Control",
     items: [
       { to: "/system-admin", label: "Shopkeeper Approvals & Queue", icon: ShieldAlert },
+      { to: "/health-monitor", label: "Health Monitor & Alerts", icon: Activity },
       { to: "/workspaces", label: "Store Workspaces & Users", icon: Building },
       { to: "/subscriptions", label: "Storage Space & Subscriptions", icon: HardDrive },
       { to: "/locations", label: "Store Locations & Map Directory", icon: MapPin },
@@ -59,6 +62,7 @@ const NAV: NavSection[] = [
 function AppShell() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const [isDark, setIsDark] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s: any) => s.location.pathname });

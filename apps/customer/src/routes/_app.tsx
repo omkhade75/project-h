@@ -38,6 +38,8 @@ import {
   Settings,
   Truck,
   Store,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -88,6 +90,7 @@ const NAV: NavSection[] = [
 function AppShell() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const [isDark, setIsDark] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);

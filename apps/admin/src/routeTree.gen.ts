@@ -37,6 +37,7 @@ import { Route as AppLive_opsRouteImport } from './routes/_app.live_ops'
 import { Route as AppLiveOpsRouteImport } from './routes/_app.live-ops'
 import { Route as AppInventoryRouteImport } from './routes/_app.inventory'
 import { Route as AppIncomeRouteImport } from './routes/_app.income'
+import { Route as AppHealthMonitorRouteImport } from './routes/_app.health-monitor'
 import { Route as AppForecastingRouteImport } from './routes/_app.forecasting'
 import { Route as AppExpiryRouteImport } from './routes/_app.expiry'
 import { Route as AppExpensesRouteImport } from './routes/_app.expenses'
@@ -193,6 +194,11 @@ const AppIncomeRoute = AppIncomeRouteImport.update({
   path: '/income',
   getParentRoute: () => AppRoute,
 } as any)
+const AppHealthMonitorRoute = AppHealthMonitorRouteImport.update({
+  id: '/health-monitor',
+  path: '/health-monitor',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppForecastingRoute = AppForecastingRouteImport.update({
   id: '/forecasting',
   path: '/forecasting',
@@ -295,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/expenses': typeof AppExpensesRoute
   '/expiry': typeof AppExpiryRoute
   '/forecasting': typeof AppForecastingRoute
+  '/health-monitor': typeof AppHealthMonitorRoute
   '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
   '/live-ops': typeof AppLiveOpsRoute
@@ -340,6 +347,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof AppExpensesRoute
   '/expiry': typeof AppExpiryRoute
   '/forecasting': typeof AppForecastingRoute
+  '/health-monitor': typeof AppHealthMonitorRoute
   '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
   '/live-ops': typeof AppLiveOpsRoute
@@ -387,6 +395,7 @@ export interface FileRoutesById {
   '/_app/expenses': typeof AppExpensesRoute
   '/_app/expiry': typeof AppExpiryRoute
   '/_app/forecasting': typeof AppForecastingRoute
+  '/_app/health-monitor': typeof AppHealthMonitorRoute
   '/_app/income': typeof AppIncomeRoute
   '/_app/inventory': typeof AppInventoryRoute
   '/_app/live-ops': typeof AppLiveOpsRoute
@@ -434,6 +443,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/expiry'
     | '/forecasting'
+    | '/health-monitor'
     | '/income'
     | '/inventory'
     | '/live-ops'
@@ -479,6 +489,7 @@ export interface FileRouteTypes {
     | '/expenses'
     | '/expiry'
     | '/forecasting'
+    | '/health-monitor'
     | '/income'
     | '/inventory'
     | '/live-ops'
@@ -525,6 +536,7 @@ export interface FileRouteTypes {
     | '/_app/expenses'
     | '/_app/expiry'
     | '/_app/forecasting'
+    | '/_app/health-monitor'
     | '/_app/income'
     | '/_app/inventory'
     | '/_app/live-ops'
@@ -756,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIncomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/health-monitor': {
+      id: '/_app/health-monitor'
+      path: '/health-monitor'
+      fullPath: '/health-monitor'
+      preLoaderRoute: typeof AppHealthMonitorRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/forecasting': {
       id: '/_app/forecasting'
       path: '/forecasting'
@@ -888,6 +907,7 @@ interface AppRouteChildren {
   AppExpensesRoute: typeof AppExpensesRoute
   AppExpiryRoute: typeof AppExpiryRoute
   AppForecastingRoute: typeof AppForecastingRoute
+  AppHealthMonitorRoute: typeof AppHealthMonitorRoute
   AppIncomeRoute: typeof AppIncomeRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppLiveOpsRoute: typeof AppLiveOpsRoute
@@ -930,6 +950,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppExpensesRoute: AppExpensesRoute,
   AppExpiryRoute: AppExpiryRoute,
   AppForecastingRoute: AppForecastingRoute,
+  AppHealthMonitorRoute: AppHealthMonitorRoute,
   AppIncomeRoute: AppIncomeRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppLiveOpsRoute: AppLiveOpsRoute,
