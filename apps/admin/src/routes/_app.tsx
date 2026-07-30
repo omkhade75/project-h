@@ -22,6 +22,9 @@ import {
   Sun,
   Moon,
   Activity,
+  Menu,
+  ArrowLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { stopImpersonatingServer } from "@/lib/server-auth";
@@ -229,7 +232,126 @@ function AppShell() {
 
         {/* Main Workspace View */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <Outlet />
+          {/* Top Header Bar */}
+          <header className="sticky top-0 z-20 hairline-b glass">
+            <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground lg:hidden"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              {/* Back button */}
+              <button
+                onClick={() => window.history.back()}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-surface/30 hover:text-foreground transition-colors mr-1"
+                title="Go Back"
+              >
+                <ArrowLeft className="h-4.5 w-4.5" />
+              </button>
+
+              <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-semibold text-rose-500">Bizora Admin</span>
+                <ChevronRight className="h-3 w-3" />
+                <span className="truncate font-medium text-foreground">
+                  {NAV[0]?.items.find((i) => i.to === pathname)?.label || "Super Admin"}
+                </span>
+              </div>
+
+              <div className="ml-auto flex items-center gap-1.5">
+                <LanguageSelector className="mr-1" />
+                {/* Theme toggle */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground"
+                  onClick={() => {
+                    const html = document.documentElement;
+                    const nowDark = html.classList.contains("dark");
+                    if (nowDark) {
+                      html.classList.remove("dark");
+                      localStorage.setItem("bizora-theme", "light");
+                      setIsDark(false);
+                    } else {
+                      html.classList.add("dark");
+                      localStorage.setItem("bizora-theme", "dark");
+                      setIsDark(true);
+                    }
+                  }}
+                  title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          <main className="min-w-0 flex-1 pb-20 md:pb-6">
+            <div className="w-full p-4 sm:p-6 lg:p-8">
+              <Outlet />
+            </div>
+          </main>
+
+          {/* Mobile Floating Bottom Navigation Dock */}
+          <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-sidebar/95 backdrop-blur-xl border-t border-hairline px-2 py-1.5 flex items-center justify-around shadow-2xl mobile-bottom-dock">
+            <Link
+              to="/system-admin"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/system-admin" && "text-rose-500 font-bold bg-rose-500/10"
+              )}
+            >
+              <ShieldAlert className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Queue</span>
+            </Link>
+
+            <Link
+              to="/health-monitor"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/health-monitor" && "text-rose-500 font-bold bg-rose-500/10"
+              )}
+            >
+              <Activity className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Health</span>
+            </Link>
+
+            <Link
+              to="/workspaces"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/workspaces" && "text-rose-500 font-bold bg-rose-500/10"
+              )}
+            >
+              <Building className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Stores</span>
+            </Link>
+
+            <Link
+              to="/subscriptions"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/subscriptions" && "text-rose-500 font-bold bg-rose-500/10"
+              )}
+            >
+              <HardDrive className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Plans</span>
+            </Link>
+
+            <Link
+              to="/audits"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/audits" && "text-rose-500 font-bold bg-rose-500/10"
+              )}
+            >
+              <Database className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Audits</span>
+            </Link>
+          </nav>
         </div>
       </div>
     </div>

@@ -453,7 +453,7 @@ header.glass {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MOBILE RESPONSIVENESS
+   MOBILE RESPONSIVENESS & TOUCH OPTIMIZATIONS
    ═══════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
   html, body {
@@ -461,10 +461,36 @@ header.glass {
     touch-action: manipulation;
   }
 
+  /* Prevent iOS Safari input auto-zoom by ensuring 16px min font size */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="password"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Mobile Bottom Dock spacing for main content */
+  main {
+    padding-bottom: max(4.5rem, calc(4rem + env(safe-area-inset-bottom))) !important;
+  }
+
+  /* Mobile Bottom Sheet Dialog Styling */
+  .fixed.z-50.grid.w-full.max-w-lg.bg-background,
+  [role="dialog"] {
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+
   .mobile-bottom-dock {
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
 
+  /* Smooth Touch Horizontal Scroll */
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -473,6 +499,7 @@ header.glass {
     display: none;
   }
 
+  /* Micro-animation tap feedback */
   button:active, a:active {
     transform: scale(0.97);
   }
