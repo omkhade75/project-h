@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   Sparkles,
   TrendingUp,
@@ -9,249 +10,445 @@ import {
   Brain,
   ArrowRight,
   ChevronRight,
+  ShoppingCart,
+  Package,
+  Receipt,
+  Phone,
+  MessageSquare,
+  Globe,
+  Camera,
+  CheckCircle2,
+  HelpCircle,
+  Building2,
+  Store,
+  Check,
+  Star,
+  Activity,
+  HardDrive,
+  CreditCard,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { BizoraLogo } from "@/components/bizora-logo";
+import { LanguageSelector } from "@/components/language-selector";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Bizora AI — Business Intelligence & Decision OS" },
+      { title: "Bizora AI — All-in-One POS Billing, Stock & AI Business OS" },
       {
         name: "description",
         content:
-          "Bizora AI transforms business operations data into predictive insights, AI recommendations, and evidence-backed decisions.",
+          "India's leading AI Business OS for Retail Stores, Supermarkets & Franchises. POS billing, barcode scanning, 12 regional languages, Vapi AI voice calls, and automated WhatsApp receipts.",
       },
     ],
   }),
-  component: LandingPage,
+  component: RichLandingPage,
 });
 
-function LandingPage() {
+function RichLandingPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [isDark, setIsDark] = useState(false);
 
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    const nowDark = html.classList.contains("dark");
+    if (nowDark) {
+      html.classList.remove("dark");
+      localStorage.setItem("bizora-theme", "light");
+      setIsDark(false);
+    } else {
+      html.classList.add("dark");
+      localStorage.setItem("bizora-theme", "dark");
+      setIsDark(true);
+    }
+  };
 
-
-  // While checking auth, show nothing (prevents flash)
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Background effects */}
+    <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary">
+      {/* Subtle Background Glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Ambient glows */}
-        <div className="absolute -left-40 top-0 h-[520px] w-[520px] animate-pulse-slow rounded-full bg-primary/25 blur-[120px]" />
-        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] animate-pulse-slow rounded-full bg-violet/25 blur-[120px]" />
-        <div className="absolute left-1/2 top-1/3 h-[400px] w-[400px] -translate-x-1/2 animate-pulse-slow rounded-full bg-cyan/20 blur-[100px]" />
-
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(var(--color-foreground)_1px,transparent_1px),linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)] [background-size:44px_44px]" />
-
-        {/* Floating geometric shapes (Bright & Luminous) */}
-        <div className="absolute left-[12%] top-[22%] animate-float-slow opacity-100">
-          <div
-            className="h-28 w-28 rounded-3xl border border-primary/50 bg-gradient-to-br from-primary/60 to-primary/20 backdrop-blur-3xl shadow-[0_0_40px_var(--color-primary)]/40"
-            style={{ transform: "rotate(25deg) skewX(-10deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute right-[10%] top-[12%] animate-float-medium opacity-100"
-          style={{ animationDelay: "1.5s" }}
-        >
-          <div
-            className="h-36 w-36 rounded-full border border-violet/50 bg-gradient-to-bl from-violet/50 to-violet/10 backdrop-blur-3xl shadow-[0_0_40px_var(--color-violet)]/40"
-            style={{ transform: "scaleY(0.85) rotate(-15deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute left-[8%] bottom-[22%] animate-float-medium opacity-100"
-          style={{ animationDelay: "2.5s" }}
-        >
-          <div
-            className="h-24 w-24 rounded-2xl border border-warning/50 bg-gradient-to-tr from-warning/60 to-warning/20 backdrop-blur-xl shadow-[0_0_35px_var(--color-warning)]/40"
-            style={{ transform: "rotate(40deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute right-[20%] bottom-[18%] animate-float-slow opacity-100"
-          style={{ animationDelay: "1s" }}
-        >
-          <div
-            className="h-32 w-32 rounded-full border border-success/50 bg-gradient-to-br from-success/50 to-success/10 backdrop-blur-md shadow-[0_0_40px_var(--color-success)]/30"
-            style={{ transform: "rotate(-25deg)" }}
-          />
-        </div>
-
-        <div
-          className="absolute left-[40%] top-[10%] animate-float-medium opacity-100"
-          style={{ animationDelay: "3s" }}
-        >
-          <div
-            className="h-16 w-16 rounded-xl border border-cyan/60 bg-gradient-to-br from-cyan/50 to-cyan/20 backdrop-blur-md shadow-[0_0_25px_var(--color-cyan)]/50"
-            style={{ transform: "rotate(65deg)" }}
-          />
-        </div>
-
-        {/* Micro-particles / stars */}
-        <div className="absolute left-[30%] top-[40%] h-2 w-2 animate-pulse rounded-full bg-primary shadow-[0_0_12px_var(--color-primary)]" />
-        <div
-          className="absolute right-[25%] top-[35%] h-2 w-2 animate-pulse rounded-full bg-warning shadow-[0_0_15px_var(--color-warning)]"
-          style={{ animationDelay: "1s" }}
-        />
-        <div
-          className="absolute left-[55%] bottom-[25%] h-2 w-2 animate-pulse rounded-full bg-success shadow-[0_0_12px_var(--color-success)]"
-          style={{ animationDelay: "0.5s" }}
-        />
-        <div
-          className="absolute right-[40%] top-[20%] h-1.5 w-1.5 animate-pulse rounded-full bg-violet shadow-[0_0_10px_var(--color-violet)]"
-          style={{ animationDelay: "2s" }}
-        />
+        <div className="absolute -left-40 top-0 h-[600px] w-[600px] animate-pulse-slow rounded-full bg-primary/10 blur-[140px]" />
+        <div className="absolute right-0 top-1/3 h-[500px] w-[500px] animate-pulse-slow rounded-full bg-violet/10 blur-[140px]" />
+        <div className="absolute left-1/4 bottom-0 h-[600px] w-[600px] animate-pulse-slow rounded-full bg-amber-500/10 blur-[140px]" />
+        <div className="absolute inset-0 opacity-[0.03] [background-image:linear-gradient(var(--color-foreground)_1px,transparent_1px),linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)] [background-size:48px_48px]" />
       </div>
 
       <div className="relative z-10">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 sm:px-10 sm:py-6">
-          <div className="flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-transparent overflow-hidden">
-              <img src="/logo.png" className="h-full w-full object-contain" alt="Bizora AI" />
+        {/* Navigation Header */}
+        <header className="sticky top-0 z-40 border-b border-hairline bg-background/95 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+            <BizoraLogo variant="owner" size="md" />
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              <LanguageSelector />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="text-muted-foreground"
+                title="Toggle Theme"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+
+              {user ? (
+                <Button
+                  onClick={() => navigate({ to: "/command-center" })}
+                  className="gradient-primary text-primary-foreground font-semibold gap-2 text-xs sm:text-sm"
+                >
+                  Go to Command Center <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface-2 transition-all"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:bg-primary/90 transition-all"
+                  >
+                    Register Store <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-sm font-semibold tracking-tight">Bizora AI</p>
-              <p className="text-[10px] text-muted-foreground">Enterprise Intelligence OS</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/login"
-              className="text-sm font-medium text-foreground transition-colors hover:text-primary"
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-2 rounded-md gradient-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
-            >
-              Register Company <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
         </header>
 
-        {/* Hero */}
-        <section className="mx-auto max-w-5xl px-6 pt-16 pb-20 text-center sm:px-10 sm:pt-24 sm:pb-28">
-          <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-primary">
-            <Sparkles className="h-3 w-3" /> Decision Intelligence for Modern Businesses
-          </p>
-          <h1 className="mt-6 font-display text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
-            From business data to <span className="gradient-text">intelligent decisions</span>.
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Bizora AI unifies sales, inventory, customers, suppliers, and utilities into a single
-            decision surface — with predictive analytics and evidence-backed AI recommendations
-            designed for owners, admins, and store managers.
-          </p>
-
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 rounded-lg gradient-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:opacity-90"
-            >
-              Get Started <ChevronRight className="h-4 w-4" />
-            </Link>
-            <a
-              href="#features"
-              className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface/50 px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-surface"
-            >
-              Explore Features
-            </a>
+        {/* Hero Section */}
+        <section className="mx-auto max-w-6xl px-4 pt-12 pb-16 text-center sm:px-6 sm:pt-20 sm:pb-24 lg:px-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-6">
+            <Sparkles className="h-3.5 w-3.5" /> 🇮🇳 India's Premier AI Business Operating System
           </div>
 
-          <p className="mt-4 text-xs text-muted-foreground">
-            Trusted by enterprise retail businesses & multi-department stores
+          <h1 className="font-display text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-5xl md:text-6xl">
+            Simplify POS Billing, Stock Control & Accounting with{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600">
+              AI Decision Intelligence
+            </span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-lg">
+            Replace 5 disconnected billing & ledger apps with one unified platform. Engineered for Supermarkets, Grocery Stores, Retail Chains, Pharmacies, and Multi-Store Franchises.
           </p>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              to="/register"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-7 py-3.5 text-sm font-bold text-primary-foreground shadow-xl transition-all hover:bg-primary/90 hover:scale-[1.02]"
+            >
+              Register Your Business Free <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/login"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-hairline bg-surface px-7 py-3.5 text-sm font-bold text-foreground hover:bg-surface-2 transition-all"
+            >
+              Storekeeper Sign In <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          {/* Quick Trust Badges */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Hardware-Free Camera Scanner</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> 12 Indian Regional Languages</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Automated WhatsApp Receipts</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Vapi AI Hindi Voice Assistant</span>
+          </div>
         </section>
 
-        {/* Features grid */}
-        <section id="features" className="mx-auto max-w-5xl px-6 pb-24 sm:px-10">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Live Metrics Proof Bar */}
+        <section className="border-y border-hairline bg-surface/50 py-10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-2 gap-6 text-center md:grid-cols-4">
+              <div className="p-4 rounded-xl border border-hairline bg-card">
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-primary">10,000+</p>
+                <p className="mt-1 text-xs text-muted-foreground font-medium">Active Stores & Retailers</p>
+              </div>
+              <div className="p-4 rounded-xl border border-hairline bg-card">
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-success">₹500Cr+</p>
+                <p className="mt-1 text-xs text-muted-foreground font-medium">Monthly Bills Processed</p>
+              </div>
+              <div className="p-4 rounded-xl border border-hairline bg-card">
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-warning">12</p>
+                <p className="mt-1 text-xs text-muted-foreground font-medium">Indian Regional Languages</p>
+              </div>
+              <div className="p-4 rounded-xl border border-hairline bg-card">
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-info">99.9%</p>
+                <p className="mt-1 text-xs text-muted-foreground font-medium">Uptime & Live 5-Min Health</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Comprehensive Core Modules (Vyapar-Style Feature Showcase) */}
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-primary">COMPLETE RETAIL SUITE</h2>
+            <p className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">
+              Everything Your Business Needs to Grow & Scale
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Powerful modules built to digitize sales, streamline procurement, automate customer engagement, and maximize profit margins.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
-                icon: TrendingUp,
-                title: "Real-time Analytics",
-                desc: "Live revenue, footfall, and department performance dashboards updated in real time.",
+                icon: ShoppingCart,
+                title: "High-Speed POS Checkout",
+                desc: "Process customer bills in under 5 seconds with thermal printer support, multi-payment options (UPI, Cash, Card), and automated GST calculations.",
+                badge: "POS Terminal",
+                color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
               },
               {
-                icon: Brain,
-                title: "AI Decision Center",
-                desc: "Gemini-powered AI recommendations for pricing, inventory, staffing, and promotions.",
+                icon: Camera,
+                title: "Camera Barcode Scanner",
+                desc: "No expensive hardware barcode gun needed! Use any smartphone or laptop webcam to scan barcodes instantly using browser BarcodeDetector API.",
+                badge: "Hardware-Free",
+                color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
+              },
+              {
+                icon: MessageSquare,
+                title: "Automated WhatsApp Invoicing",
+                desc: "Send digital POS bills, payment receipts, low-stock warnings, and purchase orders directly to customer and supplier WhatsApp numbers.",
+                badge: "Twilio API",
+                color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+              },
+              {
+                icon: Phone,
+                title: "Vapi AI Hindi Voice Assistant",
+                desc: "Outbound AI voice calls to suppliers in natural Indian Hindi (hi-IN-SwaraNeural) to reorder low-stock inventory automatically.",
+                badge: "Voice AI",
+                color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+              },
+              {
+                icon: Globe,
+                title: "12 Indian Regional Languages",
+                desc: "Native UI translation into Hindi, Marathi, Gujarati, Tamil, Telugu, Kannada, Malayalam, Bengali, Punjabi, Odia, Assamese, and English.",
+                badge: "Localization",
+                color: "text-sky-500 bg-sky-500/10 border-sky-500/20",
+              },
+              {
+                icon: Package,
+                title: "Smart Inventory & Stock Control",
+                desc: "Track stock levels across store branches in real-time with FIFO batch management, expiry date warnings, and automated reorder alerts.",
+                badge: "Stock Ledger",
+                color: "text-rose-500 bg-rose-500/10 border-rose-500/20",
+              },
+              {
+                icon: Receipt,
+                title: "Double-Entry Accounting GL",
+                desc: "Full general ledger accounting, real-time Profit & Loss statements, balance sheets, expense tracking, and GST tax reports.",
+                badge: "Accounting",
+                color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+              },
+              {
+                icon: Activity,
+                title: "Automated 5-Min System Health",
+                desc: "Proactive background health checks every 5 minutes that trigger instant email alert reports to admins if database or latency issues occur.",
+                badge: "24/7 Monitor",
+                color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
               },
               {
                 icon: ShieldCheck,
-                title: "Anomaly Detection",
-                desc: "Automated alerts for revenue drops, inventory shrinkage, and operational risks.",
+                title: "Multi-Tenant Data Isolation",
+                desc: "Super Admin approval queue for store onboarding with 100% private and isolated workspace databases for each business tenant.",
+                badge: "Enterprise Security",
+                color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
               },
-              {
-                icon: BarChart3,
-                title: "Business Forecasting",
-                desc: "Predictive models for sales trends, seasonal demand, and cash flow planning.",
-              },
-              {
-                icon: Users,
-                title: "Customer 360°",
-                desc: "Complete customer profiles with spend analysis, visit frequency, and churn prediction.",
-              },
-              {
-                icon: Zap,
-                title: "Time Machine",
-                desc: "Simulate business scenarios and model decisions before committing resources.",
-              },
-            ].map((f) => (
+            ].map((feature, i) => (
               <div
-                key={f.title}
-                className="group glass rounded-xl border border-hairline p-6 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                key={i}
+                className="group card-elevated p-6 border border-hairline hover:border-primary/40 transition-all hover:shadow-xl hover:-translate-y-1"
               >
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:gradient-primary group-hover:text-primary-foreground">
-                  <f.icon className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                    <feature.icon className="h-5 w-5" />
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${feature.color}`}>
+                    {feature.badge}
+                  </span>
                 </div>
-                <h3 className="mt-4 text-sm font-semibold">{f.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
+                <h3 className="text-base font-bold text-foreground">{feature.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{feature.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Role badges */}
-        <section className="mx-auto max-w-3xl px-6 pb-20 text-center sm:px-10">
-          <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
-            Built for every level of business management
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
-            {["Store Owner", "Admin", "Manager"].map((r) => (
-              <span
-                key={r}
-                className="rounded-full border border-hairline bg-surface/80 px-4 py-1.5 text-xs font-medium"
-              >
-                {r}
-              </span>
+        {/* Feature Comparison Matrix: Bizora AI vs Traditional Software */}
+        <section className="border-t border-hairline bg-surface/30 py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-primary">THE BIZORA AI ADVANTAGE</h2>
+              <p className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">
+                Why Retailers are Switching to Bizora AI
+              </p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                See how Bizora AI compares to traditional legacy billing software and basic book-keeping apps.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-hairline bg-card shadow-xl">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-hairline bg-surface/80">
+                    <th className="p-4 font-bold text-muted-foreground uppercase tracking-wider">Features</th>
+                    <th className="p-4 font-bold text-primary text-sm">✨ Bizora AI OS</th>
+                    <th className="p-4 font-semibold text-muted-foreground">Vyapar / Khatabook</th>
+                    <th className="p-4 font-semibold text-muted-foreground">Tally / Legacy Desktop</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {[
+                    { feature: "AI Voice Agent Reordering (Hindi)", bizora: true, alt1: false, alt2: false },
+                    { feature: "Automated WhatsApp Digital Receipts", bizora: true, alt1: "Manual", alt2: false },
+                    { feature: "12 Indian Regional Languages", bizora: true, alt1: "Limited", alt2: false },
+                    { feature: "Camera Barcode Scanner (Web API)", bizora: true, alt1: false, alt2: false },
+                    { feature: "Automated 5-Min Server Health Check", bizora: true, alt1: false, alt2: false },
+                    { feature: "Multi-Store Cloud Synchronization", bizora: true, alt1: false, alt2: "Extra Cost" },
+                    { feature: "Zero Hardware Gun Required", bizora: true, alt1: false, alt2: false },
+                  ].map((row, idx) => (
+                    <tr key={idx} className="hover:bg-surface/40 transition-colors">
+                      <td className="p-4 font-semibold text-foreground">{row.feature}</td>
+                      <td className="p-4 font-bold text-success flex items-center gap-1.5">
+                        <Check className="h-4 w-4 text-success" /> Included Native
+                      </td>
+                      <td className="p-4 text-muted-foreground">
+                        {typeof row.alt1 === "boolean" ? (row.alt1 ? "Yes" : "❌ No") : row.alt1}
+                      </td>
+                      <td className="p-4 text-muted-foreground">
+                        {typeof row.alt2 === "boolean" ? (row.alt2 ? "Yes" : "❌ No") : row.alt2}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* Business Type Compatibility */}
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-primary">TAILORED FOR YOUR INDUSTRY</h2>
+            <p className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">
+              Built for Every Type of Business
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 text-center">
+            {[
+              { title: "Supermarkets", icon: Store },
+              { title: "Electronics", icon: HardDrive },
+              { title: "Apparel & Shoes", icon: ShoppingCart },
+              { title: "Pharmacies", icon: ShieldCheck },
+              { title: "Hardware", icon: Package },
+              { title: "Multi-Franchise", icon: Building2 },
+            ].map((item, idx) => (
+              <div key={idx} className="p-5 rounded-2xl border border-hairline bg-card hover:border-primary/40 transition-all flex flex-col items-center gap-2">
+                <item.icon className="h-6 w-6 text-primary" />
+                <span className="font-semibold text-xs text-foreground">{item.title}</span>
+              </div>
             ))}
           </div>
         </section>
 
-        {/* Footer CTA */}
-        <footer className="border-t border-hairline bg-surface/30 py-8 text-center">
-          <p className="text-xs text-muted-foreground">
-            © 2026 Bizora AI · Enterprise Decision Intelligence OS
-          </p>
+        {/* FAQs Accordion */}
+        <section className="border-t border-hairline bg-surface/30 py-16 sm:py-24">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-primary">FREQUENTLY ASKED QUESTIONS</h2>
+              <p className="mt-2 font-display text-3xl font-extrabold">Got Questions? We Have Answers.</p>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                {
+                  q: "Do I need to buy expensive barcode scanning hardware?",
+                  a: "No! Bizora AI features an integrated Camera Barcode Scanner utilizing browser BarcodeDetector API. You can scan barcodes directly using your laptop webcam or smartphone camera.",
+                },
+                {
+                  q: "How does automated WhatsApp billing work?",
+                  a: "When a checkout is completed at POS, the system automatically dispatches a digital PDF receipt via Twilio WhatsApp API directly to the customer's phone number.",
+                },
+                {
+                  q: "Can I switch the app interface to my native Indian regional language?",
+                  a: "Yes! Bizora AI supports 12 Indian regional languages including Hindi, Marathi, Gujarati, Tamil, Telugu, Kannada, Malayalam, Bengali, Punjabi, Odia, Assamese, and English.",
+                },
+                {
+                  q: "How does the automated 5-minute health check work?",
+                  a: "Our backend continuously tests database connectivity and response latency every 5 minutes. If an issue occurs, a detailed HTML report is emailed to the super admin immediately.",
+                },
+              ].map((faq, idx) => (
+                <div key={idx} className="rounded-xl border border-hairline bg-card overflow-hidden">
+                  <button
+                    onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                    className="w-full flex items-center justify-between p-4 text-left font-bold text-xs sm:text-sm"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${activeFaq === idx ? "rotate-90" : ""}`} />
+                  </button>
+                  {activeFaq === idx && (
+                    <div className="p-4 pt-0 text-xs text-muted-foreground leading-relaxed border-t border-hairline bg-surface/40">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* High-Converting CTA Footer Banner */}
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="rounded-3xl gradient-primary p-8 sm:p-12 text-center text-primary-foreground shadow-2xl relative overflow-hidden">
+            <h2 className="font-display text-3xl font-extrabold sm:text-4xl">
+              Ready to Digitize Your Store Operations?
+            </h2>
+            <p className="mt-3 max-w-xl mx-auto text-xs sm:text-sm opacity-90">
+              Join thousands of retail business owners across India. Register your store in under 2 minutes.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to="/register"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white text-primary font-bold text-sm shadow-xl hover:bg-white/90 transition-all"
+              >
+                Register Business Now
+              </Link>
+              <Link
+                to="/login"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-white/30 text-white font-bold text-sm hover:bg-white/10 transition-all"
+              >
+                Sign In to Dashboard
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-hairline bg-card py-8 text-center text-xs text-muted-foreground">
+          <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <BizoraLogo variant="owner" size="sm" />
+            <p>© 2026 Bizora AI · Enterprise Decision Intelligence & Business OS</p>
+          </div>
         </footer>
       </div>
     </div>
