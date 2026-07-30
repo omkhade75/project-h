@@ -96,7 +96,7 @@ export function BizoraLogo({
           </span>
         </div>
         {sub && (
-          <span className={cn("mt-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border w-fit leading-none", badge.color)}>
+          <span className={cn("mt-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border w-fit leading-none hidden sm:inline-block", badge.color)}>
             {sub}
           </span>
         )}

@@ -196,16 +196,16 @@ function RichLandingPage() {
       <div className="relative z-10">
         {/* Navigation Header */}
         <header className="sticky top-0 z-40 border-b border-hairline bg-background/95 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3">
             <BizoraLogo variant="owner" size="md" />
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <LanguageSelector />
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                className="text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground"
                 title="Toggle Theme"
               >
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -214,23 +214,27 @@ function RichLandingPage() {
               {user ? (
                 <Button
                   onClick={() => navigate({ to: "/command-center" })}
-                  className="gradient-primary text-primary-foreground font-semibold gap-2 text-xs sm:text-sm"
+                  className="gradient-primary text-primary-foreground font-semibold gap-1 text-xs h-8 px-2.5 sm:px-4 shrink-0"
                 >
-                  Go to Command Center <ArrowRight className="h-4 w-4" />
+                  <span className="hidden sm:inline">Go to Command Center</span>
+                  <span className="sm:hidden">Command Center</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <Link
                     to="/login"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface-2 transition-all"
+                    className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-surface px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-surface-2 transition-all h-8"
                   >
                     Sign In
                   </Link>
                   <Link
                     to="/register"
-                    className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:bg-primary/90 transition-all"
+                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-md hover:bg-primary/90 transition-all h-8"
                   >
-                    Register Store <ChevronRight className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Register Store</span>
+                    <span className="sm:hidden">Register</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               )}
