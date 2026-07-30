@@ -1,6 +1,8 @@
 name: Live Backend Health Monitor Cron
 
 on:
+  push:
+    branches: [ main ]
   schedule:
     # Run every 6 hours automatically on GitHub Actions
     - cron: '0 */6 * * *'
