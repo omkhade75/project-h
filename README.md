@@ -1,5 +1,8 @@
 # 🚀 Bizora AI (OmniMind) — Enterprise Business Intelligence & SaaS OS
 
+![CI Build Verification](https://github.com/omkhade75/project-h/actions/workflows/ci.yml/badge.svg)
+![Live Backend Health Monitor](https://github.com/omkhade75/project-h/actions/workflows/health-cron.yml/badge.svg)
+
 **Bizora AI** is an enterprise-grade, multi-tenant AI Business Operating System designed for modern retail chains, supermarkets, franchises, and multi-department enterprises. It unifies POS Billing, Inventory Stock Control, Double-Entry Accounting, Customer CRM, Supplier Procurement, Vapi Voice AI Calls, Automated WhatsApp Messaging, and Gemini AI Decision Intelligence into a single unified control plane.
 
 ---
