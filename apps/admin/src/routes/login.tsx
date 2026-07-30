@@ -1,3 +1,4 @@
+import { BizoraLogo } from "@/components/bizora-logo";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff, ShieldAlert, Loader2, Building2, UserCheck } from "lucide-react";
@@ -67,15 +68,7 @@ function AdminLoginPage() {
       <div className="relative grid min-h-screen grid-cols-1 lg:grid-cols-2">
         {/* Left: Super Admin Brand Story */}
         <div className="hidden flex-col justify-between p-10 lg:flex xl:p-14 border-r border-border/40 bg-rose-950/10">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-rose-600/20 border border-rose-500/30 text-rose-400">
-              <ShieldAlert className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-base font-bold tracking-tight text-foreground">Bizora OS</p>
-              <p className="text-xs font-semibold text-rose-400 uppercase tracking-wider">Super Admin Console</p>
-            </div>
-          </div>
+          <BizoraLogo variant="admin" size="lg" />
 
           <div className="max-w-lg">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold uppercase tracking-wider mb-4">

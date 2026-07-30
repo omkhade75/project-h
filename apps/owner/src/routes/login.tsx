@@ -1,3 +1,4 @@
+import { BizoraLogo } from "@/components/bizora-logo";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff, Building, TrendingUp, Loader2, ArrowLeft, Crown, DollarSign, PieChart } from "lucide-react";
@@ -96,15 +97,7 @@ function OwnerLoginPage() {
       <div className="relative grid min-h-screen grid-cols-1 lg:grid-cols-2">
         {/* Left: brand story */}
         <div className="hidden flex-col justify-between p-10 lg:flex xl:p-14 border-r border-border/40 bg-amber-950/10">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400">
-              <Crown className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-base font-bold tracking-tight text-foreground">Bizora OS</p>
-              <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Business Owner Portal</p>
-            </div>
-          </div>
+          <BizoraLogo variant="owner" size="lg" />
 
           <div className="max-w-lg">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold uppercase tracking-wider mb-4">

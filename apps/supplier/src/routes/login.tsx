@@ -1,3 +1,4 @@
+import { BizoraLogo } from "@/components/bizora-logo";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff, Truck, PackageCheck, Loader2, ArrowLeft, Building2, ClipboardList } from "lucide-react";

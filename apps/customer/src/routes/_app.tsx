@@ -1,3 +1,4 @@
+import { BizoraLogo } from "@/components/bizora-logo";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,

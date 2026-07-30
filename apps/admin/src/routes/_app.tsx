@@ -1,3 +1,4 @@
+import { BizoraLogo } from "@/components/bizora-logo";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,
@@ -132,15 +133,7 @@ function AppShell() {
           )}
         >
           <div className="relative hairline-b flex items-center gap-3 px-4 py-5">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-600/20 text-rose-500">
-              <ShieldAlert className="h-5 w-5" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="truncate text-base font-bold tracking-tight">Bizora Admin</p>
-                <p className="truncate text-[11px] text-rose-400 font-bold uppercase">Super Admin Portal</p>
-              </div>
-            )}
+            {!collapsed ? <BizoraLogo variant="admin" size="md" /> : <BizoraLogo variant="admin" size="sm" subtitle="" />}
             <button
               onClick={() => setMobileOpen(false)}
               className="ml-auto rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground lg:hidden"
