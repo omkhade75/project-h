@@ -22,6 +22,7 @@ import { Route as AppTaxRouteImport } from './routes/_app.tax'
 import { Route as AppSystemAdminRouteImport } from './routes/_app.system-admin'
 import { Route as AppSuppliersRouteImport } from './routes/_app.suppliers'
 import { Route as AppSupplierPortalRouteImport } from './routes/_app.supplier-portal'
+import { Route as AppSubscriptionsRouteImport } from './routes/_app.subscriptions'
 import { Route as AppStaffRouteImport } from './routes/_app.staff'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSalesRouteImport } from './routes/_app.sales'
@@ -112,6 +113,11 @@ const AppSuppliersRoute = AppSuppliersRouteImport.update({
 const AppSupplierPortalRoute = AppSupplierPortalRouteImport.update({
   id: '/supplier-portal',
   path: '/supplier-portal',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSubscriptionsRoute = AppSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStaffRoute = AppStaffRouteImport.update({
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/sales': typeof AppSalesRoute
   '/settings': typeof AppSettingsRoute
   '/staff': typeof AppStaffRoute
+  '/subscriptions': typeof AppSubscriptionsRoute
   '/supplier-portal': typeof AppSupplierPortalRoute
   '/suppliers': typeof AppSuppliersRoute
   '/system-admin': typeof AppSystemAdminRoute
@@ -323,6 +330,7 @@ export interface FileRoutesByTo {
   '/sales': typeof AppSalesRoute
   '/settings': typeof AppSettingsRoute
   '/staff': typeof AppStaffRoute
+  '/subscriptions': typeof AppSubscriptionsRoute
   '/supplier-portal': typeof AppSupplierPortalRoute
   '/suppliers': typeof AppSuppliersRoute
   '/system-admin': typeof AppSystemAdminRoute
@@ -366,6 +374,7 @@ export interface FileRoutesById {
   '/_app/sales': typeof AppSalesRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/staff': typeof AppStaffRoute
+  '/_app/subscriptions': typeof AppSubscriptionsRoute
   '/_app/supplier-portal': typeof AppSupplierPortalRoute
   '/_app/suppliers': typeof AppSuppliersRoute
   '/_app/system-admin': typeof AppSystemAdminRoute
@@ -409,6 +418,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/staff'
+    | '/subscriptions'
     | '/supplier-portal'
     | '/suppliers'
     | '/system-admin'
@@ -450,6 +460,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/staff'
+    | '/subscriptions'
     | '/supplier-portal'
     | '/suppliers'
     | '/system-admin'
@@ -492,6 +503,7 @@ export interface FileRouteTypes {
     | '/_app/sales'
     | '/_app/settings'
     | '/_app/staff'
+    | '/_app/subscriptions'
     | '/_app/supplier-portal'
     | '/_app/suppliers'
     | '/_app/system-admin'
@@ -601,6 +613,13 @@ declare module '@tanstack/react-router' {
       path: '/supplier-portal'
       fullPath: '/supplier-portal'
       preLoaderRoute: typeof AppSupplierPortalRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/subscriptions': {
+      id: '/_app/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof AppSubscriptionsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/staff': {
@@ -823,6 +842,7 @@ interface AppRouteChildren {
   AppSalesRoute: typeof AppSalesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStaffRoute: typeof AppStaffRoute
+  AppSubscriptionsRoute: typeof AppSubscriptionsRoute
   AppSupplierPortalRoute: typeof AppSupplierPortalRoute
   AppSuppliersRoute: typeof AppSuppliersRoute
   AppSystemAdminRoute: typeof AppSystemAdminRoute
@@ -861,6 +881,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSalesRoute: AppSalesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStaffRoute: AppStaffRoute,
+  AppSubscriptionsRoute: AppSubscriptionsRoute,
   AppSupplierPortalRoute: AppSupplierPortalRoute,
   AppSuppliersRoute: AppSuppliersRoute,
   AppSystemAdminRoute: AppSystemAdminRoute,

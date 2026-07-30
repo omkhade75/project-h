@@ -155,6 +155,7 @@ const NAV: NavSection[] = [
     section: "System",
     items: [
       { to: "/reports", label: "Reports", icon: FileText },
+      { to: "/subscriptions", label: "Plans & Pricing", icon: CreditCard },
       { to: "/data-import", label: "Data Import", icon: Upload },
       { to: "/settings", label: "Settings", icon: Settings },
     ],
