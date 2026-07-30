@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Sun,
   Moon,
+  Activity,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { stopImpersonatingServer } from "@/lib/server-auth";
