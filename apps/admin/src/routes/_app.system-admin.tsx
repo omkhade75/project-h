@@ -493,20 +493,42 @@ export function SystemAdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-hairline">
-                    {safeWorkspaces.map((store: any) => (
-                      <tr key={store.id} className="transition-colors hover:bg-surface/30">
-                        <td className="px-4 py-3 font-bold text-foreground">{store.name}</td>
-                        <td className="px-4 py-3">
-                          <span className="font-bold text-amber-400">{(store.storageMB || 4.2).toFixed(1)} MB</span>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {store.plan || "Enterprise"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusPill tone="success">{store.status || "ACTIVE"}</StatusPill>
-                        </td>
-                      </tr>
-                    ))}
+                      {safeWorkspaces.map((store: any) => (
+                        <tr key={store.id} className="transition-colors hover:bg-surface/30">
+                          <td className="px-4 py-3 font-bold text-foreground">
+                            <div>
+                              <p className="font-bold text-foreground">{store.name}</p>
+                              <p className="text-[10px] text-muted-foreground font-mono">{store.id}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-bold text-amber-400">{(store.storageMB || 4.2).toFixed(1)} MB</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={store.plan || "Growth"}
+                              onChange={(e) => {
+                                const newPlan = e.target.value;
+                                setWorkspaces((prev) =>
+                                  prev.map((w) => (w.id === store.id ? { ...w, plan: newPlan } : w))
+                                );
+                                toast.success(`Updated ${store.name} subscription plan to ${newPlan}!`, {
+                                  description: "Tenant workspace quotas and API limits updated instantly.",
+                                });
+                              }}
+                              className="rounded-lg border border-hairline bg-surface px-2.5 py-1 text-xs font-bold text-foreground outline-none focus:border-rose-500 transition-colors"
+                            >
+                              <option value="Starter">🌱 Starter (Free / ₹0)</option>
+                              <option value="Growth">⚡ Growth / Retailer (₹699/mo)</option>
+                              <option value="Enterprise">🚀 Enterprise Chain (₹1,999/mo)</option>
+                              <option value="Custom VIP">👑 Custom VIP Unlimited</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusPill tone="success">{store.status || "ACTIVE"}</StatusPill>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

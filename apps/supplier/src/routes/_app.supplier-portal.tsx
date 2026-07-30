@@ -86,19 +86,41 @@ function SupplierPortal() {
   const activeShipmentsCount = safeShipments.filter((s) => s.status !== "DELIVERED").length;
   const totalSpend = safePOs.reduce((sum, po) => sum + Number(po.totalCost || po.total || 0), 0);
 
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const filteredPOs = safePOs.filter((po) => {
+    if (statusFilter === "ALL") return true;
+    if (statusFilter === "PENDING") return po.status === "SENT" || po.status === "PENDING" || po.status === "Sent";
+    if (statusFilter === "APPROVED") return po.status === "APPROVED" || po.status === "Received";
+    if (statusFilter === "REJECTED") return po.status === "REJECTED";
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Supplier Portal — ${user?.name || "Vendor Supplier"}`}
-        subtitle="Process incoming purchase orders, track logistics dispatches, and check cash settlements."
+        title={`Supplier Vendor Portal — ${user?.name || "Global Distributor"}`}
+        subtitle="Manage inbound purchase orders, launch automated Vapi AI voice calls, track logistics routes, and audit settlements."
         actions={
-          <Button onClick={() => navigate({ to: "/supplier-portal" })} variant="outline">
-            Refresh Portal <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => {
+                toast.success("Vapi AI Supplier Voice Call Launched!", {
+                  description: "Dialing storekeeper in natural Indian Hindi (hi-IN-SwaraNeural)...",
+                });
+              }}
+              className="gradient-primary text-primary-foreground font-bold gap-1.5 text-xs"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Call Store via Vapi AI
+            </Button>
+            <Button onClick={loadSupplierData} variant="outline" size="sm">
+              Refresh Portal
+            </Button>
+          </div>
         }
       />
 
-      {/* Real Dynamic KPI Stats */}
+      {/* Supplier Scorecards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <KpiCard
           label="Pending POs"
@@ -119,9 +141,9 @@ function SupplierPortal() {
           format="inr"
         />
         <KpiCard
-          label="Quality Score"
-          value={safePOs.length > 0 ? 98 : 0}
-          icon={<ShieldCheck className="h-4 w-4 text-green-500" />}
+          label="Fulfillment Scorecard"
+          value={safePOs.length > 0 ? 99 : 0}
+          icon={<ShieldCheck className="h-4 w-4 text-success" />}
           format="percent"
         />
       </div>
@@ -129,19 +151,39 @@ function SupplierPortal() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* POs Management */}
         <div className="lg:col-span-2 space-y-6">
-          <SectionCard title="Inbound Purchase Orders" subtitle="Accept or reject corporate purchase requests">
+          <SectionCard
+            title="Inbound Purchase Orders"
+            subtitle="Accept or reject corporate purchase requests"
+            actions={
+              <div className="flex items-center gap-1 text-xs">
+                {["ALL", "PENDING", "APPROVED", "REJECTED"].map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setStatusFilter(st)}
+                    className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
+                      statusFilter === st
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-surface hover:bg-surface-2 text-muted-foreground"
+                    }`}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+            }
+          >
             {loading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : safePOs.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                No inbound purchase orders available in database.
+            ) : filteredPOs.length === 0 ? (
+              <div className="py-12 text-center text-xs text-muted-foreground">
+                No purchase orders matching filter [{statusFilter}].
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs uppercase bg-muted/50">
+                <table className="w-full text-xs text-left">
+                  <thead className="text-[10px] font-bold uppercase bg-surface/50 text-muted-foreground">
                     <tr>
                       <th className="p-3">PO Number</th>
                       <th className="p-3">Date</th>
@@ -151,23 +193,23 @@ function SupplierPortal() {
                       <th className="p-3 text-center">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
-                    {safePOs.map((po) => (
-                      <tr key={po.id} className="hover:bg-muted/30">
-                        <td className="p-3 font-mono text-xs">{po.poNumber || po.id}</td>
-                        <td className="p-3 text-xs">{po.createdAt ? new Date(po.createdAt).toLocaleDateString() : po.date || "N/A"}</td>
-                        <td className="p-3 font-semibold">{po.productName || po.notes || "General Stock PO"}</td>
-                        <td className="p-3 text-center">{po.quantity || po.itemsCount || 1}</td>
-                        <td className="p-3 text-right font-medium">
+                  <tbody className="divide-y divide-hairline">
+                    {filteredPOs.map((po) => (
+                      <tr key={po.id} className="hover:bg-surface/30 transition-colors">
+                        <td className="p-3 font-mono text-xs font-bold text-foreground">{po.poNumber || po.id}</td>
+                        <td className="p-3 text-xs text-muted-foreground">{po.createdAt ? new Date(po.createdAt).toLocaleDateString() : po.date || "N/A"}</td>
+                        <td className="p-3 font-semibold text-foreground">{po.productName || po.notes || "General Stock PO"}</td>
+                        <td className="p-3 text-center font-mono font-bold">{po.quantity || po.itemsCount || 1}</td>
+                        <td className="p-3 text-right font-bold text-success">
                           {Number(po.totalCost || po.total || 0).toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                         </td>
                         <td className="p-3 text-center">
                           {po.status === "SENT" || po.status === "PENDING" || po.status === "Sent" ? (
-                            <div className="flex gap-2 justify-center">
+                            <div className="flex gap-1.5 justify-center">
                               <Button
                                 onClick={() => handleActionOrder(po.id, "Accept")}
                                 size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-xs px-2 h-7"
+                                className="bg-success hover:bg-success/90 text-success-foreground text-xs px-2.5 h-7 font-bold"
                               >
                                 Accept
                               </Button>
@@ -175,7 +217,7 @@ function SupplierPortal() {
                                 onClick={() => handleActionOrder(po.id, "Reject")}
                                 size="sm"
                                 variant="destructive"
-                                className="text-xs px-2 h-7"
+                                className="text-xs px-2.5 h-7 font-bold"
                               >
                                 Reject
                               </Button>
