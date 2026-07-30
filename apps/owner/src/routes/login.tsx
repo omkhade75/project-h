@@ -29,7 +29,7 @@ export const Route = createFileRoute("/login")({
 
 function OwnerLoginPage() {
   const [show, setShow] = useState(false);
-  const [email, setEmail] = useState("owner@gmail.com");
+  const [email, setEmail] = useState("");
   const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
   const { user, login } = useAuth();
@@ -133,7 +133,7 @@ function OwnerLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Executive Business Suite</span>
-            <span className="font-medium text-amber-400">owner@gmail.com</span>
+            <span className="font-medium text-muted-foreground font-mono">Business Owner</span>
           </div>
         </div>
 
@@ -161,28 +161,13 @@ function OwnerLoginPage() {
                 Sign in to view your executive business dashboard and financial ledger.
               </p>
 
-              {/* Demo quick fill button */}
-              <button
-                type="button"
-                onClick={fillDemoOwner}
-                className="mt-4 w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 transition-all"
-              >
-                <span className="flex items-center gap-2">
-                  <Crown className="h-3.5 w-3.5 text-amber-400" />
-                  Quick Fill Owner Credentials
-                </span>
-                <span className="font-mono text-[10px] bg-amber-950/60 px-2 py-0.5 rounded text-amber-200">
-                  owner@gmail.com / 123456789
-                </span>
-              </button>
-
               <form className="mt-6 space-y-4" onSubmit={handleFormLogin}>
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Owner Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="owner@gmail.com"
+                    placeholder="owner@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"

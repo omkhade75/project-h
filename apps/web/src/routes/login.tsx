@@ -273,7 +273,7 @@ function LoginPage() {
                 type="email"
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="khade8915@gmail.com"
+                placeholder="admin@company.com"
                 required
               />
             </div>

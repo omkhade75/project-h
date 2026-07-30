@@ -28,7 +28,7 @@ export const Route = createFileRoute("/login")({
 
 function AdminLoginPage() {
   const [show, setShow] = useState(false);
-  const [email, setEmail] = useState("khade8915@gmail.com");
+  const [email, setEmail] = useState("");
   const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
@@ -91,7 +91,7 @@ function AdminLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Platform Super Admin</span>
-            <span className="font-medium text-rose-400 font-mono">khade8915@gmail.com</span>
+            <span className="font-medium text-muted-foreground font-mono">Platform Admin</span>
           </div>
         </div>
 
@@ -109,28 +109,13 @@ function AdminLoginPage() {
                 Sign in to approve registered shopkeepers & manage store tenants.
               </p>
 
-              {/* Demo quick fill button */}
-              <button
-                type="button"
-                onClick={fillDemoAdmin}
-                className="mt-4 w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 transition-all"
-              >
-                <span className="flex items-center gap-2">
-                  <UserCheck className="h-3.5 w-3.5 text-rose-400" />
-                  Quick Fill Super Admin Credentials
-                </span>
-                <span className="font-mono text-[10px] bg-rose-950/60 px-2 py-0.5 rounded text-rose-200">
-                  khade8915@gmail.com / 123456789
-                </span>
-              </button>
-
               <form className="mt-6 space-y-4" onSubmit={handleFormLogin}>
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Super Admin Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="khade8915@gmail.com"
+                    placeholder="admin@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"

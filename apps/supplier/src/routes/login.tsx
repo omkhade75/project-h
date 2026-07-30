@@ -29,7 +29,7 @@ export const Route = createFileRoute("/login")({
 
 function SupplierLoginPage() {
   const [show, setShow] = useState(false);
-  const [email, setEmail] = useState("supplier@gmail.com");
+  const [email, setEmail] = useState("");
   const [pass, setPass] = useState("123456789");
   const [submitting, setSubmitting] = useState(false);
   const { user, login } = useAuth();
@@ -161,28 +161,13 @@ function SupplierLoginPage() {
                 Sign in to manage purchase orders and delivery fulfillment.
               </p>
 
-              {/* Demo quick fill button */}
-              <button
-                type="button"
-                onClick={fillDemoSupplier}
-                className="mt-4 w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 transition-all"
-              >
-                <span className="flex items-center gap-2">
-                  <Truck className="h-3.5 w-3.5 text-emerald-400" />
-                  Quick Fill Supplier Credentials
-                </span>
-                <span className="font-mono text-[10px] bg-emerald-950/60 px-2 py-0.5 rounded text-emerald-200">
-                  supplier@gmail.com / 123456789
-                </span>
-              </button>
-
               <form className="mt-6 space-y-4" onSubmit={handleFormLogin}>
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Vendor Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="supplier@gmail.com"
+                    placeholder="supplier@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"
