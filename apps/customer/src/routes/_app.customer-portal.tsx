@@ -85,7 +85,7 @@ export function CustomerPortal() {
   const [inStockOnly, setInStockOnly] = useState(true); // Default to showing only products in stock at nearest shop
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [address, setAddress] = useState("18th Road, Near Turner Road, Bandra West, Mumbai 400050");
-  const [paymentMethod, setPaymentMethod] = useState<"UPI" | "COD" | "Wallet">("UPI");
+  const [paymentMethod, setPaymentMethod] = useState<"UPI_RAZORPAY" | "CARD" | "COD">("UPI_RAZORPAY");
 
   // Hyperlocal Orders
   const [placedOrders, setPlacedOrders] = useState<Array<{
@@ -204,9 +204,28 @@ export function CustomerPortal() {
   const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
   const cartSavings = useMemo(() => cart.reduce((sum, item) => sum + (item.mrp - item.price) * item.quantity, 0), [cart]);
 
-  // Handle Hyperlocal Order Placement
+  // Handle Hyperlocal Order Placement with Category Store Routing
   const handlePlaceOrder = () => {
     if (cart.length === 0) return toast.error("Your cart is empty!");
+
+    // Determine store category based on cart items
+    const hasDairyGrocery = cart.some((i) => ["Grocery", "Dairy", "Milk", "Beverages", "Fresh Fruits"].includes(i.category) || i.name.toLowerCase().includes("milk"));
+    const hasElectronics = cart.some((i) => i.category === "Electronics" || i.name.toLowerCase().includes("headphone") || i.name.toLowerCase().includes("printer"));
+    const hasFashion = cart.some((i) => i.category === "Fashion" || i.name.toLowerCase().includes("jeans") || i.name.toLowerCase().includes("saree"));
+
+    let matchedStoreName = "GrandSquare Kirana & Supermart (#STR-104)";
+    let matchedStoreType = "Kirana / Daily Grocery Store";
+
+    if (hasDairyGrocery && !hasElectronics && !hasFashion) {
+      matchedStoreName = "GrandSquare Kirana & Daily Fresh (#STR-104)";
+      matchedStoreType = "Kirana / Daily Grocery Store";
+    } else if (hasElectronics) {
+      matchedStoreName = "Metro Digital & Electronics Hub (#STR-208)";
+      matchedStoreType = "Consumer Electronics & Tech";
+    } else if (hasFashion) {
+      matchedStoreName = "Saree Sadan & Fashion Retail (#STR-312)";
+      matchedStoreType = "Apparel & Fashion Boutique";
+    }
 
     const newOrderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
     const newOrder = {
@@ -223,7 +242,7 @@ export function CustomerPortal() {
     setIsCheckoutOpen(false);
     setActiveTab("ORDERS");
 
-    toast.success(`🎉 Amazon Fresh Order ${newOrderId} placed! Dispatching to GrandSquare Supermart...`);
+    toast.success(`🎉 Order ${newOrderId} placed! Routing to nearest ${matchedStoreType}...`);
 
     // Simulate Shopkeeper Grabbing Order First
     setTimeout(() => {
@@ -233,9 +252,9 @@ export function CustomerPortal() {
             return {
               ...o,
               status: "ACCEPTED_BY_STORE",
-              acceptedStore: "GrandSquare Supermart (Nearest Local Shop)",
+              acceptedStore: `${matchedStoreName} (${matchedStoreType})`,
               storePhone: "+91 98765 43210",
-              driverName: "Ramesh Kumar (Express Partner)",
+              driverName: "Ramesh Kumar (Express 10-Min Partner)",
               driverPhone: "+91 98765 43211",
             };
           }
@@ -243,10 +262,10 @@ export function CustomerPortal() {
         })
       );
       toast.success(
-        `🚨 Nearest Shopkeeper "GrandSquare Supermart" grabbed & accepted your order first! Express delivery dispatched!`,
-        { duration: 6000 }
+        `🚨 Nearest Storekeeper "${matchedStoreName}" (${matchedStoreType}) grabbed & accepted your order! Express 10-min delivery dispatched!`,
+        { duration: 7000 }
       );
-    }, 3200);
+    }, 2800);
   };
 
   return (
@@ -617,11 +636,68 @@ export function CustomerPortal() {
               <div className="flex justify-between font-extrabold text-sm border-t pt-1"><span>Order Total:</span><span>₹{cartTotal}</span></div>
             </div>
 
+            {/* Secure Production Payment Method Selector */}
+            <div className="space-y-2 pt-2 border-t">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                Select Secure Production Payment Method
+              </label>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("UPI_RAZORPAY")}
+                  className={`p-2.5 rounded-lg border text-left flex items-center gap-2 font-bold transition-all ${
+                    paymentMethod === "UPI_RAZORPAY"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm"
+                      : "border-slate-200 bg-white hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="text-lg">📲</span>
+                  <div>
+                    <p className="leading-none">UPI / QR</p>
+                    <p className="text-[10px] text-slate-500 font-normal">GPay, PhonePe, Paytm</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("CARD")}
+                  className={`p-2.5 rounded-lg border text-left flex items-center gap-2 font-bold transition-all ${
+                    paymentMethod === "CARD"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm"
+                      : "border-slate-200 bg-white hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="text-lg">💳</span>
+                  <div>
+                    <p className="leading-none">Cards / NetBank</p>
+                    <p className="text-[10px] text-slate-500 font-normal">Visa, Mastercard, HDFC</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("COD")}
+                  className={`p-2.5 rounded-lg border text-left col-span-2 flex items-center gap-2 font-bold transition-all ${
+                    paymentMethod === "COD"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm"
+                      : "border-slate-200 bg-white hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="text-lg">💵</span>
+                  <div>
+                    <p className="leading-none">Cash on 10-Min Delivery (COD)</p>
+                    <p className="text-[10px] text-slate-500 font-normal">Pay store delivery partner at doorstep</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={handlePlaceOrder}
-              className="w-full rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold py-3 text-sm shadow-md"
+              className="w-full rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold py-3 text-sm shadow-md flex items-center justify-center gap-2"
             >
-              PLACE ORDER & BROADCAST TO NEARBY SHOP
+              <span>PAY ₹{cartTotal} & BROADCAST TO NEARBY SHOP</span>
             </button>
           </div>
         </div>

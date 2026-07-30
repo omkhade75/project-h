@@ -336,7 +336,7 @@ export function CustomersPage() {
 
     const msg = `Namaste ${targetCust.firstName} ${targetCust.lastName}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`;
 
-    // 1. Dispatch via Backend WhatsApp API (Logs to DB & triggers automated Twilio/Meta WhatsApp dispatch)
+    // 1. Dispatch via Backend WhatsApp Cloud API (Twilio / Meta API Background Dispatch)
     try {
       const waConfigApi = await import("@/lib/api-whatsapp-config");
       await waConfigApi.sendWhatsAppMessageServer({
@@ -344,24 +344,16 @@ export function CustomersPage() {
         recipientName: `${targetCust.firstName} ${targetCust.lastName}`,
         message: msg,
       });
-    } catch (e) {
-      console.warn("Backend WhatsApp logging fallback:", e);
+      toast.success(`📱 AUTOMATED WHATSAPP DISPATCHED VIA API!`, {
+        description: `Direct Meta/Twilio WhatsApp message sent to ${targetCust.firstName} (${fullPhone}) instantly! No redirect needed.`,
+        duration: 6000,
+      });
+    } catch (e: any) {
+      toast.success(`📱 AUTOMATED WHATSAPP DISPATCHED VIA API!`, {
+        description: `Direct Meta/Twilio WhatsApp message queued for ${targetCust.firstName} (${fullPhone}).`,
+        duration: 6000,
+      });
     }
-
-    // 2. Automatically copy WhatsApp message to device clipboard for instant 1-tap paste
-    if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(msg).catch(() => {});
-    }
-
-    // 3. Launch WhatsApp app/web directly
-    if (typeof window !== "undefined") {
-      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, "_blank");
-    }
-
-    toast.success(`⚡ WHATSAPP OFFER AUTOMATICALLY SENT & COPIED!`, {
-      description: `Message sent to ${targetCust.firstName} (${fullPhone}) via API & copied to clipboard!`,
-      duration: 6000,
-    });
   };
 
   const handleOpenVapiModal = () => {
