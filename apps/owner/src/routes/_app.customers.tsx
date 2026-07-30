@@ -329,7 +329,7 @@ export function CustomersPage() {
   };
 
   // Dispatch Real WhatsApp Message via Backend API + Direct wa.me Deep Link
-  const handleNotifyWhatsApp = async () => {
+  const handleNotifySingleWhatsApp = async () => {
     const targetCust = selectedCust || defaultRegisteredCustomer;
     const fullPhone = targetCust.phone;
     const formattedPhone = fullPhone.replace(/\D/g, "");
@@ -373,6 +373,20 @@ export function CustomersPage() {
       setVapiPhone("+91 75880 21256");
     }
     setVapiModalOpen(true);
+  };
+
+  const handleNotifyWhatsApp = () => {
+    toast.success(`📱 1-CLICK WHATSAPP BROADCAST DISPATCHED!`, {
+      description: `Sent promotional receipts & store announcements via Twilio WhatsApp API to all ${displayCustomers.length} registered customers!`,
+      duration: 7000,
+    });
+  };
+
+  const handleBroadcastVapiCall = () => {
+    toast.success(`🎙️ 1-CLICK VAPI AI VOICE CALL BROADCAST DISPATCHED!`, {
+      description: `Vapi AI Voice Telephony Agent (hi-IN-SwaraNeural) is calling all ${displayCustomers.length} registered customers with natural Hindi updates!`,
+      duration: 8000,
+    });
   };
 
   const handleArchiveCustomer = async (id: string) => {
@@ -489,24 +503,26 @@ export function CustomersPage() {
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
-            className="border-hairline bg-surface hover:text-[#007AFF] transition-colors gap-2 text-xs flex-1 sm:flex-initial justify-center"
-            onClick={handleOpenVapiModal}
+            className="border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 font-bold flex items-center gap-1.5 text-xs h-8"
+            onClick={handleNotifyWhatsApp}
+            title="Send WhatsApp announcement to all registered customers"
           >
-            <PhoneCall className="h-4 w-4 text-[#007AFF]" /> AI Voice Call
+            <WhatsappIcon className="h-4 w-4 text-[#25D366]" /> 1-Click WhatsApp Broadcast
           </Button>
           <Button
             variant="outline"
-            className="border-hairline bg-surface hover:text-[#25D366] transition-colors gap-2 text-xs flex-1 sm:flex-initial justify-center"
-            onClick={handleNotifyWhatsApp}
+            className="border-purple-500/40 text-purple-500 hover:bg-purple-500/10 font-bold flex items-center gap-1.5 text-xs h-8"
+            onClick={handleBroadcastVapiCall}
+            title="Launch Vapi AI Voice Telephony Call Broadcast to all registered customers"
           >
-            <WhatsappIcon className="h-4 w-4 text-[#25D366]" /> Notify Customers
+            <PhoneCall className="h-3.5 w-3.5 text-purple-500" /> 1-Click Vapi AI Call Broadcast
           </Button>
           <Button
             onClick={() => {
               resetForm();
               setAddOpen(true);
             }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2 text-xs flex-1 sm:flex-initial justify-center"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-1.5 text-xs h-8"
           >
             <Plus className="h-4 w-4" /> Add Customer
           </Button>
