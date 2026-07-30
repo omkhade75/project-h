@@ -114,6 +114,28 @@ function HealthMonitor() {
     ? Math.round((report.memory.heapUsed / report.memory.heapTotal) * 100)
     : 0;
 
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const handleSendTestEmail = async () => {
+    setSendingEmail(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/health/test-email`, { method: "POST" });
+      const json = await res.json();
+      if (json.success) {
+        toast.success("🚨 Test Alert Email Sent!", {
+          description: "Check khade8915@gmail.com inbox for the health alert report.",
+        });
+      } else {
+        const msg = json.emailResult?.reason || "Email sending failed.";
+        toast.warning("Email Alert Status", { description: msg });
+      }
+    } catch (err: any) {
+      toast.error("Failed to send test email: " + err.message);
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -132,6 +154,15 @@ function HealthMonitor() {
             >
               <Activity className={cn("h-3.5 w-3.5", autoRefresh && "animate-pulse")} />
               {autoRefresh ? "Live" : "Paused"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSendTestEmail}
+              disabled={sendingEmail}
+              className="border-hairline bg-surface hover:bg-surface-2 gap-2 text-xs font-semibold"
+            >
+              {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 text-warning" />}
+              Send Test Email
             </Button>
             <Button
               onClick={fetchHealth}

@@ -52,11 +52,14 @@ export class HealthService implements OnModuleInit {
     return report;
   }
 
-  async sendHealthAlertEmail(report: any) {
+  async sendHealthAlertEmail(report: any, isTest = false) {
     const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) {
-      this.logger.warn('RESEND_API_KEY not found. Cannot send health alert email.');
-      return;
+      this.logger.warn('RESEND_API_KEY not found in environment.');
+      return {
+        sent: false,
+        reason: 'RESEND_API_KEY environment variable is missing on server. Add RESEND_API_KEY to Render Environment Variables to receive real email alerts.'
+      };
     }
 
     try {
@@ -67,20 +70,37 @@ export class HealthService implements OnModuleInit {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'onboarding@resend.dev',
+          from: 'Bizora Health Monitor <onboarding@resend.dev>',
           to: 'khade8915@gmail.com',
-          subject: 'Backend Health Alert',
-          html: `<p>Health check issues detected:</p><pre>${JSON.stringify(report, null, 2)}</pre>`,
+          subject: isTest ? '🚨 [TEST ALERT] Bizora Health Check Email' : '🚨 [ALERT] Bizora Backend Issue Detected',
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #1a1a1a;">
+              <h2 style="color: #dc2626;">🚨 Bizora System Health ${isTest ? 'Test Notification' : 'Alert'}</h2>
+              <p>Automated health check completed for <strong>bizora-backend</strong>.</p>
+              <table style="border-collapse: collapse; width: 100%; max-width: 500px; margin: 15px 0; border: 1px solid #e5e7eb;">
+                <tr style="background: #f9fafb;"><td style="padding: 10px; font-weight: bold; border: 1px solid #e5e7eb;">Timestamp</td><td style="padding: 10px; border: 1px solid #e5e7eb;">${report.timestamp}</td></tr>
+                <tr><td style="padding: 10px; font-weight: bold; border: 1px solid #e5e7eb;">Database Status</td><td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold; color: ${report.dbStatus === 'up' ? '#16a34a' : '#dc2626'};">${report.dbStatus.toUpperCase()}</td></tr>
+                <tr style="background: #f9fafb;"><td style="padding: 10px; font-weight: bold; border: 1px solid #e5e7eb;">Response Time</td><td style="padding: 10px; border: 1px solid #e5e7eb;">${report.responseTimeMs} ms</td></tr>
+                <tr><td style="padding: 10px; font-weight: bold; border: 1px solid #e5e7eb;">Uptime</td><td style="padding: 10px; border: 1px solid #e5e7eb;">${Math.round(report.uptime)} seconds</td></tr>
+              </table>
+              <h4>Full Health JSON Report:</h4>
+              <pre style="background: #f3f4f6; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto;">${JSON.stringify(report, null, 2)}</pre>
+            </div>
+          `,
         }),
       });
 
       if (!response.ok) {
-        this.logger.error(`Failed to send health email: ${await response.text()}`);
+        const errorText = await response.text();
+        this.logger.error(`Failed to send health email: ${errorText}`);
+        return { sent: false, reason: errorText };
       } else {
         this.logger.log('Health alert email sent successfully.');
+        return { sent: true };
       }
     } catch (err: any) {
       this.logger.error(`Error sending health alert email: ${err.message}`);
+      return { sent: false, reason: err.message };
     }
   }
 
