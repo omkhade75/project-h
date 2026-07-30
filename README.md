@@ -1,7 +1,27 @@
-# 🚀 Bizora AI (OmniMind) — Enterprise Business Intelligence & SaaS OS
+<div align="center">
 
-![CI Build Verification](https://github.com/omkhade75/project-h/actions/workflows/ci.yml/badge.svg)
-![Live Backend Health Monitor](https://github.com/omkhade75/project-h/actions/workflows/health-cron.yml/badge.svg)
+# 🚀 Bizora AI (OmniMind)
+### **Enterprise AI Business Operating System & Decision Intelligence**
+
+[![CI Build Verification](https://github.com/omkhade75/project-h/actions/workflows/ci.yml/badge.svg)](https://github.com/omkhade75/project-h/actions/workflows/ci.yml)
+[![Live Backend Health Monitor](https://github.com/omkhade75/project-h/actions/workflows/health-cron.yml/badge.svg)](https://github.com/omkhade75/project-h/actions/workflows/health-cron.yml)
+![Node.js Version](https://img.shields.io/badge/Node.js-v20-brightgreen?style=flat&logo=node.js)
+![NestJS](https://img.shields.io/badge/NestJS-v10-red?style=flat&logo=nestjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-96%25-blue?style=flat&logo=typescript)
+![License](https://img.shields.io/badge/License-MIT-purple?style=flat)
+
+<br />
+
+[**🛡️ Super Admin**](https://bizora-admin.onrender.com) &nbsp;•&nbsp;
+[**👑 Owner Portal**](https://bizora-owner.onrender.com) &nbsp;•&nbsp;
+[**🚚 Supplier Hub**](https://bizora-supplier.onrender.com) &nbsp;•&nbsp;
+[**🛍️ Customer CRM**](https://bizora-customer.onrender.com) &nbsp;•&nbsp;
+[**🌐 Web Marketing**](https://bizora-web.onrender.com) &nbsp;•&nbsp;
+[**⚙️ Backend API**](https://bizora-backend-gtoe.onrender.com)
+
+<br />
+
+</div>
 
 **Bizora AI** is an enterprise-grade, multi-tenant AI Business Operating System designed for modern retail chains, supermarkets, franchises, and multi-department enterprises. It unifies POS Billing, Inventory Stock Control, Double-Entry Accounting, Customer CRM, Supplier Procurement, Vapi Voice AI Calls, Automated WhatsApp Messaging, and Gemini AI Decision Intelligence into a single unified control plane.
 
