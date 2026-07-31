@@ -127,8 +127,9 @@ export function DataImportPage() {
 
       setIngestionLogs((prev) => [newLog, ...prev]);
       setUploading(false);
-      toast.success(`Successfully processed "${fileName}"!`, {
-        description: `Parsed & ingested ${recordCount} ${targetCategory} records into live system database.`,
+      toast.success(`🎉 PHOTO OCR IMPORT COMPLETED for "${fileName}"!`, {
+        description: `Ingested ${recordCount} ${targetCategory} items into system database! Visit Inventory (/products) or Sales (/sales) to view updated records.`,
+        duration: 7000,
       });
       forceRefresh();
 

@@ -327,11 +327,31 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }));
 
         const currentSchema = db.schema;
+
+        // Preserve locally imported OCR items that are not yet on backend server
+        const existingProducts = currentSchema.products || [];
+        const customLocalProducts = existingProducts.filter(
+          (p) => !mappedProducts.some((mp) => mp.id === p.id)
+        );
+        const mergedProducts = [...mappedProducts, ...customLocalProducts];
+
+        const existingTransactions = currentSchema.transactions || [];
+        const customLocalTransactions = existingTransactions.filter(
+          (t) => !mappedTransactions.some((mt) => mt.id === t.id)
+        );
+        const mergedTransactions = [...mappedTransactions, ...customLocalTransactions];
+
+        const existingCustomers = currentSchema.customers || [];
+        const customLocalCustomers = existingCustomers.filter(
+          (c) => !mappedCustomers.some((mc) => mc.id === c.id)
+        );
+        const mergedCustomers = [...mappedCustomers, ...customLocalCustomers];
+
         db.save({
           ...currentSchema,
-          products: mappedProducts,
-          transactions: mappedTransactions,
-          customers: mappedCustomers,
+          products: mergedProducts,
+          transactions: mergedTransactions,
+          customers: mergedCustomers,
           suppliers: mappedSuppliers,
           expenses: mappedExpenses,
           purchaseOrders: mappedPurchaseOrders,
