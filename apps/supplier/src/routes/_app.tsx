@@ -784,25 +784,26 @@ function AppShell() {
               )}
             </div>
 
-            <div className="ml-auto flex items-center gap-1.5 md:ml-0">
-              <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] font-medium sm:flex">
+            <div className="ml-auto flex items-center gap-1 sm:gap-1.5">
+              <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-[11px] font-medium xl:flex shrink-0">
                 <Circle className="h-2 w-2 fill-success text-success" />
                 Mall Open · 09:00–22:00
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground"
                 onClick={() => navigate({ to: "/time-machine" as never })}
+                title="Time Machine Calendar"
               >
                 <CalendarDays className="h-4 w-4" />
               </Button>
-              <LanguageSelector className="mr-1" />
+              <LanguageSelector />
               {/* Theme toggle */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground"
                 onClick={() => {
                   const html = document.documentElement;
                   const nowDark = html.classList.contains('dark');
@@ -825,7 +826,7 @@ function AppShell() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative text-muted-foreground"
+                  className="relative h-8 w-8 text-muted-foreground"
                   onClick={() => setNotifOpen((o) => !o)}
                 >
                   <Bell className="h-4 w-4" />
@@ -950,11 +951,11 @@ function AppShell() {
               </div>
               <Button
                 size="sm"
-                className="gap-1.5 gradient-primary text-primary-foreground"
+                className="h-8 gap-1.5 gradient-primary text-primary-foreground text-xs font-semibold px-2.5 sm:px-3 shrink-0"
                 onClick={() => navigate({ to: "/ai-decisions" })}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Ask Bizora</span>
+                <span className="hidden sm:inline">Ask Bizora AI</span>
               </Button>
             </div>
           </div>

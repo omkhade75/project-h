@@ -573,13 +573,13 @@ function AppShell() {
               <ArrowLeft className="h-4.5 w-4.5" />
             </button>
 
-            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-              <span>Bizora AI</span>
-              <ChevronRight className="h-3 w-3" />
-              <span className="truncate font-medium text-foreground">{currentLabel}</span>
+            <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+              <span className="hidden sm:inline font-medium">Bizora AI</span>
+              <ChevronRight className="hidden sm:inline h-3 w-3 text-muted-foreground/60" />
+              <span className="truncate font-semibold text-foreground">{currentLabel}</span>
             </div>
 
-            <div className="relative ml-auto hidden max-w-md flex-1 md:block">
+            <div className="relative ml-3 hidden max-w-xs xl:max-w-sm flex-1 md:block">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <input
                 ref={searchInputRef}
@@ -841,25 +841,26 @@ function AppShell() {
               )}
             </div>
 
-            <div className="ml-auto flex items-center gap-1.5 md:ml-0">
-              <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2 py-1 text-[11px] font-medium sm:flex">
+            <div className="ml-auto flex items-center gap-1 sm:gap-1.5">
+              <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-[11px] font-medium xl:flex shrink-0">
                 <Circle className="h-2 w-2 fill-success text-success" />
                 Mall Open · 09:00–22:00
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground"
                 onClick={() => navigate({ to: "/time-machine" as never })}
+                title="Time Machine Calendar"
               >
                 <CalendarDays className="h-4 w-4" />
               </Button>
-              <LanguageSelector className="mr-1" />
+              <LanguageSelector />
               {/* Theme toggle */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground"
                 onClick={() => {
                   const html = document.documentElement;
                   const nowDark = html.classList.contains('dark');
@@ -882,7 +883,7 @@ function AppShell() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative text-muted-foreground"
+                  className="relative h-8 w-8 text-muted-foreground"
                   onClick={() => setNotifOpen((o) => !o)}
                 >
                   <Bell className="h-4 w-4" />
@@ -1034,7 +1035,7 @@ function AppShell() {
               </div>
               <Button
                 size="sm"
-                className="gap-1.5 gradient-primary text-primary-foreground"
+                className="h-8 gap-1.5 gradient-primary text-primary-foreground text-xs font-semibold px-2.5 sm:px-3 shrink-0"
                 onClick={() => navigate({ to: "/ai-decisions" })}
               >
                 <Sparkles className="h-3.5 w-3.5" />
