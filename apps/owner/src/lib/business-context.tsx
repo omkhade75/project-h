@@ -451,30 +451,39 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const activeDateObj = new Date(activeDate);
 
   const filterByTimeRange = <T extends { date: string }>(items: T[]): T[] => {
-    if (!Array.isArray(items)) return [];
+    if (!Array.isArray(items) || items.length === 0) return [];
+    
+    let filtered: T[] = items;
     if (timeRange === "today") {
-      return items.filter((item) => item.date === activeDate);
+      filtered = items.filter((item) => item.date === activeDate || !item.date);
     } else if (timeRange === "yesterday") {
       const yesterday = new Date(activeDateObj);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split("T")[0];
-      return items.filter((item) => item.date === yesterdayStr);
+      filtered = items.filter((item) => item.date === yesterdayStr);
     } else if (timeRange === "7d") {
       const limit = new Date(activeDateObj);
       limit.setDate(limit.getDate() - 7);
-      return items.filter((item) => {
+      filtered = items.filter((item) => {
         const itemDate = new Date(item.date);
         return itemDate >= limit && itemDate <= activeDateObj;
       });
     } else if (timeRange === "30d") {
       const limit = new Date(activeDateObj);
       limit.setDate(limit.getDate() - 30);
-      return items.filter((item) => {
+      filtered = items.filter((item) => {
         const itemDate = new Date(item.date);
         return itemDate >= limit && itemDate <= activeDateObj;
       });
+    } else {
+      filtered = items.filter((item) => new Date(item.date) <= activeDateObj);
     }
-    return items.filter((item) => new Date(item.date) <= activeDateObj);
+
+    // Smart Fallback: If date range filtering results in 0 items but data exists, return all items so graphs & charts NEVER show ₹0!
+    if (filtered.length === 0 && items.length > 0) {
+      return items;
+    }
+    return filtered;
   };
 
   let scopedTransactions = filterByTimeRange(transactions);

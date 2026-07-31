@@ -1237,6 +1237,15 @@ class SeededDatabase {
     this.save({ ...this.schema, customers: updated });
   }
 
+  public clearAllData() {
+    this.save({
+      ...this.schema,
+      products: [],
+      transactions: [],
+      customers: [],
+    });
+  }
+
   public updateProductStock(id: string, newStock: number) {
     const updated = this.schema.products.map((p) => (p.id === id ? { ...p, stock: newStock } : p));
     this.save({ ...this.schema, products: updated });

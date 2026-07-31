@@ -177,13 +177,32 @@ export function DataImportPage() {
       />
 
       {/* Accepted File Types Banner */}
-      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-xs">
-        <div className="flex items-center gap-2 font-bold text-primary mb-1">
-          <Sparkles className="h-4 w-4" /> AI Document & Image OCR Parser Enabled
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
+          <p className="font-bold text-foreground text-sm flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            AI Document & Image OCR Ingestion Enabled
+          </p>
+          <p className="text-muted-foreground">
+            Upload any file format: <strong>Photos/Screenshots (.png, .jpg)</strong>, <strong>PDF Invoices & Bills (.pdf)</strong>, or <strong>Excel Worksheets (.xlsx, .xls, .csv)</strong>. Bizora AI automatically scans, parses line items, and updates your inventory and sales ledger.
+          </p>
         </div>
-        <p className="text-muted-foreground leading-relaxed">
-          Upload any file format: <span className="font-semibold text-foreground">Photos/Screenshots (.png, .jpg)</span>, <span className="font-semibold text-foreground">PDF Invoices & Bills (.pdf)</span>, or <span className="font-semibold text-foreground">Excel Worksheets (.xlsx, .xls, .csv)</span>. Bizora AI automatically scans, parses line items, and updates your inventory and sales ledger.
-        </p>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={async () => {
+            if (!confirm("Are you sure you want to clear all existing products, transactions, and customers to start fresh?")) return;
+            const dbModule = await import("@/lib/db");
+            dbModule.db.clearAllData();
+            setIngestionLogs([]);
+            forceRefresh();
+            toast.success("🗑️ All existing data cleared! System reset to fresh slate. Ready for your photo uploads.");
+          }}
+          className="shrink-0 font-bold gap-1.5 text-xs h-9"
+        >
+          🗑️ Clear All Current Data
+        </Button>
       </div>
 
       {/* Upload Cards Grid */}
