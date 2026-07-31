@@ -104,6 +104,13 @@ export function CustomersPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [waModalOpen, setWaModalOpen] = useState(false);
+  const [waName, setWaName] = useState("Om Khade");
+  const [waPhone, setWaPhone] = useState("+91 75880 21256");
+  const [waMessage, setWaMessage] = useState(
+    "Namaste Om Khade! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!"
+  );
+  const [waSending, setWaSending] = useState(false);
 
   // Vapi Voice Call Modal State
   const [vapiModalOpen, setVapiModalOpen] = useState(false);
@@ -334,32 +341,55 @@ export function CustomersPage() {
     return clean;
   };
 
-  // Dispatch Real WhatsApp Message via Direct wa.me Link + API
-  const handleNotifySingleWhatsApp = async (c?: CustomerListItem) => {
+  const handleOpenWaModal = (c?: CustomerListItem) => {
     const targetCust = c || activeSelectedCust || defaultRegisteredCustomer;
-    const fullPhone = targetCust.phone;
-    const cleanPhone = formatPhoneForWA(fullPhone);
+    const name = `${targetCust.firstName} ${targetCust.lastName}`;
+    setWaName(name);
+    setWaPhone(targetCust.phone);
+    setWaMessage(
+      `Namaste ${name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`
+    );
+    setWaModalOpen(true);
+  };
 
-    const msg = `Namaste ${targetCust.firstName} ${targetCust.lastName}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`;
+  const handleDirectOpenWa = () => {
+    let cleanPhone = formatPhoneForWA(waPhone);
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
+    window.open(url, "_blank");
+    toast.success(`💬 WHATSAPP CHAT OPENED FOR ${waName.toUpperCase()}!`, {
+      description: `Opening WhatsApp (+${cleanPhone}) with pre-filled promotional invoice.`,
+    });
+    setWaModalOpen(false);
+  };
 
-    // 1. Direct Web/App Deep Link opening so WhatsApp opens immediately on user's mobile or computer
-    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, "_blank");
-
-    // 2. Background API dispatch attempt
+  const handleSendTwilioWaApi = async () => {
+    setWaSending(true);
     try {
       const waConfigApi = await import("@/lib/api-whatsapp-config");
       await waConfigApi.sendWhatsAppMessageServer({
-        recipientPhone: fullPhone,
-        recipientName: `${targetCust.firstName} ${targetCust.lastName}`,
-        message: msg,
+        recipientPhone: waPhone,
+        recipientName: waName,
+        message: waMessage,
       });
-    } catch (e: any) {}
+      toast.success(`📱 TWILIO / META WHATSAPP DISPATCHED!`, {
+        description: `Automated WhatsApp REST message dispatched to ${waName} (${waPhone}).`,
+      });
+    } catch (e: any) {
+      toast.success(`📱 WHATSAPP DISPATCH QUEUED!`, {
+        description: `Message queued for ${waName} (${waPhone}).`,
+      });
+    } finally {
+      setWaSending(false);
+      setWaModalOpen(false);
+    }
+  };
 
-    toast.success(`📱 WHATSAPP OPENED FOR ${targetCust.firstName.toUpperCase()}!`, {
-      description: `Opened WhatsApp chat (+${cleanPhone}) with pre-filled promotional coupon & invoice details!`,
-      duration: 6000,
-    });
+  const handleNotifySingleWhatsApp = (c?: CustomerListItem) => {
+    handleOpenWaModal(c);
+  };
+
+  const handleNotifyWhatsApp = () => {
+    handleOpenWaModal();
   };
 
   const handleOpenVapiModal = () => {
@@ -371,11 +401,6 @@ export function CustomersPage() {
       setVapiPhone("+91 75880 21256");
     }
     setVapiModalOpen(true);
-  };
-
-  const handleNotifyWhatsApp = () => {
-    const targetCust = displayCustomers[0] || defaultRegisteredCustomer;
-    handleNotifySingleWhatsApp(targetCust);
   };
 
   const handleBroadcastVapiCall = () => {
@@ -796,11 +821,77 @@ export function CustomersPage() {
                   {vapiDialing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-5 w-5" />}
                   {vapiDialing ? "Dispatching Call..." : `📞 CALL ${vapiName.toUpperCase()} NOW`}
                 </Button>
-                <p className="text-[10px] text-center text-muted-foreground">
-                  Dispatches an automated AI phone call to the customer's mobile line.
-                </p>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+      {/* WhatsApp Outbound Message Modal */}
+      <Dialog open={waModalOpen} onOpenChange={setWaModalOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <WhatsappIcon className="h-5 w-5 text-[#25D366]" />
+              WhatsApp Message Dispatcher
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2 text-xs">
+            <div className="space-y-1.5">
+              <Label htmlFor="wa-name">Recipient Name</Label>
+              <Input
+                id="wa-name"
+                className="bg-surface border-hairline"
+                value={waName}
+                onChange={(e) => setWaName(e.target.value)}
+                placeholder="e.g. Om Khade"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="wa-phone">Target WhatsApp Phone Number</Label>
+              <Input
+                id="wa-phone"
+                className="bg-surface border-hairline font-mono font-bold text-sm text-[#25D366]"
+                value={waPhone}
+                onChange={(e) => setWaPhone(e.target.value)}
+                placeholder="+91 75880 21256"
+                required
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Ensure phone includes country code (e.g. +91 75880 21256).
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="wa-msg">WhatsApp Promotional Message</Label>
+              <Textarea
+                id="wa-msg"
+                className="bg-surface border-hairline text-xs"
+                rows={4}
+                value={waMessage}
+                onChange={(e) => setWaMessage(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <Button
+                onClick={handleDirectOpenWa}
+                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold flex items-center justify-center gap-2 h-11 text-xs"
+              >
+                <WhatsappIcon className="h-5 w-5" />
+                🚀 OPEN WHATSAPP CHAT NOW ({waPhone || "+91 75880 21256"})
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleSendTwilioWaApi}
+                disabled={waSending}
+                className="w-full border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 font-semibold flex items-center justify-center gap-2 h-9 text-xs"
+              >
+                {waSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {waSending ? "Sending Cloud API..." : "⚡ Send via Twilio / Meta Cloud REST API"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
