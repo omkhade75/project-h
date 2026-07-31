@@ -1,4 +1,4 @@
-import { BizoraLogo } from "@/components/bizora-logo";
+import { BizoraLogo, BizoraLogoIcon } from "@/components/bizora-logo";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,
@@ -443,7 +443,7 @@ function AppShell() {
 
         <div className="relative hairline-b flex items-center gap-3 px-4 py-5">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-transparent overflow-hidden">
-            <img src="/logo.png" className="h-full w-full object-contain" alt="Bizora AI" />
+            <BizoraLogoIcon className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
@@ -573,8 +573,9 @@ function AppShell() {
               <ArrowLeft className="h-4.5 w-4.5" />
             </button>
 
-            <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-              <span className="hidden sm:inline font-medium">Bizora AI</span>
+            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground shrink-0">
+              <BizoraLogoIcon className="h-5 w-5 shrink-0" />
+              <span className="hidden sm:inline font-bold text-foreground">Bizora AI</span>
               <ChevronRight className="hidden sm:inline h-3 w-3 text-muted-foreground/60" />
               <span className="truncate font-semibold text-foreground">{currentLabel}</span>
             </div>

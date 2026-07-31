@@ -1,4 +1,4 @@
-import { BizoraLogo } from "@/components/bizora-logo";
+import { BizoraLogo, BizoraLogoIcon } from "@/components/bizora-logo";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,
@@ -256,9 +256,10 @@ function AppShell() {
               <Menu className="h-4 w-4" />
             </button>
 
-            <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
-              Hyperlocal Express Customer Portal
-            </span>
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <BizoraLogoIcon className="h-5 w-5 shrink-0" />
+              <span>Bizora AI — Hyperlocal Customer Portal</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">

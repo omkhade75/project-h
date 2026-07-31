@@ -1,4 +1,4 @@
-import { BizoraLogo } from "@/components/bizora-logo";
+import { BizoraLogo, BizoraLogoIcon } from "@/components/bizora-logo";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,
@@ -516,10 +516,11 @@ function AppShell() {
               <ArrowLeft className="h-4.5 w-4.5" />
             </button>
 
-            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-              <span>Bizora</span>
-              <ChevronRight className="h-3 w-3" />
-              <span className="truncate font-medium text-foreground">{currentLabel}</span>
+            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground shrink-0">
+              <BizoraLogoIcon className="h-5 w-5 shrink-0" />
+              <span className="hidden sm:inline font-bold text-foreground">Bizora AI</span>
+              <ChevronRight className="hidden sm:inline h-3 w-3 text-muted-foreground/60" />
+              <span className="truncate font-semibold text-foreground">{currentLabel}</span>
             </div>
 
             <div className="relative ml-auto hidden max-w-md flex-1 md:block">

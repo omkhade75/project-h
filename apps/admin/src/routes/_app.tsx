@@ -1,4 +1,4 @@
-import { BizoraLogo } from "@/components/bizora-logo";
+import { BizoraLogo, BizoraLogoIcon } from "@/components/bizora-logo";
 import { LanguageSelector } from "@/components/language-selector";
 import {
   createFileRoute,
@@ -253,10 +253,11 @@ function AppShell() {
                 <ArrowLeft className="h-4.5 w-4.5" />
               </button>
 
-              <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-semibold text-rose-500">Bizora Admin</span>
+              <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground shrink-0">
+                <BizoraLogoIcon className="h-5 w-5 shrink-0" />
+                <span className="font-bold text-rose-500">Bizora Admin</span>
                 <ChevronRight className="h-3 w-3" />
-                <span className="truncate font-medium text-foreground">
+                <span className="truncate font-semibold text-foreground">
                   {NAV[0]?.items.find((i) => i.to === pathname)?.label || "Super Admin"}
                 </span>
               </div>
