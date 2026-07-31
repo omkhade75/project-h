@@ -129,20 +129,20 @@ export class CommsService {
       }
     }
 
-    // Instant Log Success for saved numbers
+    // No Twilio credentials configured — return honest status
     if (logId) {
       try {
         await this.prisma.messageLog.update({
           where: { id: logId },
-          data: { status: "SENT", providerId: "wa-msg-" + Date.now() },
+          data: { status: "NO_CREDENTIALS", providerId: "wa-msg-" + Date.now() },
         });
       } catch (e) {}
     }
 
     return {
-      success: true,
-      message: `WhatsApp notification successfully sent to ${phone}`,
-      data: { phone, status: "SENT", messageId: "wa-msg-" + Date.now() },
+      success: false,
+      message: `WhatsApp API credentials not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables, or use the direct wa.me link to send messages manually.`,
+      data: { phone, status: "NO_CREDENTIALS", messageId: "wa-msg-" + Date.now() },
     };
   }
 
@@ -197,13 +197,32 @@ export class CommsService {
 
     // Dispatch real outbound phone call via Vapi REST API
     try {
-      const vapiPayload = {
+      // Build inline assistant config so Vapi speaks the correct script in Hindi
+      const vapiPayload: any = {
         phoneNumberId: config.vapiPhoneId,
-        assistantId: config.vapiAgentId,
         customer: {
           number: phone,
           name: recipientName,
-        }
+        },
+        // Override with inline assistant so the AI speaks our exact script
+        assistant: {
+          model: {
+            provider: "openai",
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: `You are a friendly and professional Hindi-speaking customer service representative for GrandSquare Supermart powered by Bizora AI. You are calling ${recipientName}. Your job is to deliver this message clearly and naturally in Hindi/Hinglish: "${contextMsg}". Be warm, polite, and conversational. If the customer asks questions, answer helpfully. Keep the conversation brief and professional. Always speak in Hindi or Hinglish. Do not speak English unless the customer speaks English first.`,
+              },
+            ],
+          },
+          voice: {
+            provider: "azure",
+            voiceId: "hi-IN-SwaraNeural",
+          },
+          firstMessage: `Namaste ${recipientName} ji! Main GrandSquare Supermart se Bizora AI assistant bol rahi hoon. ${contextMsg}`,
+          endCallMessage: `Dhanyavaad ${recipientName} ji! Aapka din shubh ho. GrandSquare Supermart mein aapka swagat hai.`,
+        },
       };
 
       const vapiResponse = await fetch("https://api.vapi.ai/call/phone", {

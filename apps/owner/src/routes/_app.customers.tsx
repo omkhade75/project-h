@@ -354,10 +354,19 @@ export function CustomersPage() {
 
   const handleDirectOpenWa = () => {
     let cleanPhone = formatPhoneForWA(waPhone);
+    // Use location.href to avoid popup blockers — this navigates the current tab
+    // but we use a link click approach that is more reliable across browsers
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
-    window.open(url, "_blank");
-    toast.success(`💬 WHATSAPP CHAT OPENED FOR ${waName.toUpperCase()}!`, {
-      description: `Opening WhatsApp (+${cleanPhone}) with pre-filled promotional invoice.`,
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`💬 WHATSAPP CHAT OPENED!`, {
+      description: `Opening WhatsApp for +${cleanPhone}. Tap "Send" in WhatsApp to deliver the message.`,
+      duration: 8000,
     });
     setWaModalOpen(false);
   };
@@ -366,21 +375,30 @@ export function CustomersPage() {
     setWaSending(true);
     try {
       const waConfigApi = await import("@/lib/api-whatsapp-config");
-      await waConfigApi.sendWhatsAppMessageServer({
+      const result = await waConfigApi.sendWhatsAppMessageServer({
         recipientPhone: waPhone,
         recipientName: waName,
         message: waMessage,
       });
-      toast.success(`📱 TWILIO / META WHATSAPP DISPATCHED!`, {
-        description: `Automated WhatsApp REST message dispatched to ${waName} (${waPhone}).`,
-      });
+      // Check if the API actually sent the message
+      if (result && result.status === "NO_CREDENTIALS") {
+        toast.error(`⚠️ Twilio/Meta API keys not configured!`, {
+          description: `Use the green "Open WhatsApp Chat" button above instead. It opens WhatsApp directly on your phone.`,
+          duration: 10000,
+        });
+      } else {
+        toast.success(`📱 TWILIO WHATSAPP DISPATCHED!`, {
+          description: `Automated WhatsApp message sent to ${waName} (${waPhone}).`,
+        });
+        setWaModalOpen(false);
+      }
     } catch (e: any) {
-      toast.success(`📱 WHATSAPP DISPATCH QUEUED!`, {
-        description: `Message queued for ${waName} (${waPhone}).`,
+      toast.error(`⚠️ API dispatch failed. Use the green "Open WhatsApp Chat" button instead.`, {
+        description: `Error: ${e?.message || "Network error"}. The direct WhatsApp link always works.`,
+        duration: 8000,
       });
     } finally {
       setWaSending(false);
-      setWaModalOpen(false);
     }
   };
 
@@ -873,23 +891,40 @@ export function CustomersPage() {
               />
             </div>
 
-            <div className="space-y-2 pt-2">
-              <Button
-                onClick={handleDirectOpenWa}
-                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold flex items-center justify-center gap-2 h-11 text-xs"
-              >
-                <WhatsappIcon className="h-5 w-5" />
-                🚀 OPEN WHATSAPP CHAT NOW ({waPhone || "+91 75880 21256"})
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleSendTwilioWaApi}
-                disabled={waSending}
-                className="w-full border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 font-semibold flex items-center justify-center gap-2 h-9 text-xs"
-              >
-                {waSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {waSending ? "Sending Cloud API..." : "⚡ Send via Twilio / Meta Cloud REST API"}
-              </Button>
+            <div className="space-y-3 pt-2">
+              <div className="rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 p-3">
+                <p className="text-[11px] font-semibold text-[#25D366] mb-2 flex items-center gap-1.5">
+                  <WhatsappIcon className="h-4 w-4" /> ✅ Recommended: Direct WhatsApp
+                </p>
+                <Button
+                  onClick={handleDirectOpenWa}
+                  className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold flex items-center justify-center gap-2 h-11 text-xs shadow-lg"
+                >
+                  <WhatsappIcon className="h-5 w-5" />
+                  Open WhatsApp Chat & Send Message
+                </Button>
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  Opens WhatsApp with your message pre-filled. Tap "Send" in WhatsApp to deliver.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-hairline bg-muted/30 p-3">
+                <p className="text-[11px] font-medium text-muted-foreground mb-2">
+                  ⚡ Automated API (Requires Twilio/Meta API Keys)
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleSendTwilioWaApi}
+                  disabled={waSending}
+                  className="w-full border-hairline text-muted-foreground hover:bg-muted/50 font-semibold flex items-center justify-center gap-2 h-9 text-xs"
+                >
+                  {waSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {waSending ? "Sending via API..." : "Send via Twilio Cloud API"}
+                </Button>
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  Requires TWILIO_ACCOUNT_SID & AUTH_TOKEN configured in environment.
+                </p>
+              </div>
             </div>
           </div>
         </DialogContent>
