@@ -74,6 +74,13 @@ export class CommsService {
       else phone = "+" + phone;
     }
 
+    console.log("[WhatsApp Debug] Config loaded:", {
+      hasSid: !!config.twilioAccountSid,
+      hasToken: !!config.twilioAuthToken,
+      sender: config.twilioWhatsAppSender,
+      recipientPhone: phone,
+    });
+
     let logId = "";
     try {
       const log = await this.prisma.messageLog.create({
@@ -94,9 +101,21 @@ export class CommsService {
     if (config.twilioAccountSid && config.twilioAuthToken) {
       try {
         const auth = Buffer.from(`${config.twilioAccountSid}:${config.twilioAuthToken}`).toString('base64');
+        
+        // Ensure the sender has 'whatsapp:' prefix
+        let fromNumber = config.twilioWhatsAppSender || "whatsapp:+14155238886";
+        if (!fromNumber.startsWith("whatsapp:")) {
+          fromNumber = `whatsapp:${fromNumber}`;
+        }
+        
+        // Ensure the recipient has 'whatsapp:' prefix
+        const toNumber = `whatsapp:${phone}`;
+        
+        console.log("[WhatsApp Debug] Sending via Twilio:", { from: fromNumber, to: toNumber, bodyLength: data.message.length });
+
         const bodyParams = new URLSearchParams({
-          From: config.twilioWhatsAppSender || "whatsapp:+14155238886",
-          To: `whatsapp:${phone}`,
+          From: fromNumber,
+          To: toNumber,
           Body: data.message,
         });
 
@@ -113,6 +132,8 @@ export class CommsService {
         );
 
         const twilioData: any = await twilioRes.json();
+        console.log("[WhatsApp Debug] Twilio Response:", { ok: twilioRes.ok, status: twilioRes.status, data: twilioData });
+        
         if (logId) {
           await this.prisma.messageLog.update({
             where: { id: logId },
@@ -123,9 +144,32 @@ export class CommsService {
           });
         }
 
-        return { success: twilioRes.ok, data: twilioData, recipientPhone: phone };
+        if (!twilioRes.ok) {
+          return { 
+            success: false, 
+            error: twilioData.message || `Twilio API returned HTTP ${twilioRes.status}`,
+            errorCode: twilioData.code,
+            data: twilioData, 
+            recipientPhone: phone 
+          };
+        }
+
+        return { success: true, data: twilioData, recipientPhone: phone };
       } catch (err: any) {
         console.error("[Twilio WhatsApp Error]:", err);
+        if (logId) {
+          try {
+            await this.prisma.messageLog.update({
+              where: { id: logId },
+              data: { status: "FAILED" },
+            });
+          } catch (e) {}
+        }
+        return {
+          success: false,
+          error: err?.message || "Twilio API network error",
+          data: { phone, status: "FAILED" },
+        };
       }
     }
 

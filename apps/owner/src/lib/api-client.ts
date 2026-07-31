@@ -32,13 +32,26 @@ export async function fetchApi<T = any>(
       headers,
     });
 
-    if (!response.ok) {
-      return { success: true, data: [] as any, message: `HTTP ${response.status}` };
+    // Always try to parse the JSON body — the backend sends error details in the body
+    let result: any;
+    try {
+      result = await response.json();
+    } catch {
+      result = null;
     }
 
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    return { success: true, data: [] as any, error };
+    if (!response.ok) {
+      // Return the actual error from the backend response body
+      return {
+        success: false,
+        data: result?.data ?? ([] as any),
+        message: result?.message || result?.error || `HTTP ${response.status}`,
+        error: result?.error || result?.message || `HTTP ${response.status}`,
+      };
+    }
+
+    return result || { success: true, data: [] as any };
+  } catch (error: any) {
+    return { success: false, data: [] as any, error: error?.message || 'Network error', message: error?.message || 'Network error' };
   }
 }

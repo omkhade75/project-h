@@ -380,21 +380,36 @@ export function CustomersPage() {
         recipientName: waName,
         message: waMessage,
       });
-      // Check if the API actually sent the message
+      console.log("[WhatsApp Frontend] API result:", result);
+      
+      // Check various error states
       if (result && result.status === "NO_CREDENTIALS") {
         toast.error(`⚠️ Twilio/Meta API keys not configured!`, {
-          description: `Use the green "Open WhatsApp Chat" button above instead. It opens WhatsApp directly on your phone.`,
+          description: `Use the green "Open WhatsApp Chat" button above instead.`,
           duration: 10000,
         });
+      } else if (result && result.status === "FAILED") {
+        toast.error(`❌ Twilio API Error`, {
+          description: result.error || result.message || `WhatsApp message failed to send. Check Twilio dashboard for details.`,
+          duration: 12000,
+        });
+      } else if (result && (result.sid || result.status === "queued" || result.status === "sent")) {
+        toast.success(`✅ WHATSAPP MESSAGE SENT!`, {
+          description: `Message delivered to ${waName} (${waPhone}) via Twilio. SID: ${result.sid || "N/A"}`,
+          duration: 8000,
+        });
+        setWaModalOpen(false);
       } else {
-        toast.success(`📱 TWILIO WHATSAPP DISPATCHED!`, {
-          description: `Automated WhatsApp message sent to ${waName} (${waPhone}).`,
+        // Fallback — try to determine if it was successful
+        toast.info(`📱 WhatsApp dispatch attempted`, {
+          description: `Status: ${JSON.stringify(result).substring(0, 150)}`,
+          duration: 10000,
         });
         setWaModalOpen(false);
       }
     } catch (e: any) {
-      toast.error(`⚠️ API dispatch failed. Use the green "Open WhatsApp Chat" button instead.`, {
-        description: `Error: ${e?.message || "Network error"}. The direct WhatsApp link always works.`,
+      toast.error(`⚠️ API dispatch failed.`, {
+        description: `Error: ${e?.message || "Network error"}. Use the green "Open WhatsApp Chat" button instead.`,
         duration: 8000,
       });
     } finally {
