@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_app/expenses")({
 
 function Expenses() {
   const { user } = useAuth();
-  const { scopedExpenses, forceRefresh, activeDate } = useBusinessData();
+  const { scopedExpenses, scopedTransactions, forceRefresh, activeDate } = useBusinessData();
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -70,6 +70,16 @@ function Expenses() {
     return scopedExpenses.reduce((sum, e) => sum + e.amount, 0);
   }, [scopedExpenses]);
 
+  const totalRevenue = useMemo(() => {
+    return (scopedTransactions || []).reduce((sum, t) => sum + (t.total || t.amount || 0), 0);
+  }, [scopedTransactions]);
+
+  const expenseRevenueRatio = useMemo(() => {
+    if (total === 0 || totalRevenue === 0) return "0.0%";
+    const ratio = (total / totalRevenue) * 100;
+    return `${ratio.toFixed(1)}%`;
+  }, [total, totalRevenue]);
+
   const categoriesData = useMemo(() => {
     const map: Record<string, number> = {};
     scopedExpenses.forEach((e) => {
@@ -77,6 +87,29 @@ function Expenses() {
     });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [scopedExpenses]);
+
+  const momChange = useMemo(() => {
+    if (scopedExpenses.length === 0 || total === 0) return "0.0%";
+    
+    // Group expenses by YYYY-MM
+    const monthTotals: Record<string, number> = {};
+    scopedExpenses.forEach((e) => {
+      if (e.date) {
+        const monthKey = e.date.substring(0, 7);
+        monthTotals[monthKey] = (monthTotals[monthKey] || 0) + e.amount;
+      }
+    });
+
+    const sortedMonths = Object.keys(monthTotals).sort();
+    if (sortedMonths.length < 2) return "0.0%";
+
+    const currentMonthExp = monthTotals[sortedMonths[sortedMonths.length - 1]] || 0;
+    const prevMonthExp = monthTotals[sortedMonths[sortedMonths.length - 2]] || 0;
+
+    if (prevMonthExp === 0) return currentMonthExp > 0 ? "+100.0%" : "0.0%";
+    const diff = ((currentMonthExp - prevMonthExp) / prevMonthExp) * 100;
+    return `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`;
+  }, [scopedExpenses, total]);
 
   // Construct a trend based strictly on actual database entries
   const trend = useMemo(() => {
@@ -155,12 +188,12 @@ function Expenses() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Kpi label="Current Scoped Expenses" v={fmtINR(total)} />
-        <Kpi label="MoM Change" v="-2.1%" />
-        <Kpi label="Expense/Revenue Ratio" v="25.6%" />
+        <Kpi label="MoM Change" v={momChange} />
+        <Kpi label="Expense/Revenue Ratio" v={expenseRevenueRatio} />
         <Kpi
           label="Top Category"
           v={
-            categoriesData.length > 0
+            categoriesData.length > 0 && total > 0
               ? categoriesData.reduce(
                   (max, c) => (c.value > max.value ? c : max),
                   categoriesData[0],
