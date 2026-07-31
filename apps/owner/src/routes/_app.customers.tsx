@@ -328,15 +328,25 @@ export function CustomersPage() {
     }
   };
 
-  // Dispatch Real WhatsApp Message via Backend API + Direct wa.me Deep Link
-  const handleNotifySingleWhatsApp = async () => {
-    const targetCust = selectedCust || defaultRegisteredCustomer;
+  const formatPhoneForWA = (rawPhone: string) => {
+    let clean = rawPhone.replace(/\D/g, "");
+    if (clean.length === 10) clean = "91" + clean;
+    return clean;
+  };
+
+  // Dispatch Real WhatsApp Message via Direct wa.me Link + API
+  const handleNotifySingleWhatsApp = async (c?: CustomerListItem) => {
+    const targetCust = c || activeSelectedCust || defaultRegisteredCustomer;
     const fullPhone = targetCust.phone;
-    const formattedPhone = fullPhone.replace(/\D/g, "");
+    const cleanPhone = formatPhoneForWA(fullPhone);
 
     const msg = `Namaste ${targetCust.firstName} ${targetCust.lastName}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`;
 
-    // 1. Dispatch via Backend WhatsApp Cloud API (Twilio / Meta API Background Dispatch)
+    // 1. Direct Web/App Deep Link opening so WhatsApp opens immediately on user's mobile or computer
+    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank");
+
+    // 2. Background API dispatch attempt
     try {
       const waConfigApi = await import("@/lib/api-whatsapp-config");
       await waConfigApi.sendWhatsAppMessageServer({
@@ -344,16 +354,12 @@ export function CustomersPage() {
         recipientName: `${targetCust.firstName} ${targetCust.lastName}`,
         message: msg,
       });
-      toast.success(`📱 AUTOMATED WHATSAPP DISPATCHED VIA API!`, {
-        description: `Direct Meta/Twilio WhatsApp message sent to ${targetCust.firstName} (${fullPhone}) instantly! No redirect needed.`,
-        duration: 6000,
-      });
-    } catch (e: any) {
-      toast.success(`📱 AUTOMATED WHATSAPP DISPATCHED VIA API!`, {
-        description: `Direct Meta/Twilio WhatsApp message queued for ${targetCust.firstName} (${fullPhone}).`,
-        duration: 6000,
-      });
-    }
+    } catch (e: any) {}
+
+    toast.success(`📱 WHATSAPP OPENED FOR ${targetCust.firstName.toUpperCase()}!`, {
+      description: `Opened WhatsApp chat (+${cleanPhone}) with pre-filled promotional coupon & invoice details!`,
+      duration: 6000,
+    });
   };
 
   const handleOpenVapiModal = () => {
@@ -368,10 +374,8 @@ export function CustomersPage() {
   };
 
   const handleNotifyWhatsApp = () => {
-    toast.success(`📱 1-CLICK WHATSAPP BROADCAST DISPATCHED!`, {
-      description: `Sent promotional receipts & store announcements via Twilio WhatsApp API to all ${displayCustomers.length} registered customers!`,
-      duration: 7000,
-    });
+    const targetCust = displayCustomers[0] || defaultRegisteredCustomer;
+    handleNotifySingleWhatsApp(targetCust);
   };
 
   const handleBroadcastVapiCall = () => {
@@ -719,12 +723,20 @@ export function CustomersPage() {
                     Customer has high LTV ({fmtINR(activeSelectedCust.spend)}). Trigger autonomous AI voice call with 15% promotional discount.
                   </p>
                 </div>
-                <Button
-                  onClick={handleOpenVapiModal}
-                  className="w-full bg-[#007AFF] hover:bg-[#0066CC] text-white font-bold text-xs h-9 flex items-center justify-center gap-2"
-                >
-                  <PhoneCall className="h-4 w-4" /> Dial {activeSelectedCust.firstName} ({activeSelectedCust.phone})
-                </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => handleNotifySingleWhatsApp(activeSelectedCust)}
+                    className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs h-9 flex items-center justify-center gap-1.5"
+                  >
+                    <WhatsappIcon className="h-4 w-4" /> Message WhatsApp
+                  </Button>
+                  <Button
+                    onClick={handleOpenVapiModal}
+                    className="w-full bg-[#007AFF] hover:bg-[#0066CC] text-white font-bold text-xs h-9 flex items-center justify-center gap-1.5"
+                  >
+                    <PhoneCall className="h-4 w-4" /> AI Voice Call
+                  </Button>
+                </div>
               </div>
             </div>
           )}
