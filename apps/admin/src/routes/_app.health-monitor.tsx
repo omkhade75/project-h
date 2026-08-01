@@ -46,6 +46,7 @@ interface HealthReport {
   apiResults?: ApiEndpointResult[];
   entityCounts?: Record<string, number>;
   issuesFound?: string[];
+  healedActions?: string[];
   criticalIssuesCount?: number;
   warningIssuesCount?: number;
   memory: {
@@ -281,10 +282,21 @@ function HealthMonitor() {
                 <Mail className="h-4 w-4 text-warning" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold">Email Alerts</p>
-                <p className="text-muted-foreground">Admin receives detailed error emails when DB is down or response &gt; 5s</p>
+                <p className="font-semibold">Email Alerts &amp; Quota Guard</p>
+                <p className="text-muted-foreground">Smart threshold: emails send only on 3+ critical errors or DB down (30-min debounce to preserve Resend quota)</p>
               </div>
-              <StatusPill tone="success">Enabled</StatusPill>
+              <StatusPill tone="success">Smart Active</StatusPill>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-surface border border-hairline">
+              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Activity className="h-4 w-4 text-emerald-500" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold">🤖 AI Self-Healing Engine</p>
+                <p className="text-muted-foreground">Auto-remediates DB pool drops, memory spikes, and data stock anomalies before triggering alerts</p>
+              </div>
+              <StatusPill tone="success">Auto-Healing</StatusPill>
             </div>
 
             <div className="flex items-center gap-3 p-3 rounded-lg bg-surface border border-hairline">

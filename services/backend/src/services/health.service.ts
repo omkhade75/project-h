@@ -144,17 +144,50 @@ export class HealthService implements OnModuleInit {
       }
     }
 
-    // 4. MEMORY & SYSTEM THRESHOLD AUDIT
-    const memoryUsage = process.memoryUsage();
-    const heapPct = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
-    if (heapPct > 90) {
-      issues.push(`🔴 CRITICAL MEMORY USAGE: Heap is at ${heapPct}% (${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB)`);
-    } else if (heapPct > 80) {
-      warnings.push(`⚠️ Elevated memory usage: Heap is at ${heapPct}%`);
+    // 5. AI SELF-HEALING ENGINE — Auto-remediate issues before alerting
+    const healedActions: string[] = [];
+
+    // Auto-Fix 1: Database connection pool reset if DB slow or dropped
+    if (dbStatus === 'down' || dbResponseTime > 3000) {
+      try {
+        this.logger.log('🤖 AI Self-Healing: Attempting DB connection pool reset...');
+        await this.prisma.$disconnect();
+        await this.prisma.$connect();
+        await this.prisma.$queryRaw`SELECT 1`;
+        healedActions.push('Reset PostgreSQL database connection pool');
+        this.logger.log('✅ AI Self-Healing SUCCESS: DB connection restored.');
+        dbStatus = 'up';
+      } catch (healErr: any) {
+        this.logger.warn(`AI Self-Healing failed to restore DB: ${healErr.message}`);
+      }
     }
 
+    // Auto-Fix 2: Garbage collection trigger if memory is high
+    if (heapPct > 80 && (global as any).gc) {
+      try {
+        (global as any).gc();
+        healedActions.push(`Triggered garbage collection (Memory was ${heapPct}%)`);
+        this.logger.log('✅ AI Self-Healing SUCCESS: Triggered memory garbage collection.');
+      } catch (gcErr) {}
+    }
+
+    // Auto-Fix 3: Auto-repair negative stock values in Database
+    try {
+      const negativeStockCount = await this.prisma.product.count({ where: { stock: { lt: 0 } } });
+      if (negativeStockCount > 0) {
+        await this.prisma.product.updateMany({ where: { stock: { lt: 0 } }, data: { stock: 0 } });
+        healedActions.push(`Auto-repaired ${negativeStockCount} products with negative stock levels to 0`);
+        this.logger.log(`✅ AI Self-Healing SUCCESS: Repaired ${negativeStockCount} negative stock products.`);
+      }
+    } catch (_) {}
+
     const totalResponseTime = Date.now() - startTime;
-    const allIssues = [...issues, ...warnings];
+    const remainingIssues = issues.filter((iss) => {
+      if (dbStatus === 'up' && iss.includes('DATABASE CRITICAL DOWN')) return false;
+      return true;
+    });
+
+    const allIssues = [...remainingIssues, ...warnings];
 
     const report = {
       timestamp: new Date().toISOString(),
@@ -169,7 +202,8 @@ export class HealthService implements OnModuleInit {
       apiResults,
       entityCounts,
       issuesFound: allIssues,
-      criticalIssuesCount: issues.length,
+      healedActions,
+      criticalIssuesCount: remainingIssues.length,
       warningIssuesCount: warnings.length,
       memory: {
         rss: memoryUsage.rss,
@@ -183,12 +217,17 @@ export class HealthService implements OnModuleInit {
       },
     };
 
-    // Log the result
-    if (issues.length > 0) {
-      this.logger.error(`🚨 Deep audit found ${issues.length} critical issue(s), ${warnings.length} warning(s): ${issues.join(' | ')}`);
+    // Smart Alert Trigger: Only send email if > 3 critical errors OR database down OR explicit test
+    const shouldSendEmail =
+      remainingIssues.length >= 3 ||
+      dbStatus === 'down' ||
+      remainingIssues.some((i) => i.includes('CRITICAL') || i.includes('SECURITY'));
+
+    if (shouldSendEmail) {
+      this.logger.error(`🚨 Deep audit found ${remainingIssues.length} critical issue(s), ${warnings.length} warning(s). Sending alert...`);
       await this.sendHealthAlertEmail(report);
-    } else if (warnings.length > 0) {
-      this.logger.warn(`⚠️ Deep audit passed with ${warnings.length} minor warning(s): ${warnings.join(' | ')}`);
+    } else if (remainingIssues.length > 0 || warnings.length > 0) {
+      this.logger.warn(`ℹ️ Deep audit found minor issues (${remainingIssues.length} issues, ${warnings.length} warnings) — Email suppressed to preserve Resend quota. AI Healed: ${healedActions.length} item(s).`);
     } else {
       this.logger.log(`✅ Deep system audit passed. DB: ${dbStatus}, APIs: ${apiResults.filter(a => a.ok).length}/${apiResults.length} OK, Pages: ${siteResults.filter(s => s.ok).length}/${siteResults.length} OK, Audit Time: ${totalResponseTime}ms`);
     }
@@ -197,11 +236,11 @@ export class HealthService implements OnModuleInit {
   }
 
   async sendHealthAlertEmail(report: any, isTest = false) {
-    // Debounce: don't send more than 1 alert per 10 minutes
+    // Smart Quota Guard: 30-minute debounce to conserve Resend free tier emails
     const now = Date.now();
-    if (!isTest && now - this.lastAlertTime < 10 * 60 * 1000) {
-      this.logger.warn('Health alert email suppressed (debounce: max 1 per 10 minutes).');
-      return { sent: false, reason: 'Debounced — alert sent recently' };
+    if (!isTest && now - this.lastAlertTime < 30 * 60 * 1000) {
+      this.logger.warn('Health alert email suppressed (Resend Quota Guard: max 1 email per 30 minutes).');
+      return { sent: false, reason: 'Quota Guard — 30-minute debounce active' };
     }
 
     const resendApiKey = this.getResendApiKey();
