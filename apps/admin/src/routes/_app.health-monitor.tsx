@@ -28,6 +28,14 @@ export const Route = createFileRoute("/_app/health-monitor")({
   component: HealthMonitor,
 });
 
+interface ApiEndpointResult {
+  name: string;
+  path: string;
+  status: number | string;
+  ok: boolean;
+  latencyMs: number;
+}
+
 interface HealthReport {
   timestamp: string;
   uptime: number;
@@ -35,6 +43,11 @@ interface HealthReport {
   dbError: string | null;
   responseTimeMs?: number;
   dbResponseTimeMs?: number;
+  apiResults?: ApiEndpointResult[];
+  entityCounts?: Record<string, number>;
+  issuesFound?: string[];
+  criticalIssuesCount?: number;
+  warningIssuesCount?: number;
   memory: {
     rss: number | string;
     heapTotal: number | string;
@@ -325,6 +338,56 @@ function HealthMonitor() {
               ))
             )}
           </div>
+        </SectionCard>
+      </div>
+
+      {/* DEEP API CONTROLLERS & DATABASE ENTITY AUDIT */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {/* API Controllers Audit */}
+        <SectionCard title="Backend API Controllers Audit" subtitle="Live endpoint response & latency checks">
+          <div className="space-y-2 text-xs">
+            {report?.apiResults && report.apiResults.length > 0 ? (
+              report.apiResults.map((api, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-surface border border-hairline">
+                  <div className="flex items-center gap-2">
+                    {api.ok ? (
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    <div>
+                      <p className="font-semibold text-foreground">{api.name}</p>
+                      <p className="text-[10px] font-mono text-muted-foreground">{api.path}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-mono text-muted-foreground">{api.latencyMs}ms</span>
+                    <StatusPill tone={api.ok ? "success" : "danger"}>
+                      {api.ok ? `HTTP ${api.status}` : `ERR ${api.status}`}
+                    </StatusPill>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground py-4 text-center">Run a check to audit API controllers.</p>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* Database Entity Count Audit */}
+        <SectionCard title="Database Schema & Record Audit" subtitle="Live PostgreSQL table record counts">
+          {report?.entityCounts ? (
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
+              {Object.entries(report.entityCounts).map(([entity, count]) => (
+                <div key={entity} className="p-3 rounded-lg bg-surface border border-hairline flex flex-col justify-between">
+                  <span className="text-[11px] font-medium capitalize text-muted-foreground">{entity.replace(/([A-Z])/g, ' $1')}</span>
+                  <span className="text-lg font-bold font-mono text-primary mt-1">{count.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground py-4 text-center">Run a check to audit database tables.</p>
+          )}
         </SectionCard>
       </div>
 

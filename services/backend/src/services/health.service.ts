@@ -38,69 +38,123 @@ export class HealthService implements OnModuleInit {
   async runFullHealthCheck() {
     const startTime = Date.now();
     const issues: string[] = [];
+    const warnings: string[] = [];
     let dbStatus = 'up';
     let dbError: string | null = null;
 
-    // 1. DATABASE CHECK
+    // 1. DATABASE CONNECTION & SCHEMA INTEGRITY AUDIT
+    const dbStartTime = Date.now();
+    const entityCounts: Record<string, number> = {};
     try {
       await this.prisma.$queryRaw`SELECT 1`;
+
+      // Deep entity count checks
+      try { entityCounts.products = await this.prisma.product.count(); } catch (e: any) { warnings.push(`⚠️ Product table audit issue: ${e.message}`); }
+      try { entityCounts.transactions = await this.prisma.transaction.count(); } catch (e: any) { warnings.push(`⚠️ Transaction table audit issue: ${e.message}`); }
+      try { entityCounts.customers = await this.prisma.customer.count(); } catch (e: any) { warnings.push(`⚠️ Customer table audit issue: ${e.message}`); }
+      try { entityCounts.suppliers = await this.prisma.supplier.count(); } catch (e: any) { warnings.push(`⚠️ Supplier table audit issue: ${e.message}`); }
+      try { entityCounts.expenses = await this.prisma.expense.count(); } catch (e: any) { warnings.push(`⚠️ Expense table audit issue: ${e.message}`); }
+      try { entityCounts.purchaseOrders = await this.prisma.purchaseOrder.count(); } catch (e: any) { warnings.push(`⚠️ Purchase Order table audit issue: ${e.message}`); }
+      try { entityCounts.users = await this.prisma.user.count(); } catch (e: any) { warnings.push(`⚠️ User table audit issue: ${e.message}`); }
+      try { entityCounts.workspaces = await this.prisma.workspace.count(); } catch (e: any) { warnings.push(`⚠️ Workspace table audit issue: ${e.message}`); }
+
     } catch (err: any) {
       dbStatus = 'down';
       dbError = err.message;
-      issues.push(`🔴 DATABASE DOWN: ${err.message}`);
+      issues.push(`🔴 DATABASE CRITICAL DOWN: ${err.message}`);
     }
 
-    const dbResponseTime = Date.now() - startTime;
-    if (dbResponseTime > 5000) {
-      issues.push(`⚠️ DATABASE SLOW: Response time ${dbResponseTime}ms (>5s threshold)`);
+    const dbResponseTime = Date.now() - dbStartTime;
+    if (dbResponseTime > 3000) {
+      issues.push(`⚠️ DATABASE SLOW: Response time ${dbResponseTime}ms (>3s threshold)`);
+    } else if (dbResponseTime > 1000) {
+      warnings.push(`ℹ️ Database query time slightly elevated (${dbResponseTime}ms)`);
     }
 
-    // 2. FRONTEND SITE CHECK — probe each critical page
-    const siteResults: Array<{ url: string; status: number | string; ok: boolean; error?: string }> = [];
-    for (const url of FRONTEND_URLS) {
+    // 2. BACKEND API ENDPOINT CONTROLLER AUDIT
+    const backendUrl = process.env.VITE_API_URL || 'https://bizora-backend-gtoe.onrender.com';
+    const apiEndpoints = [
+      { name: 'Health Check', path: '/api/health' },
+      { name: 'Products API', path: '/api/products' },
+      { name: 'Transactions API', path: '/api/transactions' },
+      { name: 'Customers API', path: '/api/customers' },
+      { name: 'Suppliers API', path: '/api/suppliers' },
+      { name: 'Expenses API', path: '/api/expenses' },
+      { name: 'Purchase Orders API', path: '/api/purchase-orders' },
+      { name: 'Recommendations AI API', path: '/api/recommendations' },
+      { name: 'Anomalies AI API', path: '/api/anomalies' },
+    ];
+
+    const apiResults: Array<{ name: string; path: string; status: number | string; ok: boolean; latencyMs: number }> = [];
+
+    for (const ep of apiEndpoints) {
+      const epStart = Date.now();
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(`${backendUrl}${ep.path}`, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: { 'User-Agent': 'BizoraDeepAuditMonitor/2.0' },
+        });
+        clearTimeout(timeout);
+        const latencyMs = Date.now() - epStart;
+        const isOk = res.status < 500; // 2xx, 3xx, 4xx (auth required) are alive controllers
+
+        apiResults.push({ name: ep.name, path: ep.path, status: res.status, ok: isOk, latencyMs });
+
+        if (res.status >= 500) {
+          issues.push(`🔴 BACKEND API ERROR: ${ep.path} returned HTTP ${res.status} (${latencyMs}ms)`);
+        } else if (latencyMs > 4000) {
+          warnings.push(`⚠️ SLOW ENDPOINT: ${ep.path} took ${latencyMs}ms to respond`);
+        }
+      } catch (err: any) {
+        const latencyMs = Date.now() - epStart;
+        apiResults.push({ name: ep.name, path: ep.path, status: 'UNREACHABLE', ok: false, latencyMs });
+        issues.push(`🔴 API ENDPOINT UNREACHABLE: ${ep.path} — ${err.message}`);
+      }
+    }
+
+    // 3. FRONTEND PORTAL & MULTI-PAGE AVAILABILITY AUDIT
+    const siteResults: Array<{ url: string; status: number | string; ok: boolean; latencyMs: number }> = [];
+    for (const url of FRONTEND_URLS) {
+      const pageStart = Date.now();
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000);
         const res = await fetch(url, {
           method: 'GET',
           signal: controller.signal,
-          headers: { 'User-Agent': 'BizoraHealthMonitor/1.0' },
+          headers: { 'User-Agent': 'BizoraDeepAuditMonitor/2.0' },
         });
         clearTimeout(timeout);
+        const latencyMs = Date.now() - pageStart;
 
-        siteResults.push({ url, status: res.status, ok: res.ok });
+        siteResults.push({ url, status: res.status, ok: res.ok, latencyMs });
 
         if (!res.ok) {
-          issues.push(`🔴 FRONTEND ERROR: ${url} returned HTTP ${res.status}`);
+          issues.push(`🔴 FRONTEND PAGE DOWN: ${url} returned HTTP ${res.status}`);
+        } else if (latencyMs > 5000) {
+          warnings.push(`⚠️ SLOW PAGE LOAD: ${url} took ${latencyMs}ms`);
         }
       } catch (err: any) {
-        siteResults.push({ url, status: 'UNREACHABLE', ok: false, error: err.message });
+        const latencyMs = Date.now() - pageStart;
+        siteResults.push({ url, status: 'UNREACHABLE', ok: false, latencyMs });
         issues.push(`🔴 FRONTEND UNREACHABLE: ${url} — ${err.message}`);
       }
     }
 
-    // 3. BACKEND API SELF-CHECK
-    let backendApiStatus = 'up';
-    try {
-      const backendUrl = process.env.VITE_API_URL || 'https://bizora-backend-gtoe.onrender.com';
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(`${backendUrl}/api/health`, {
-        signal: controller.signal,
-        headers: { 'User-Agent': 'BizoraHealthMonitor/1.0' },
-      });
-      clearTimeout(timeout);
-      if (!res.ok) {
-        backendApiStatus = `HTTP ${res.status}`;
-        issues.push(`⚠️ BACKEND API /api/health returned HTTP ${res.status}`);
-      }
-    } catch (err: any) {
-      backendApiStatus = 'unreachable';
-      // Don't flag this as critical since we ARE the backend
+    // 4. MEMORY & SYSTEM THRESHOLD AUDIT
+    const memoryUsage = process.memoryUsage();
+    const heapPct = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
+    if (heapPct > 90) {
+      issues.push(`🔴 CRITICAL MEMORY USAGE: Heap is at ${heapPct}% (${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB)`);
+    } else if (heapPct > 80) {
+      warnings.push(`⚠️ Elevated memory usage: Heap is at ${heapPct}%`);
     }
 
-    const memoryUsage = process.memoryUsage();
     const totalResponseTime = Date.now() - startTime;
+    const allIssues = [...issues, ...warnings];
 
     const report = {
       timestamp: new Date().toISOString(),
@@ -110,13 +164,18 @@ export class HealthService implements OnModuleInit {
       responseTimeMs: dbResponseTime,
       dbResponseTimeMs: dbResponseTime,
       totalCheckTimeMs: totalResponseTime,
-      backendApiStatus,
+      backendApiStatus: apiResults.every(r => r.ok) ? 'up' : 'degraded',
       frontendSiteResults: siteResults,
-      issuesFound: issues,
+      apiResults,
+      entityCounts,
+      issuesFound: allIssues,
+      criticalIssuesCount: issues.length,
+      warningIssuesCount: warnings.length,
       memory: {
         rss: memoryUsage.rss,
         heapUsed: memoryUsage.heapUsed,
         heapTotal: memoryUsage.heapTotal,
+        heapPct,
       },
       system: {
         freeMem: os.freemem(),
@@ -126,10 +185,12 @@ export class HealthService implements OnModuleInit {
 
     // Log the result
     if (issues.length > 0) {
-      this.logger.error(`🚨 Health check found ${issues.length} issue(s): ${issues.join(' | ')}`);
+      this.logger.error(`🚨 Deep audit found ${issues.length} critical issue(s), ${warnings.length} warning(s): ${issues.join(' | ')}`);
       await this.sendHealthAlertEmail(report);
+    } else if (warnings.length > 0) {
+      this.logger.warn(`⚠️ Deep audit passed with ${warnings.length} minor warning(s): ${warnings.join(' | ')}`);
     } else {
-      this.logger.log(`✅ Health check passed. DB: ${dbStatus}, Frontend: ${siteResults.filter(s => s.ok).length}/${siteResults.length} OK, Time: ${totalResponseTime}ms`);
+      this.logger.log(`✅ Deep system audit passed. DB: ${dbStatus}, APIs: ${apiResults.filter(a => a.ok).length}/${apiResults.length} OK, Pages: ${siteResults.filter(s => s.ok).length}/${siteResults.length} OK, Audit Time: ${totalResponseTime}ms`);
     }
 
     return report;
