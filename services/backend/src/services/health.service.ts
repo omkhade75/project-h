@@ -4,13 +4,13 @@ import * as os from 'os';
 
 const ADMIN_EMAIL = process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com';
 const FRONTEND_URLS = [
-  'https://project-h-1.jdfc.onrender.com/command-center',
-  'https://project-h-1.jdfc.onrender.com/customers',
-  'https://project-h-1.jdfc.onrender.com/products',
-  'https://project-h-1.jdfc.onrender.com/settings',
-  'https://project-h-1.jdfc.onrender.com/expenses',
-  'https://project-h-1.jdfc.onrender.com/ai-decisions',
-  'https://project-h-1.jdfc.onrender.com/sales',
+  'https://bizora-owner.onrender.com/command-center',
+  'https://bizora-owner.onrender.com/customers',
+  'https://bizora-owner.onrender.com/products',
+  'https://bizora-owner.onrender.com/settings',
+  'https://bizora-owner.onrender.com/expenses',
+  'https://bizora-owner.onrender.com/ai-decisions',
+  'https://bizora-owner.onrender.com/sales',
 ];
 
 @Injectable()
@@ -85,14 +85,14 @@ export class HealthService implements OnModuleInit {
       const backendUrl = process.env.VITE_API_URL || 'https://bizora-backend-gtoe.onrender.com';
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(`${backendUrl}/health`, {
+      const res = await fetch(`${backendUrl}/api/health`, {
         signal: controller.signal,
         headers: { 'User-Agent': 'BizoraHealthMonitor/1.0' },
       });
       clearTimeout(timeout);
       if (!res.ok) {
         backendApiStatus = `HTTP ${res.status}`;
-        issues.push(`⚠️ BACKEND API /health returned HTTP ${res.status}`);
+        issues.push(`⚠️ BACKEND API /api/health returned HTTP ${res.status}`);
       }
     } catch (err: any) {
       backendApiStatus = 'unreachable';
