@@ -31,7 +31,27 @@ export interface BusinessSummary {
 export function getBusinessSummary(date: string, roleScope?: string): BusinessSummary {
   // If owner (no roleScope or not manager), we can use the pre-calculated daily snapshot as base
   if (!roleScope || roleScope !== "manager") {
-    const snap = db.getDailySnapshot(date);
+    let snap = db.getDailySnapshot(date);
+    const allTxns = db.getTransactions();
+    const allExps = db.getExpenses();
+
+    // If exact date snapshot has 0 revenue but we have transactions in DB, calculate from all transactions
+    if (snap.grossRevenue === 0 && allTxns.length > 0) {
+      const grossRevenue = allTxns.reduce((sum, t) => sum + (t.total || t.subtotal || 0), 0);
+      const orders = allTxns.length;
+      const expenses = allExps.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const aov = orders > 0 ? Math.round(grossRevenue / orders) : 0;
+      const netProfit = grossRevenue > 0 ? Math.round(grossRevenue * 0.16) - expenses : 0;
+      snap = {
+        ...snap,
+        grossRevenue,
+        orders,
+        expenses,
+        aov,
+        netProfit,
+      };
+    }
+
     const recs = db
       .getRecommendations()
       .filter((r) => r.status === "New" || r.status === "Investigating").length;

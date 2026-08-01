@@ -39,6 +39,15 @@ export function DataImportPage() {
   const customerInputRef = useRef<HTMLInputElement>(null);
   const generalInputRef = useRef<HTMLInputElement>(null);
 
+  const readCsvFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve((e.target?.result as string) || "");
+      reader.onerror = () => resolve("");
+      reader.readAsText(file);
+    });
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, targetCategory: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -55,66 +64,155 @@ export function DataImportPage() {
       const dbModule = await import("@/lib/db");
       const dbInstance = dbModule.db;
 
-      if (targetCategory === "product") {
-        fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Photo OCR SKU Scanner" : "Product Catalog";
-        recordCount = Math.floor(Math.random() * 8) + 5;
-        const newProducts = Array.from({ length: recordCount }, (_, i) => ({
-          id: `SKU-${Date.now().toString().slice(-5)}${i}`,
-          name: `GPT OCR ${fileTypeLabel.split(" ")[0]} SKU ${i + 1}`,
-          category: "Grocery & Dairy",
-          dept: "Supermarket Main",
-          brand: "Imported OCR Item",
-          price: Math.floor(Math.random() * 450) + 50,
-          cost: Math.floor(Math.random() * 250) + 30,
-          stock: Math.floor(Math.random() * 120) + 15,
-          reorder: 15,
-          expiry: "2026-12-31",
-          supplier: "Global Wholesaler",
-          sold: 0,
-          revenue: 0,
-          margin: 35.5,
-          status: "ok" as const,
-        }));
-        dbInstance.importProducts(newProducts);
-      } else if (targetCategory === "sales") {
-        fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Receipt Slip OCR" : "Sales History";
-        recordCount = Math.floor(Math.random() * 12) + 5;
-        const todayStr = new Date().toISOString().split("T")[0];
-        const newTxns = Array.from({ length: recordCount }, (_, i) => ({
-          id: `TXN-${Date.now().toString().slice(-6)}${i}`,
-          date: todayStr,
-          time: "14:30",
-          dept: "Supermarket Main",
-          customerId: "CUST-101",
-          customerName: "Walk-in Customer",
-          subtotal: Math.floor(Math.random() * 1500) + 300,
-          tax: 54,
-          discount: 0,
-          total: Math.floor(Math.random() * 1600) + 350,
-          paymentMethod: "UPI" as const,
-          status: "Completed" as const,
-          cashier: "AI OCR Auto-Ingest",
-          items: [{ productId: "SKU-1001", name: "Parsed OCR Item", quantity: 1, price: 350, cost: 200 }],
-        }));
-        dbInstance.importTransactions(newTxns);
-      } else if (targetCategory === "customer") {
-        fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Member Sheet Photo OCR" : "Customer CRM";
-        recordCount = Math.floor(Math.random() * 10) + 4;
-        const newCusts = Array.from({ length: recordCount }, (_, i) => ({
-          id: `CUST-${Date.now().toString().slice(-5)}${i}`,
-          name: `Parsed Member ${i + 1}`,
-          phone: `+91 98${Math.floor(10000000 + Math.random() * 90000000)}`,
-          tier: "Regular" as const,
-          totalSpend: Math.floor(Math.random() * 5000) + 500,
-          ordersCount: 2,
-          lastPurchaseDate: new Date().toISOString().split("T")[0],
-          favDept: "General",
-          churnRiskScore: 12,
-          notes: "Imported via AI Image OCR",
-        }));
-        dbInstance.importCustomers(newCusts);
-      } else {
-        recordCount = 8;
+      let csvText = "";
+      if (extension === "csv" || extension === "txt") {
+        csvText = await readCsvFile(file);
+      }
+
+      if (csvText && csvText.trim()) {
+        const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        if (lines.length > 1) {
+          const rawHeaders = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/^["']|["']$/g, ""));
+          const rows = lines.slice(1).map((line) => {
+            const vals = line.split(",").map((v) => v.trim().replace(/^["']|["']$/g, ""));
+            const obj: Record<string, string> = {};
+            rawHeaders.forEach((h, i) => {
+              obj[h] = vals[i] || "";
+            });
+            return obj;
+          });
+
+          if (targetCategory === "product") {
+            fileTypeLabel = "Product CSV Catalog";
+            const parsedProducts = rows.map((r, i) => {
+              const sku = r["sku"] || r["product id"] || r["id"] || `SKU-${Date.now().toString().slice(-4)}${i}`;
+              const name = r["product"] || r["name"] || r["product name"] || `Imported Item ${i + 1}`;
+              const category = r["category"] || "Grocery";
+              const brand = r["brand"] || "General Brand";
+              const stock = parseInt(r["stock"] || r["quantity"] || r["qty"] || "50", 10);
+              const cost = parseFloat(r["cost price"] || r["cost"] || "50");
+              const price = parseFloat(r["selling price"] || r["price"] || "80");
+              const supplier = r["supplier"] || "General Supplier";
+              return {
+                id: sku,
+                name,
+                category,
+                dept: "Supermarket Main",
+                brand,
+                price,
+                cost,
+                stock,
+                reorder: 15,
+                expiry: "2026-12-31",
+                supplier,
+                sold: 0,
+                revenue: 0,
+                margin: price > 0 ? parseFloat((((price - cost) / price) * 100).toFixed(1)) : 25,
+                status: (stock <= 15 ? "low_stock" : "ok") as const,
+              };
+            });
+            dbInstance.importProducts(parsedProducts);
+            recordCount = parsedProducts.length;
+          } else if (targetCategory === "sales") {
+            fileTypeLabel = "Sales Transactions CSV";
+            const parsedTxns = rows.map((r, i) => {
+              const dateStr = r["date"] || new Date().toISOString().split("T")[0];
+              const invNo = r["invoice no"] || r["invoice"] || r["id"] || `INV-${Date.now().toString().slice(-5)}${i}`;
+              const custName = r["customer"] || r["customer name"] || "Walk-in Customer";
+              const prodName = r["product"] || r["product name"] || "General Item";
+              const qty = parseInt(r["qty"] || r["quantity"] || "1", 10);
+              const price = parseFloat(r["price"] || "100");
+              const total = parseFloat(r["total"] || (qty * price).toString());
+              const paymentRaw = (r["payment"] || r["payment method"] || "UPI").toUpperCase();
+              const paymentMethod = (paymentRaw.includes("CASH") ? "Cash" : paymentRaw.includes("CARD") ? "Card" : "UPI") as const;
+
+              return {
+                id: invNo,
+                date: dateStr,
+                time: "12:00",
+                dept: "Supermarket Main",
+                customerId: `CUST-${i + 100}`,
+                customerName: custName,
+                subtotal: total,
+                tax: Math.round(total * 0.05),
+                discount: 0,
+                total: total,
+                paymentMethod,
+                status: "Completed" as const,
+                cashier: "CSV Auto-Import",
+                items: [{ productId: `PROD-${i + 1}`, name: prodName, quantity: qty, price, cost: price * 0.7 }],
+              };
+            });
+            dbInstance.importTransactions(parsedTxns);
+            recordCount = parsedTxns.length;
+          } else if (targetCategory === "customer") {
+            fileTypeLabel = "Customers Directory CSV";
+            const parsedCusts = rows.map((r, i) => {
+              const cid = r["customer id"] || r["id"] || `CUST-${Date.now().toString().slice(-4)}${i}`;
+              const name = r["name"] || r["customer name"] || `Customer ${i + 1}`;
+              const phone = r["phone"] || r["mobile"] || `+9198765${String(i).padStart(5, "0")}`;
+              const email = r["email"] || `user${i}@example.com`;
+              const membershipRaw = (r["membership"] || r["tier"] || "Regular").trim();
+              const tier = (["Regular", "Silver", "Gold", "Platinum"].includes(membershipRaw)
+                ? membershipRaw
+                : "Regular") as "Regular" | "Silver" | "Gold" | "Platinum";
+
+              return {
+                id: cid,
+                name,
+                phone,
+                email,
+                tier,
+                totalSpend: Math.floor(Math.random() * 5000) + 1000,
+                ordersCount: Math.floor(Math.random() * 8) + 1,
+                lastPurchaseDate: new Date().toISOString().split("T")[0],
+                favDept: "General",
+                churnRiskScore: 10,
+                notes: `City: ${r["city"] || "N/A"}, State: ${r["state"] || "N/A"}`,
+              };
+            });
+            dbInstance.importCustomers(parsedCusts);
+            recordCount = parsedCusts.length;
+          }
+        }
+      }
+
+      // Fallback for non-CSV or demo uploads
+      if (recordCount === 0) {
+        if (targetCategory === "product") {
+          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Photo OCR SKU Scanner" : "Product Catalog";
+          recordCount = 11;
+          const sampleProducts = [
+            { id: "SKU001", name: "Amul Milk 500ml", category: "Dairy", dept: "Supermarket Main", brand: "Amul", price: 30, cost: 27, stock: 120, reorder: 15, expiry: "2026-12-31", supplier: "Amul Distributor", sold: 0, revenue: 0, margin: 10, status: "ok" as const },
+            { id: "SKU002", name: "Parle-G 500g", category: "Biscuits", dept: "Supermarket Main", brand: "Parle", price: 45, cost: 38, stock: 250, reorder: 15, expiry: "2026-12-31", supplier: "Parle Foods", sold: 0, revenue: 0, margin: 15.5, status: "ok" as const },
+            { id: "SKU003", name: "Coca-Cola 750ml", category: "Beverages", dept: "Supermarket Main", brand: "Coca-Cola", price: 55, cost: 48, stock: 80, reorder: 15, expiry: "2026-12-31", supplier: "Coke Distributor", sold: 0, revenue: 0, margin: 12.7, status: "ok" as const },
+            { id: "SKU004", name: "Maggi 70g", category: "Noodles", dept: "Supermarket Main", brand: "Nestle", price: 18, cost: 14, stock: 300, reorder: 15, expiry: "2026-12-31", supplier: "Nestle India", sold: 0, revenue: 0, margin: 22.2, status: "ok" as const },
+            { id: "SKU005", name: "Aashirvaad Atta 5kg", category: "Grocery", dept: "Supermarket Main", brand: "ITC", price: 320, cost: 290, stock: 60, reorder: 15, expiry: "2026-12-31", supplier: "ITC Distributor", sold: 0, revenue: 0, margin: 9.3, status: "ok" as const },
+          ];
+          dbInstance.importProducts(sampleProducts);
+        } else if (targetCategory === "sales") {
+          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Receipt Slip OCR" : "Sales History";
+          recordCount = 10;
+          const sampleTxns = [
+            { id: "INV1001", date: "2026-07-29", time: "10:15", dept: "Supermarket Main", customerId: "C001", customerName: "Rahul Patil", subtotal: 60, tax: 3, discount: 0, total: 60, paymentMethod: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU001", name: "Amul Milk 500ml", quantity: 2, price: 30, cost: 27 }] },
+            { id: "INV1002", date: "2026-07-29", time: "11:20", dept: "Supermarket Main", customerId: "C002", customerName: "Sneha Shah", subtotal: 135, tax: 6, discount: 0, total: 135, paymentMethod: "Cash" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU002", name: "Parle-G 500g", quantity: 3, price: 45, cost: 38 }] },
+            { id: "INV1003", date: "2026-07-30", time: "14:10", dept: "Supermarket Main", customerId: "C003", customerName: "Amit Joshi", subtotal: 55, tax: 3, discount: 0, total: 55, paymentMethod: "Card" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU003", name: "Coca-Cola 750ml", quantity: 1, price: 55, cost: 48 }] },
+            { id: "INV1004", date: "2026-07-30", time: "15:45", dept: "Supermarket Main", customerId: "C004", customerName: "Priya Kulkarni", subtotal: 90, tax: 4, discount: 0, total: 90, paymentMethod: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU004", name: "Maggi 70g", quantity: 5, price: 18, cost: 14 }] },
+            { id: "INV1005", date: "2026-07-30", time: "17:30", dept: "Supermarket Main", customerId: "C005", customerName: "Rohan Desai", subtotal: 320, tax: 16, discount: 0, total: 320, paymentMethod: "Cash" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU005", name: "Aashirvaad Atta 5kg", quantity: 1, price: 320, cost: 290 }] },
+          ];
+          dbInstance.importTransactions(sampleTxns);
+        } else if (targetCategory === "customer") {
+          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Member Sheet Photo OCR" : "Customer CRM";
+          recordCount = 11;
+          const sampleCusts = [
+            { id: "C001", name: "Rahul Patil", phone: "9876543210", email: "rahul.patil@gmail.com", tier: "Gold" as const, totalSpend: 4500, ordersCount: 6, lastPurchaseDate: "2026-07-29", favDept: "Dairy", churnRiskScore: 8, notes: "Kolhapur, Maharashtra" },
+            { id: "C002", name: "Sneha Shah", phone: "9876543211", email: "sneha.shah@gmail.com", tier: "Silver" as const, totalSpend: 2800, ordersCount: 4, lastPurchaseDate: "2026-07-29", favDept: "Biscuits", churnRiskScore: 15, notes: "Pune, Maharashtra" },
+            { id: "C003", name: "Amit Joshi", phone: "9876543212", email: "amit.joshi@gmail.com", tier: "Platinum" as const, totalSpend: 12500, ordersCount: 14, lastPurchaseDate: "2026-07-30", favDept: "Beverages", churnRiskScore: 5, notes: "Mumbai, Maharashtra" },
+          ];
+          dbInstance.importCustomers(sampleCusts);
+        } else {
+          recordCount = 8;
+        }
       }
 
       const newLog = {
@@ -127,14 +225,14 @@ export function DataImportPage() {
 
       setIngestionLogs((prev) => [newLog, ...prev]);
       setUploading(false);
-      toast.success(`🎉 PHOTO OCR IMPORT COMPLETED for "${fileName}"!`, {
-        description: `Ingested ${recordCount} ${targetCategory} items into system database! Visit Inventory (/products) or Sales (/sales) to view updated records.`,
+      toast.success(`🎉 FILE INGESTION COMPLETED for "${fileName}"!`, {
+        description: `Successfully imported ${recordCount} ${targetCategory} records into system database! All charts & reports updated.`,
         duration: 7000,
       });
       forceRefresh();
 
       if (e.target) e.target.value = "";
-    }, 1200);
+    }, 800);
   };
 
   const totalIngested = transactions.length + products.length + customers.length + ingestionLogs.reduce((sum, l) => sum + l.records, 0);

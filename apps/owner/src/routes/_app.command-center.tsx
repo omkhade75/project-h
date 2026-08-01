@@ -346,21 +346,40 @@ export function CommandCenter() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {liveKpis.map((k) => (
-          <KpiCard
-            key={k.key}
-            label={k.label}
-            value={k.value}
-            delta={k.delta}
-            spark={k.spark}
-            icon={ICONS[k.key]}
-            format={
-              k.key === "orders" || k.key === "footfall" || k.key === "newCustomers"
-                ? "num"
-                : "inr-compact"
+        {(() => {
+          const calcRevenue = (safeScopedTxns.length > 0 ? safeScopedTxns : safeTxns).reduce(
+            (sum, t) => sum + (t.total || t.amount || 0),
+            0,
+          );
+          const calcOrders = (safeScopedTxns.length > 0 ? safeScopedTxns : safeTxns).length;
+          const calcExpenses = (scopedExpenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+          const calcProfit = Math.round(calcRevenue * 0.16) - calcExpenses;
+
+          return liveKpis.map((k) => {
+            let val = k.value;
+            if (val === 0) {
+              if (k.key === "revenue") val = calcRevenue;
+              if (k.key === "profit") val = calcProfit;
+              if (k.key === "orders") val = calcOrders;
+              if (k.key === "expenses") val = calcExpenses;
             }
-          />
-        ))}
+            return (
+              <KpiCard
+                key={k.key}
+                label={k.label}
+                value={val}
+                delta={k.delta}
+                spark={k.spark}
+                icon={ICONS[k.key]}
+                format={
+                  k.key === "orders" || k.key === "footfall" || k.key === "newCustomers"
+                    ? "num"
+                    : "inr-compact"
+                }
+              />
+            );
+          });
+        })()}
       </div>
 
       {/* Executive brief */}
