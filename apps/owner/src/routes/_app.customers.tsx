@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
+import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR, fmtNum } from "@/lib/mock-data";
 import {
@@ -174,12 +175,64 @@ export function CustomersPage() {
           email: user?.email || "",
         },
       });
-      const safeList = Array.isArray(res) && res.length > 0 ? res : [defaultRegisteredCustomer];
+
+      // Merge API customers with local DB customers (imported CSVs)
+      const apiCusts: CustomerListItem[] = Array.isArray(res) ? res : [];
+      const apiIds = new Set(apiCusts.map((c) => c.id));
+
+      // Get local DB customers from business context
+      const localDbCustomers = db.getCustomers();
+      const localCusts: CustomerListItem[] = (localDbCustomers || [])
+        .filter((c) => !apiIds.has(c.id))
+        .map((c) => ({
+          id: c.id,
+          customerCode: c.id,
+          name: c.name || "Customer",
+          firstName: (c.name || "Customer").split(" ")[0],
+          lastName: (c.name || "").split(" ").slice(1).join(" ") || "",
+          email: (c as any).email || "",
+          phone: (c as any).phone || "",
+          joined: c.joined || new Date().toISOString().split("T")[0],
+          customerType: "B2C",
+          visits: c.visits || 0,
+          spend: c.spend || 0,
+          aov: c.aov || 0,
+          favDept: c.favDept || "General",
+          segment: c.segment || "New",
+          churn: c.churn || 0,
+          status: "Active",
+          lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
+        }));
+
+      const merged = [...apiCusts, ...localCusts];
+      const safeList = merged.length > 0 ? merged : [defaultRegisteredCustomer];
       setCustomers(safeList);
       setSelectedCust(safeList[0]);
     } catch (e: any) {
-      setCustomers([defaultRegisteredCustomer]);
-      setSelectedCust(defaultRegisteredCustomer);
+      // Fallback: use local DB customers
+      const localDbCustomers = db.getCustomers();
+      const localCusts: CustomerListItem[] = (localDbCustomers || []).map((c) => ({
+        id: c.id,
+        customerCode: c.id,
+        name: c.name || "Customer",
+        firstName: (c.name || "Customer").split(" ")[0],
+        lastName: (c.name || "").split(" ").slice(1).join(" ") || "",
+        email: (c as any).email || "",
+        phone: (c as any).phone || "",
+        joined: c.joined || new Date().toISOString().split("T")[0],
+        customerType: "B2C",
+        visits: c.visits || 0,
+        spend: c.spend || 0,
+        aov: c.aov || 0,
+        favDept: c.favDept || "General",
+        segment: c.segment || "New",
+        churn: c.churn || 0,
+        status: "Active",
+        lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
+      }));
+      const safeList = localCusts.length > 0 ? localCusts : [defaultRegisteredCustomer];
+      setCustomers(safeList);
+      setSelectedCust(safeList[0]);
     } finally {
       setLoading(false);
     }

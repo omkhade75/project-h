@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_app/transactions")({
 });
 
 function Transactions() {
-  const { openCustomer360 } = useBusinessData();
+  const { openCustomer360, transactions: localDbTransactions } = useBusinessData();
   const { user } = useAuth();
 
   const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
@@ -35,9 +35,67 @@ function Transactions() {
           email: user?.email || "",
         },
       });
-      setTransactions(res);
+
+      // Merge API results with local DB transactions (imported CSVs)
+      const apiTxns: TransactionListItem[] = Array.isArray(res) ? res : [];
+      const apiIds = new Set(apiTxns.map((t) => t.id));
+
+      const localTxns: TransactionListItem[] = (localDbTransactions || [])
+        .filter((t) => !apiIds.has(t.id))
+        .map((t) => ({
+          id: t.id,
+          transactionNumber: t.id,
+          date: t.date,
+          time: t.time || "12:00",
+          customerId: t.customerId || null,
+          customerName: t.customerName || "Walk-in Customer",
+          customerType: "B2C",
+          dept: t.dept || "Supermarket Main",
+          departmentId: t.dept || "dept-supermarket",
+          items: (t.items || []).map((item) => ({
+            productId: item.productId,
+            productName: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          subtotal: t.subtotal,
+          tax: t.tax || 0,
+          discount: t.discount || 0,
+          total: t.total,
+          payment: (t as any).payment || (t as any).paymentMethod || "Cash",
+          status: t.status,
+        }));
+
+      setTransactions([...apiTxns, ...localTxns]);
     } catch (e) {
-      toast.error("Failed to load transactions history from database.");
+      // Fallback: use local DB transactions
+      const localTxns: TransactionListItem[] = (localDbTransactions || []).map((t) => ({
+        id: t.id,
+        transactionNumber: t.id,
+        date: t.date,
+        time: t.time || "12:00",
+        customerId: t.customerId || null,
+        customerName: t.customerName || "Walk-in Customer",
+        customerType: "B2C",
+        dept: t.dept || "Supermarket Main",
+        departmentId: t.dept || "dept-supermarket",
+        items: (t.items || []).map((item) => ({
+          productId: item.productId,
+          productName: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotal: t.subtotal,
+        tax: t.tax || 0,
+        discount: t.discount || 0,
+        total: t.total,
+        payment: (t as any).payment || (t as any).paymentMethod || "Cash",
+        status: t.status,
+      }));
+      setTransactions(localTxns);
+      if (localTxns.length === 0) {
+        toast.error("Failed to load transactions history from database.");
+      }
     } finally {
       setLoading(false);
     }
@@ -45,7 +103,7 @@ function Transactions() {
 
   useEffect(() => {
     loadTransactions();
-  }, [user]);
+  }, [user, localDbTransactions.length]);
 
   // Split into B2B (business customer), B2C (registered), and Walk-in (unregistered)
   const b2bTransactions = transactions.filter((t) => t.customerType === "B2B");
