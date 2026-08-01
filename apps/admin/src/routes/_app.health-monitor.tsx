@@ -33,15 +33,16 @@ interface HealthReport {
   uptime: number;
   dbStatus: string;
   dbError: string | null;
-  responseTimeMs: number;
+  responseTimeMs?: number;
+  dbResponseTimeMs?: number;
   memory: {
-    rss: number;
-    heapTotal: number;
-    heapUsed: number;
+    rss: number | string;
+    heapTotal: number | string;
+    heapUsed: number | string;
   };
   system: {
-    freeMem: number;
-    totalMem: number;
+    freeMem: number | string;
+    totalMem: number | string;
   };
 }
 
@@ -91,7 +92,21 @@ function HealthMonitor() {
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
-  const formatBytes = (bytes: number) => {
+  const toBytes = (val: number | string | undefined | null): number => {
+    if (!val) return 0;
+    if (typeof val === "number") return val;
+    const match = String(val).match(/([\d.]+)\s*(MB|GB|KB|B)?/i);
+    if (!match) return 0;
+    const num = parseFloat(match[1]);
+    const unit = (match[2] || "").toUpperCase();
+    if (unit === "GB") return num * 1024 * 1024 * 1024;
+    if (unit === "MB") return num * 1024 * 1024;
+    if (unit === "KB") return num * 1024;
+    return num;
+  };
+
+  const formatBytes = (bytesVal: number | string) => {
+    const bytes = toBytes(bytesVal);
     if (!bytes) return "0 B";
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB"];
@@ -110,8 +125,10 @@ function HealthMonitor() {
   };
 
   const isHealthy = report?.dbStatus === "up";
-  const memPercent = report?.memory?.heapTotal
-    ? Math.round((report.memory.heapUsed / report.memory.heapTotal) * 100)
+  const heapUsedBytes = toBytes(report?.memory?.heapUsed);
+  const heapTotalBytes = toBytes(report?.memory?.heapTotal);
+  const memPercent = heapTotalBytes
+    ? Math.round((heapUsedBytes / heapTotalBytes) * 100)
     : 0;
 
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -201,8 +218,10 @@ function HealthMonitor() {
           <p className="text-lg font-bold">
             {report?.dbStatus === "up" ? "Connected" : report?.dbStatus || "..."}
           </p>
-          {report?.responseTimeMs !== undefined && (
-            <p className="text-[10px] text-muted-foreground">{report.responseTimeMs}ms response</p>
+          {(report?.responseTimeMs !== undefined || report?.dbResponseTimeMs !== undefined) && (
+            <p className="text-[10px] text-muted-foreground">
+              {report.responseTimeMs ?? report.dbResponseTimeMs ?? 0}ms response
+            </p>
           )}
         </div>
 
@@ -300,7 +319,7 @@ function HealthMonitor() {
                     DB: {h.dbStatus}
                   </span>
                   <span className="text-muted-foreground ml-auto">
-                    {h.responseTimeMs}ms · {formatBytes(h.memory?.heapUsed || 0)}
+                    {h.responseTimeMs ?? h.dbResponseTimeMs ?? 0}ms · {formatBytes(h.memory?.heapUsed || 0)}
                   </span>
                 </div>
               ))

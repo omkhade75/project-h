@@ -107,19 +107,20 @@ export class HealthService implements OnModuleInit {
       uptime: process.uptime(),
       dbStatus,
       dbError,
+      responseTimeMs: dbResponseTime,
       dbResponseTimeMs: dbResponseTime,
       totalCheckTimeMs: totalResponseTime,
       backendApiStatus,
       frontendSiteResults: siteResults,
       issuesFound: issues,
       memory: {
-        rss: Math.round(memoryUsage.rss / 1024 / 1024) + ' MB',
-        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + ' MB',
-        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + ' MB',
+        rss: memoryUsage.rss,
+        heapUsed: memoryUsage.heapUsed,
+        heapTotal: memoryUsage.heapTotal,
       },
       system: {
-        freeMem: Math.round(os.freemem() / 1024 / 1024) + ' MB',
-        totalMem: Math.round(os.totalmem() / 1024 / 1024) + ' MB',
+        freeMem: os.freemem(),
+        totalMem: os.totalmem(),
       },
     };
 
@@ -209,7 +210,7 @@ export class HealthService implements OnModuleInit {
                   <tr><td style="padding: 6px 0; color: #94a3b8;">Database</td><td style="padding: 6px 0; text-align: right; color: ${report.dbStatus === 'up' ? '#34d399' : '#ef4444'}; font-weight: bold;">${(report.dbStatus || 'unknown').toUpperCase()}</td></tr>
                   <tr><td style="padding: 6px 0; color: #94a3b8;">DB Response Time</td><td style="padding: 6px 0; text-align: right;">${report.dbResponseTimeMs || 0} ms</td></tr>
                   <tr><td style="padding: 6px 0; color: #94a3b8;">Server Uptime</td><td style="padding: 6px 0; text-align: right;">${Math.round(report.uptime / 60)} minutes</td></tr>
-                  <tr><td style="padding: 6px 0; color: #94a3b8;">Heap Memory</td><td style="padding: 6px 0; text-align: right;">${report.memory?.heapUsed || 'N/A'}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #94a3b8;">Heap Memory</td><td style="padding: 6px 0; text-align: right;">${report.memory?.heapUsed ? Math.round(report.memory.heapUsed / 1024 / 1024) + ' MB' : 'N/A'}</td></tr>
                 </table>
               </div>
 
@@ -224,7 +225,15 @@ export class HealthService implements OnModuleInit {
       if (!response.ok) {
         const errorText = await response.text();
         this.logger.error(`Failed to send health email: ${errorText}`);
-        return { sent: false, reason: errorText };
+        let cleanReason = errorText;
+        try {
+          const jsonErr = JSON.parse(errorText);
+          cleanReason = jsonErr.message || jsonErr.error || errorText;
+          if (cleanReason.toLowerCase().includes('api key is invalid')) {
+            cleanReason = 'Resend API key is invalid or expired. Set RESEND_API_KEY env variable on Render server.';
+          }
+        } catch (_) {}
+        return { sent: false, reason: cleanReason };
       } else {
         this.lastAlertTime = now;
         this.logger.log(`✉️ Health alert email sent to ${ADMIN_EMAIL}`);
