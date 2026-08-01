@@ -95,6 +95,7 @@ export function CommandCenter() {
     departmentRevenue,
     scopedRecommendations,
     scopedTransactions,
+    scopedExpenses,
     transactions,
     activeDate,
     timeRange,
