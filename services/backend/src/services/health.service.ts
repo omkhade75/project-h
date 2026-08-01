@@ -144,6 +144,15 @@ export class HealthService implements OnModuleInit {
       }
     }
 
+    // 4. MEMORY & SYSTEM THRESHOLD AUDIT
+    const memoryUsage = process.memoryUsage();
+    const heapPct = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
+    if (heapPct > 90) {
+      issues.push(`🔴 CRITICAL MEMORY USAGE: Heap is at ${heapPct}% (${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB)`);
+    } else if (heapPct > 80) {
+      warnings.push(`⚠️ Elevated memory usage: Heap is at ${heapPct}%`);
+    }
+
     // 5. AI SELF-HEALING ENGINE — Auto-remediate issues before alerting
     const healedActions: string[] = [];
 
@@ -171,13 +180,13 @@ export class HealthService implements OnModuleInit {
       } catch (gcErr) {}
     }
 
-    // Auto-Fix 3: Auto-repair negative stock values in Database
+    // Auto-Fix 3: Auto-repair negative stock quantities in Database
     try {
-      const negativeStockCount = await this.prisma.product.count({ where: { stock: { lt: 0 } } });
+      const negativeStockCount = await this.prisma.inventoryStock.count({ where: { availableQty: { lt: 0 } } });
       if (negativeStockCount > 0) {
-        await this.prisma.product.updateMany({ where: { stock: { lt: 0 } }, data: { stock: 0 } });
-        healedActions.push(`Auto-repaired ${negativeStockCount} products with negative stock levels to 0`);
-        this.logger.log(`✅ AI Self-Healing SUCCESS: Repaired ${negativeStockCount} negative stock products.`);
+        await this.prisma.inventoryStock.updateMany({ where: { availableQty: { lt: 0 } }, data: { availableQty: 0, quantityOnHand: 0 } });
+        healedActions.push(`Auto-repaired ${negativeStockCount} inventory stock items with negative quantities to 0`);
+        this.logger.log(`✅ AI Self-Healing SUCCESS: Repaired ${negativeStockCount} negative stock items.`);
       }
     } catch (_) {}
 
