@@ -46,6 +46,7 @@ export class HealthService implements OnModuleInit {
     const dbStartTime = Date.now();
     const entityCounts: Record<string, number> = {};
     try {
+      await this.prisma.$connect().catch(() => {});
       await this.prisma.$queryRaw`SELECT 1`;
 
       // Deep entity count checks (safely default to 0 if table empty or pending push)

@@ -8,13 +8,14 @@ export class DatabaseService extends PrismaClient implements OnModuleInit, OnMod
   public isConnected = false;
 
   async onModuleInit() {
-    this.isConnected = await checkDbConnection();
-    if (this.isConnected) {
-      this.logger.log('Successfully connected to Supabase PostgreSQL Database.');
+    try {
       await this.$connect();
-    } else {
+      this.isConnected = true;
+      this.logger.log('Successfully connected to Supabase PostgreSQL Database.');
+    } catch (err: any) {
+      this.isConnected = false;
       this.logger.warn(
-        'Supabase PostgreSQL Database is not configured or offline. Running in offline/mock fallback mode.',
+        `PostgreSQL connection init notice: ${err.message}. Fallback mode active.`
       );
     }
   }
