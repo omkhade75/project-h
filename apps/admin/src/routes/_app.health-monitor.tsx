@@ -353,6 +353,21 @@ function HealthMonitor() {
         </SectionCard>
       </div>
 
+      {/* AI SELF-HEALING ENGINE ACTIVITY LOG */}
+      {report?.healedActions && report.healedActions.length > 0 && (
+        <SectionCard title="🤖 AI Self-Healing Activity Log" subtitle="Real-time automated issue remediation">
+          <div className="space-y-2 text-xs">
+            {report.healedActions.map((action, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>{action}</span>
+                <StatusPill tone="success" className="ml-auto">Healed</StatusPill>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
       {/* DEEP API CONTROLLERS & DATABASE ENTITY AUDIT */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {/* API Controllers Audit */}

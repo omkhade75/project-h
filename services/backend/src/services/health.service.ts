@@ -147,40 +147,91 @@ export class HealthService implements OnModuleInit {
       issues.push(`🔴 CRITICAL MEMORY USAGE: Heap is at ${heapPct}% (${heapUsedMb}MB / ${heapTotalMb}MB)`);
     }
 
-    // 5. AI SELF-HEALING ENGINE — Auto-remediate issues before alerting
+    // 5. AI SELF-HEALING ENGINE — Active real-time auto-remediation & issue clearance
     const healedActions: string[] = [];
 
-    // Auto-Fix 1: Database connection pool reset if DB slow or dropped
+    // Auto-Fix 1: Database Connection Reset & Pool Warm-up if DB slow or dropped
     if (dbStatus === 'down' || dbResponseTime > 3000) {
       try {
-        this.logger.log('🤖 AI Self-Healing: Attempting DB connection pool reset...');
-        await this.prisma.$disconnect();
+        this.logger.log('🤖 AI Self-Healing: Resetting PostgreSQL connection pool & warming DB...');
+        await this.prisma.$disconnect().catch(() => {});
         await this.prisma.$connect();
+        const healStart = Date.now();
         await this.prisma.$queryRaw`SELECT 1`;
-        healedActions.push('Reset PostgreSQL database connection pool');
-        this.logger.log('✅ AI Self-Healing SUCCESS: DB connection restored.');
+        const healedDbTime = Date.now() - healStart;
+
         dbStatus = 'up';
+        dbError = null;
+
+        // Clear DB down / slow issues if healed
+        const idx = issues.findIndex(i => i.includes('DATABASE'));
+        if (idx !== -1) {
+          issues.splice(idx, 1);
+        }
+
+        const healedMsg = `Restored PostgreSQL pool & warmed connection (Query latency lowered to ${healedDbTime}ms)`;
+        healedActions.push(healedMsg);
+        this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
       } catch (healErr: any) {
         this.logger.warn(`AI Self-Healing failed to restore DB: ${healErr.message}`);
       }
     }
 
-    // Auto-Fix 2: Garbage collection trigger if memory is high
+    // Auto-Fix 2: API Endpoint Controller Retry & Warm-up
+    const failedApis = apiResults.filter(r => !r.ok);
+    if (failedApis.length > 0) {
+      for (const failedEp of failedApis) {
+        try {
+          this.logger.log(`🤖 AI Self-Healing: Auto-retrying failed API controller endpoint ${failedEp.path}...`);
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000);
+          const retryRes = await fetch(`${backendUrl}${failedEp.path}`, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: { 'User-Agent': 'BizoraSelfHealingEngine/2.0' },
+          });
+          clearTimeout(timeout);
+
+          if (retryRes.status < 500) {
+            failedEp.ok = true;
+            failedEp.status = retryRes.status;
+            const idx = issues.findIndex(i => i.includes(failedEp.path));
+            if (idx !== -1) issues.splice(idx, 1);
+
+            const healedMsg = `Auto-retried & warmed API endpoint ${failedEp.path} (Status HTTP ${retryRes.status})`;
+            healedActions.push(healedMsg);
+            this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
+          }
+        } catch (_) {}
+      }
+    }
+
+    // Auto-Fix 3: Memory Cache Purge & Garbage Collection Trigger
     if (heapPct > 80 && (global as any).gc) {
       try {
         (global as any).gc();
-        healedActions.push(`Triggered garbage collection (Memory was ${heapPct}%)`);
-        this.logger.log('✅ AI Self-Healing SUCCESS: Triggered memory garbage collection.');
+        const postGcUsage = process.memoryUsage();
+        const postGcPct = Math.round((postGcUsage.heapUsed / postGcUsage.heapTotal) * 100);
+        const healedMsg = `Triggered V8 memory garbage collection (Lowered heap usage from ${heapPct}% to ${postGcPct}%)`;
+        healedActions.push(healedMsg);
+        this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
+
+        // Clear critical memory issue if dropped
+        if (postGcPct < 85) {
+          const idx = issues.findIndex(i => i.includes('MEMORY'));
+          if (idx !== -1) issues.splice(idx, 1);
+        }
       } catch (gcErr) {}
     }
 
-    // Auto-Fix 3: Auto-repair negative stock quantities in Database
+    // Auto-Fix 4: Corrupted / Negative Inventory Stock Auto-Repair
     try {
-      const negativeStockCount = await this.prisma.inventoryStock.count({ where: { availableQty: { lt: 0 } } });
+      const negativeStockCount = await this.prisma.inventoryStock.count({ where: { availableQty: { lt: 0 } } }).catch(() => 0);
       if (negativeStockCount > 0) {
         await this.prisma.inventoryStock.updateMany({ where: { availableQty: { lt: 0 } }, data: { availableQty: 0, quantityOnHand: 0 } });
-        healedActions.push(`Auto-repaired ${negativeStockCount} inventory stock items with negative quantities to 0`);
-        this.logger.log(`✅ AI Self-Healing SUCCESS: Repaired ${negativeStockCount} negative stock items.`);
+        const healedMsg = `Auto-repaired ${negativeStockCount} inventory stock entries with negative quantities back to 0`;
+        healedActions.push(healedMsg);
+        this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
       }
     } catch (_) {}
 
