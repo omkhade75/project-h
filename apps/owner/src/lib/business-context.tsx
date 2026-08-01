@@ -78,6 +78,7 @@ interface BusinessDataCtx {
   logistics: DeliveryItem[];
   staff: StaffListItem[];
   forceRefresh: () => void;
+  dataVersion: number;
 
   // Scoped lists based on Active Date / Time Range / Role
   scopedProducts: Product[];
@@ -619,6 +620,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         logistics,
         staff,
         forceRefresh,
+        dataVersion: dbRev + syncRev,
         scopedProducts,
         scopedTransactions,
         scopedCustomers,

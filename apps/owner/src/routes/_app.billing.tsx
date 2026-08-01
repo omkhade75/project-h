@@ -61,7 +61,7 @@ export const Route = createFileRoute("/_app/billing")({
 
 function RouteComponent() {
   const { user } = useAuth();
-  const { activeDate, products: ctxProducts, customers: ctxCustomers, forceRefresh } = useBusinessData();
+  const { activeDate, products: ctxProducts, customers: ctxCustomers, forceRefresh, dataVersion } = useBusinessData();
 
   // Data states
   const [products, setProducts] = useState<ProductListItem[]>([]);
@@ -226,7 +226,7 @@ function RouteComponent() {
 
   useEffect(() => {
     loadData();
-  }, [user]);
+  }, [user, dataVersion]);
 
   // Auto-detect department based on cart items
   useEffect(() => {

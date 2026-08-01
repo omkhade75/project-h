@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_app/transactions")({
 });
 
 function Transactions() {
-  const { openCustomer360, transactions: localDbTransactions } = useBusinessData();
+  const { openCustomer360, transactions: localDbTransactions, dataVersion } = useBusinessData();
   const { user } = useAuth();
 
   const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
@@ -103,7 +103,7 @@ function Transactions() {
 
   useEffect(() => {
     loadTransactions();
-  }, [user, localDbTransactions.length]);
+  }, [user, localDbTransactions.length, dataVersion]);
 
   // Split into B2B (business customer), B2C (registered), and Walk-in (unregistered)
   const b2bTransactions = transactions.filter((t) => t.customerType === "B2B");

@@ -89,6 +89,7 @@ const defaultRegisteredCustomer: CustomerListItem = {
 
 export function CustomersPage() {
   const { user } = useAuth();
+  const { dataVersion } = useBusinessData();
   const [search, setSearch] = useState("");
   const [loyaltyTier, setLoyaltyTier] = useState("all");
   const [segment, setSegment] = useState("all");
@@ -240,7 +241,7 @@ export function CustomersPage() {
 
   useEffect(() => {
     loadCustomers();
-  }, [search, loyaltyTier, segment, status, sortBy, sortOrder, user]);
+  }, [search, loyaltyTier, segment, status, sortBy, sortOrder, user, dataVersion]);
 
   // Handle Add Customer
   const handleAddCustomer = async (e: React.FormEvent) => {
