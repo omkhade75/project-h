@@ -45,27 +45,46 @@ export class HealthService implements OnModuleInit {
     // 1. DATABASE CONNECTION & SCHEMA INTEGRITY AUDIT
     const dbStartTime = Date.now();
     const entityCounts: Record<string, number> = {};
-    try {
-      await this.prisma.$connect().catch(() => {});
-      await this.prisma.$queryRaw`SELECT 1`;
+    let isDbConnected = false;
 
-      // Deep entity count checks (safely default to 0 if table empty or pending push)
-      entityCounts.products = await this.prisma.product.count().catch(() => 0);
-      entityCounts.transactions = await this.prisma.transaction.count().catch(() => 0);
-      entityCounts.customers = await this.prisma.customer.count().catch(() => 0);
-      entityCounts.suppliers = this.prisma.supplier ? await this.prisma.supplier.count().catch(() => 0) : 0;
-      entityCounts.expenses = await this.prisma.expense.count().catch(() => 0);
-      entityCounts.purchaseOrders = await this.prisma.purchaseOrder.count().catch(() => 0);
-      entityCounts.users = await this.prisma.user.count().catch(() => 0);
-      entityCounts.workspaces = await this.prisma.workspace.count().catch(() => 0);
-    } catch (err: any) {
-      dbStatus = 'down';
-      dbError = err.message;
-      issues.push(`🔴 DATABASE CRITICAL DOWN: ${err.message}`);
+    try {
+      await this.prisma.$connect();
+      isDbConnected = true;
+    } catch (connErr: any) {
+      dbStatus = 'offline';
+      dbError = connErr.message || 'Database connection unconfigured or offline';
+    }
+
+    if (isDbConnected) {
+      try {
+        await this.prisma.$queryRaw`SELECT 1`;
+
+        // Deep entity count checks (safely default to 0 if table empty or pending push)
+        entityCounts.products = await this.prisma.product.count().catch(() => 0);
+        entityCounts.transactions = await this.prisma.transaction.count().catch(() => 0);
+        entityCounts.customers = await this.prisma.customer.count().catch(() => 0);
+        entityCounts.suppliers = this.prisma.supplier ? await this.prisma.supplier.count().catch(() => 0) : 0;
+        entityCounts.expenses = await this.prisma.expense.count().catch(() => 0);
+        entityCounts.purchaseOrders = await this.prisma.purchaseOrder.count().catch(() => 0);
+        entityCounts.users = await this.prisma.user.count().catch(() => 0);
+        entityCounts.workspaces = await this.prisma.workspace.count().catch(() => 0);
+      } catch (err: any) {
+        dbStatus = 'degraded';
+        dbError = err.message;
+      }
+    } else {
+      entityCounts.products = 0;
+      entityCounts.transactions = 0;
+      entityCounts.customers = 0;
+      entityCounts.suppliers = 0;
+      entityCounts.expenses = 0;
+      entityCounts.purchaseOrders = 0;
+      entityCounts.users = 0;
+      entityCounts.workspaces = 0;
     }
 
     const dbResponseTime = Date.now() - dbStartTime;
-    if (dbResponseTime > 5000) {
+    if (isDbConnected && dbResponseTime > 5000) {
       issues.push(`⚠️ DATABASE SLOW: Response time ${dbResponseTime}ms (>5s threshold)`);
     }
 
