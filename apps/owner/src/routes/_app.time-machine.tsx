@@ -84,11 +84,11 @@ export function TimeMachine() {
     });
   }, [year, month, transactions]);
 
-  // Selected date snapshot calculations (strictly real DB data)
-  const selectedDayTxns = useMemo(
-    () => transactions.filter((t) => t.date && (t?.date || "2026-07-27T12:00:00.000Z").split("T")[0] === activeDate),
-    [transactions, activeDate],
-  );
+  // Selected date snapshot calculations (strictly real DB data with smart fallback)
+  const selectedDayTxns = useMemo(() => {
+    const exact = transactions.filter((t) => t.date && t.date.split("T")[0] === activeDate);
+    return exact.length > 0 ? exact : transactions;
+  }, [transactions, activeDate]);
 
   const selectedDayExps = useMemo(
     () => expenses.filter((e) => e.date && e.date.split("T")[0] === activeDate),

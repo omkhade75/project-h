@@ -67,9 +67,21 @@ export function LiveOps() {
     staff,
   } = useBusinessData();
 
-  // Filter transactions to the current active date
-  const activeDateStr = (activeDate || "2026-07-27T12:00:00.000Z").split("T")[0];
-  const dayTxns = transactions.filter((t) => t.date && (t?.date || "2026-07-27T12:00:00.000Z").split("T")[0] === activeDateStr);
+  // Filter transactions to the current active date with smart fallback for imported data
+  const activeDateStr = (activeDate || new Date().toISOString().split("T")[0]).split("T")[0];
+  const exactDayTxns = transactions.filter((t) => t.date && t.date.split("T")[0] === activeDateStr);
+  const dayTxns = exactDayTxns.length > 0 ? exactDayTxns : transactions;
+
+  const getTxnHour = (t: any): number => {
+    if (t.time && typeof t.time === "string" && t.time.includes(":")) {
+      return parseInt(t.time.split(":")[0], 10);
+    }
+    if (t.date && typeof t.date === "string" && t.date.includes("T")) {
+      const timePart = t.date.split("T")[1];
+      if (timePart) return parseInt(timePart.split(":")[0], 10);
+    }
+    return 12;
+  };
 
   // Real operational computations
   const totalFootfallNum = dayTxns.length > 0 ? dayTxns.length * 2 : 0;
@@ -79,17 +91,13 @@ export function LiveOps() {
 
   const displayStaff = (staff.length || 0).toString();
 
-  const currentHour = 14;
+  const currentHour = new Date().getHours();
   const salesThisHourVal = dayTxns
-    .filter((t) => {
-      try {
-        return new Date(t.date).getHours() === currentHour;
-      } catch {
-        return false;
-      }
-    })
+    .filter((t) => getTxnHour(t) === currentHour || (currentHour < 9 && getTxnHour(t) <= 12))
     .reduce((sum, t) => sum + (t.total || 0), 0);
-  const displaySalesThisHour = `₹${(salesThisHourVal / 100000).toFixed(2)}L`;
+  const displaySalesThisHour = salesThisHourVal >= 100000 
+    ? `₹${(salesThisHourVal / 100000).toFixed(2)}L` 
+    : `₹${salesThisHourVal.toLocaleString("en-IN")}`;
 
   const displayTxnMin = (dayTxns.length > 0 ? (dayTxns.length / 60).toFixed(1) : "0.0");
 
@@ -98,13 +106,7 @@ export function LiveOps() {
     const hourNum = 9 + i;
     const hourStr = `${String(hourNum).padStart(2, "0")}:00`;
     const liveSales = dayTxns
-      .filter((t) => {
-        try {
-          return new Date(t.date).getHours() === hourNum;
-        } catch {
-          return false;
-        }
-      })
+      .filter((t) => getTxnHour(t) === hourNum)
       .reduce((sum, t) => sum + (t.total || 0), 0);
 
     return {
