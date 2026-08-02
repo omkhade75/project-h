@@ -1271,21 +1271,25 @@ class SeededDatabase {
     this.save(seedData);
   }
 
-  // Aggregate daily statistics for the Time Machine
+  // Aggregate daily statistics for the Time Machine & AI Reasoning
   public getDailySnapshot(date: string): DailySnapshot {
-    const txns = this.schema.transactions.filter((t) => t.date === date);
-    const exps = this.schema.expenses.filter((e) => e.date === date);
+    const targetDateStr = (date || new Date().toISOString().split("T")[0]).split("T")[0];
+    const exactTxns = this.schema.transactions.filter((t) => t.date && t.date.split("T")[0] === targetDateStr);
+    const exactExps = this.schema.expenses.filter((e) => e.date && e.date.split("T")[0] === targetDateStr);
+
+    const txns = exactTxns.length > 0 ? exactTxns : this.schema.transactions;
+    const exps = exactExps.length > 0 ? exactExps : this.schema.expenses;
 
     const grossRevenue = txns.reduce(
-      (sum, t) => (t.status === "Completed" ? sum + t.total : sum),
+      (sum, t) => (t.status === "Completed" ? sum + (t.total || 0) : sum),
       0,
     );
     const orders = txns.length;
-    const refunds = txns.reduce((sum, t) => (t.status === "Refunded" ? sum + t.total : sum), 0);
-    const discounts = txns.reduce((sum, t) => sum + t.discount, 0);
+    const refunds = txns.reduce((sum, t) => (t.status === "Refunded" ? sum + (t.total || 0) : sum), 0);
+    const discounts = txns.reduce((sum, t) => sum + (t.discount || 0), 0);
 
     // Expenses
-    const expenses = exps.reduce((sum, e) => sum + e.amount, 0);
+    const expenses = exps.reduce((sum, e) => sum + (e.amount || 0), 0);
 
     const hasData = orders > 0 || exps.length > 0;
     const footfall = hasData ? Math.round(orders * 4.2) : 0;
@@ -1296,7 +1300,7 @@ class SeededDatabase {
     const netProfit = grossRevenue > 0 ? Math.round(grossRevenue * 0.16) - expenses : 0;
 
     return {
-      date,
+      date: targetDateStr,
       grossRevenue,
       netProfit,
       orders,
