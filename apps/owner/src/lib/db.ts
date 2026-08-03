@@ -1189,15 +1189,42 @@ class SeededDatabase {
   }
 
   public getSuppliers(): Supplier[] {
-    return this.schema.suppliers || [];
+    const memory = this.schema.suppliers || [];
+    let custom: Supplier[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        const stored = window.localStorage.getItem("bizora_custom_suppliers");
+        if (stored) custom = JSON.parse(stored);
+      } catch (e) {}
+    }
+    const combinedMap = new Map<string, Supplier>();
+    memory.forEach((s) => {
+      if (s) combinedMap.set(s.id || s.email, s);
+    });
+    custom.forEach((s) => {
+      if (s) combinedMap.set(s.id || s.email, s);
+    });
+    return Array.from(combinedMap.values());
   }
 
   public addSupplier(s: Supplier) {
     if (!this.schema.suppliers) this.schema.suppliers = [];
-    const exists = this.schema.suppliers.some(x => x.id === s.id || (x.email && x.email === s.email));
+    const exists = this.schema.suppliers.some(
+      (x) => x.id === s.id || (x.email && x.email === s.email),
+    );
     if (!exists) {
       this.schema.suppliers = [s, ...this.schema.suppliers];
       this.save(this.schema);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const stored = window.localStorage.getItem("bizora_custom_suppliers");
+        const list: Supplier[] = stored ? JSON.parse(stored) : [];
+        if (!list.some((x) => x.id === s.id || (x.email && x.email === s.email))) {
+          list.unshift(s);
+          window.localStorage.setItem("bizora_custom_suppliers", JSON.stringify(list));
+        }
+      } catch (e) {}
     }
   }
 

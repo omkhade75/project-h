@@ -8,7 +8,10 @@ export class SuppliersService {
   async findAll(workspaceId: string) {
     try {
       if (this.db?.client?.supplier) {
-        return await this.db.client.supplier.findMany({ where: { workspaceId } });
+        const suppliers = await this.db.client.supplier.findMany({
+          where: { OR: [{ workspaceId }, { workspaceId: null }, { workspaceId: '' }] }
+        });
+        return suppliers;
       }
       return [];
     } catch (e) {
@@ -19,11 +22,22 @@ export class SuppliersService {
 
   async create(data: any, workspaceId: string) {
     try {
+      const cleanData = {
+        name: String(data.name || 'New Supplier'),
+        contactPerson: String(data.contactPerson || data.contact || data.name || 'Contact'),
+        email: String(data.email || 'supplier@store.com'),
+        phone: String(data.phone || '+910000000000'),
+        address: String(data.address || 'Vendor Network'),
+        paymentTerms: String(data.paymentTerms || 'Net 30'),
+        leadTimeDays: Number(data.leadTimeDays || data.lead) || 5,
+        workspaceId: workspaceId || 'ws-grand-square-mall',
+      };
       if (this.db?.client?.supplier) {
-        return await this.db.client.supplier.create({ data: { ...data, workspaceId } });
+        return await this.db.client.supplier.create({ data: cleanData as any });
       }
-      return { id: 'sup-' + Date.now(), ...data, workspaceId };
-    } catch (e) {
+      return { id: 'sup-' + Date.now(), ...cleanData };
+    } catch (e: any) {
+      console.error('[SuppliersService] create error:', e?.message || e);
       return { id: 'sup-' + Date.now(), ...data, workspaceId };
     }
   }
