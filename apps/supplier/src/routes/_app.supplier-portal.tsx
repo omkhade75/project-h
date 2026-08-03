@@ -100,17 +100,13 @@ function SupplierPortal() {
         },
       ];
 
-      const safePos = Array.isArray(posRes) && posRes.length > 0 
-        ? posRes 
-        : Array.isArray(posRes?.data) && posRes.data.length > 0 
-          ? posRes.data 
-          : defaultPOs;
+      const rawPos = Array.isArray(posRes) ? posRes : Array.isArray(posRes?.data) ? posRes.data : null;
+      const rawLog = Array.isArray(logRes) ? logRes : Array.isArray(logRes?.data) ? logRes.data : null;
 
-      const safeLog = Array.isArray(logRes) && logRes.length > 0 
-        ? logRes 
-        : Array.isArray(logRes?.data) && logRes.data.length > 0 
-          ? logRes.data 
-          : defaultLogs;
+      const isDemoAccount = !user?.email || user?.email === "demo@supplier.com" || user?.email === "supplier@gmail.com";
+
+      const safePos = rawPos !== null ? rawPos : (isDemoAccount ? defaultPOs : []);
+      const safeLog = rawLog !== null ? rawLog : (isDemoAccount ? defaultLogs : []);
 
       setPurchaseOrders(safePos);
       setShipments(safeLog);
