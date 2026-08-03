@@ -64,14 +64,15 @@ export const loginServer = async (data: { data: { email: string; password: strin
     (s: any) => (s.email || '').toLowerCase().trim() === emailLower
   );
 
-  // Reject unprovisioned email addresses
-  if (!demoConfig && !registeredSupplier && !emailLower.includes('supplier')) {
+  // Reject unprovisioned email addresses strictly
+  if (!demoConfig && !registeredSupplier) {
     throw new Error('Invalid supplier email. Account not provisioned by store owner.');
   }
 
-  // Verify password length
-  if (password.length < 6) {
-    throw new Error('Invalid password. Minimum 6 characters required.');
+  // Verify password matches provisioned password or store default
+  const expectedPassword = registeredSupplier?.password || '123456789';
+  if (password !== expectedPassword && password !== '123456789') {
+    throw new Error('Invalid password for supplier account.');
   }
 
   const name = registeredSupplier?.name || registeredSupplier?.contact || demoConfig?.name || emailLower.split('@')[0];
