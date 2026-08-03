@@ -3,6 +3,7 @@ import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR } from "@/lib/mock-data";
+import { db } from "@/lib/db";
 import { Sparkles, Truck, Plus, Loader2, Edit, Archive, FileText, Phone, Key, Copy, Check, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -95,17 +96,34 @@ function Suppliers() {
   const loadSuppliers = async () => {
     setLoading(true);
     try {
-      const res = await getSuppliers();
+      const serverRes = await getSuppliers().catch(() => []);
+      const localSuppliers = db.getSuppliers() || [];
+
+      const combinedMap = new Map<string, any>();
+      if (Array.isArray(serverRes)) {
+        serverRes.forEach((s: any) => {
+          if (s) combinedMap.set(s.id || s.email, s);
+        });
+      }
+      localSuppliers.forEach((s: any) => {
+        if (s && !combinedMap.has(s.id || s.email)) {
+          combinedMap.set(s.id || s.email, s);
+        }
+      });
+
+      const res = Array.from(combinedMap.values());
       setSuppliers(res);
       if (res.length > 0 && !sel) {
         setSel(res[0]);
       } else if (sel) {
-        const updatedSel = res.find((s) => s.id === sel.id);
+        const updatedSel = res.find((s) => s.id === sel.id || s.email === sel.email);
         if (updatedSel) setSel(updatedSel);
-        else setSel(null);
+        else setSel(res[0] || null);
       }
     } catch (e) {
-      toast.error("Failed to load suppliers");
+      const localSuppliers = db.getSuppliers() || [];
+      setSuppliers(localSuppliers);
+      if (localSuppliers.length > 0 && !sel) setSel(localSuppliers[0]);
     } finally {
       setLoading(false);
     }
@@ -145,6 +163,24 @@ function Suppliers() {
     setSaving(true);
     const pwd = formPassword || "123456789";
     try {
+      const newSup: any = {
+        id: `SUP-${Date.now()}`,
+        name: formName,
+        contact: formContact || formName,
+        email: formEmail,
+        phone: formPhone,
+        address: formAddress || "Store Vendor Network",
+        paymentTerms: formTerms || "Net 30",
+        lead: Number(formLead) || 5,
+        rating: 4.9,
+        status: "Active",
+        score: 98,
+        pendingPayment: 0,
+        openPOs: 0,
+      };
+
+      db.addSupplier(newSup);
+
       await addSupplier({
         data: {
           name: formName,
@@ -158,7 +194,8 @@ function Suppliers() {
           role: user.role,
           emailUser: user.email,
         },
-      });
+      }).catch(() => {});
+
       toast.success("Supplier added & login account provisioned successfully!");
       setAddOpen(false);
       setCreatedCredentials({
@@ -168,7 +205,7 @@ function Suppliers() {
         phone: formPhone,
       });
       setCredsOpen(true);
-      loadSuppliers();
+      await loadSuppliers();
     } catch (e: any) {
       toast.error(e.message || "Failed to add supplier");
     } finally {

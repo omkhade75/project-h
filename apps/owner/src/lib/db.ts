@@ -1189,7 +1189,16 @@ class SeededDatabase {
   }
 
   public getSuppliers(): Supplier[] {
-    return this.schema.suppliers;
+    return this.schema.suppliers || [];
+  }
+
+  public addSupplier(s: Supplier) {
+    if (!this.schema.suppliers) this.schema.suppliers = [];
+    const exists = this.schema.suppliers.some(x => x.id === s.id || (x.email && x.email === s.email));
+    if (!exists) {
+      this.schema.suppliers = [s, ...this.schema.suppliers];
+      this.save(this.schema);
+    }
   }
 
   public getExpenses(): Expense[] {
