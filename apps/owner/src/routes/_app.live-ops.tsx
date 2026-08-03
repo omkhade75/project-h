@@ -10,6 +10,7 @@ import {
   Sparkles,
   Wallet,
   Activity,
+  Package,
 } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/mock-data";
 import { useBusinessData } from "@/lib/business-context";
@@ -60,6 +61,7 @@ export function LiveOps() {
   const {
     activeDate,
     transactions,
+    products,
     expenses,
     recommendations,
     anomalies,
@@ -168,9 +170,27 @@ export function LiveOps() {
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 15);
 
-  const getDeptVisitors = (deptName: string) => {
-    const deptTxnsCount = transactions.filter((tx) => tx.dept === deptName).length;
-    return deptTxnsCount;
+  const getDeptProductsCount = (deptName: string) => {
+    if (!products || products.length === 0) return 0;
+    const dLower = deptName.toLowerCase();
+    
+    return products.filter((p) => {
+      const cat = (p.category || "").toLowerCase();
+      const name = (p.name || "").toLowerCase();
+      
+      if (cat.includes(dLower) || name.includes(dLower)) return true;
+      if (dLower === "grocery" && (cat.includes("supermarket") || cat.includes("beverage") || cat.includes("dairy") || cat.includes("food") || cat.includes("snack") || cat.includes("grocery"))) return true;
+      if (dLower === "fresh produce" && (cat.includes("fruit") || cat.includes("vegetable") || cat.includes("produce") || cat.includes("fresh"))) return true;
+      if (dLower === "fashion" && (cat.includes("apparel") || cat.includes("clothing") || cat.includes("wear") || cat.includes("shirt") || cat.includes("shoe"))) return true;
+      if (dLower === "electronics" && (cat.includes("gadget") || cat.includes("tech") || cat.includes("phone") || cat.includes("audio") || cat.includes("laptop"))) return true;
+      if (dLower === "home & living" && (cat.includes("home") || cat.includes("kitchen") || cat.includes("decor") || cat.includes("furniture"))) return true;
+      if (dLower === "beauty" && (cat.includes("cosmetic") || cat.includes("skincare") || cat.includes("personal") || cat.includes("care"))) return true;
+      if (dLower === "pharmacy" && (cat.includes("health") || cat.includes("medicine") || cat.includes("pharma") || cat.includes("wellness"))) return true;
+      if (dLower === "sports" && (cat.includes("fitness") || cat.includes("sport") || cat.includes("gym"))) return true;
+      if (dLower === "kids" && (cat.includes("toy") || cat.includes("baby") || cat.includes("child"))) return true;
+      if (dLower === "food court" && (cat.includes("bakery") || cat.includes("cafe") || cat.includes("restaurant") || cat.includes("meal"))) return true;
+      return false;
+    }).length;
   };
 
   return (
@@ -251,18 +271,23 @@ export function LiveOps() {
         </SectionCard>
       </div>
 
-      <SectionCard title="Departments — live">
+      <SectionCard title="Department Inventory — Live">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-          {DEPARTMENTS.map((d) => (
-            <div key={d} className="rounded-lg border border-hairline bg-surface p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold">{d}</p>
-                <Activity className="h-3 w-3 text-primary" />
+          {DEPARTMENTS.map((d) => {
+            const count = getDeptProductsCount(d);
+            return (
+              <div key={d} className="rounded-lg border border-hairline bg-surface p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold">{d}</p>
+                  <Package className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <p className="mt-1.5 font-display text-lg font-semibold">{fmt(count)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {count === 1 ? "product added" : "products added"}
+                </p>
               </div>
-              <p className="mt-1.5 font-display text-lg font-semibold">{fmt(getDeptVisitors(d))}</p>
-              <p className="text-[10px] text-muted-foreground">visitors now</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </SectionCard>
     </div>
