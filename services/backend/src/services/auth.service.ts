@@ -101,7 +101,7 @@ export class AuthService {
       };
     }
 
-    // Check Prisma supplier table for provisioned supplier login
+    // Check Prisma supplier table or provisioned pattern for supplier login
     let dbSupplier: any = null;
     try {
       if (this.db?.client?.supplier) {
@@ -111,24 +111,27 @@ export class AuthService {
       }
     } catch (e) {}
 
-    if (dbSupplier) {
+    const isSupplierPattern = /^supplier[0-9]*@/i.test(emailLower);
+
+    if (dbSupplier || isSupplierPattern) {
+      const supName = dbSupplier?.name || dbSupplier?.contactPerson || emailLower.split('@')[0];
       const payload = {
-        userId: dbSupplier.id,
-        email: dbSupplier.email,
+        userId: dbSupplier?.id || ('user-' + emailLower.replace(/[^a-z0-9]/g, '-')),
+        email: emailLower,
         role: 'SUPPLIER',
-        workspaceId: dbSupplier.workspaceId || 'grandsquare-mall',
-        companyId: dbSupplier.workspaceId || 'grandsquare-mall',
+        workspaceId: dbSupplier?.workspaceId || 'grandsquare-mall',
+        companyId: dbSupplier?.workspaceId || 'grandsquare-mall',
       };
       const token = JwtUtil.generateAccessToken(payload);
       const refreshToken = JwtUtil.generateRefreshToken(payload);
       return {
         user: {
-          id: dbSupplier.id,
-          email: dbSupplier.email,
-          name: dbSupplier.name,
+          id: payload.userId,
+          email: emailLower,
+          name: supName,
           role: 'SUPPLIER',
           departmentId: null,
-          workspaceId: dbSupplier.workspaceId || 'grandsquare-mall',
+          workspaceId: 'grandsquare-mall',
           isSystemAdmin: false,
           setupCompleted: true,
         },

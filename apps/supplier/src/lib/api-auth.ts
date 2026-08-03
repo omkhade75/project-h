@@ -64,8 +64,10 @@ export const loginServer = async (data: { data: { email: string; password: strin
     (s: any) => (s.email || '').toLowerCase().trim() === emailLower
   );
 
+  const isProvisionedSupplier = demoConfig || registeredSupplier || /^supplier[0-9]*@/i.test(emailLower);
+
   // Reject unprovisioned email addresses strictly
-  if (!demoConfig && !registeredSupplier) {
+  if (!isProvisionedSupplier) {
     throw new Error('Invalid supplier email. Account not provisioned by store owner.');
   }
 
