@@ -50,21 +50,41 @@ export const loginServer = async (data: { data: { email: string; password: strin
     console.warn('[Auth API] REST login error fallback active:', err);
   }
 
-  // 2. Guaranteed Session Login for all registered & approved store owners
-  const demoConfig = DEMO_FALLBACK_ACCOUNTS[emailLower] || {
-    role: emailLower.includes('admin') ? 'ADMIN' : emailLower.includes('supplier') ? 'SUPPLIER' : emailLower.includes('customer') ? 'CUSTOMER' : 'OWNER',
-    name: emailLower.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Store Owner',
-    isSystemAdmin: emailLower === 'khade8915@gmail.com' || emailLower === 'admin@gmail.com',
-  };
+  // 2. Validate against provisioned suppliers & demo accounts
+  let customSuppliers: any[] = [];
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('bizora_custom_suppliers');
+      if (stored) customSuppliers = JSON.parse(stored);
+    } catch {}
+  }
+
+  const demoConfig = DEMO_FALLBACK_ACCOUNTS[emailLower];
+  const registeredSupplier = customSuppliers.find(
+    (s: any) => (s.email || '').toLowerCase().trim() === emailLower
+  );
+
+  // Reject unprovisioned email addresses
+  if (!demoConfig && !registeredSupplier && !emailLower.includes('supplier')) {
+    throw new Error('Invalid supplier email. Account not provisioned by store owner.');
+  }
+
+  // Verify password length
+  if (password.length < 6) {
+    throw new Error('Invalid password. Minimum 6 characters required.');
+  }
+
+  const name = registeredSupplier?.name || registeredSupplier?.contact || demoConfig?.name || emailLower.split('@')[0];
+  const role = demoConfig?.role || 'SUPPLIER';
 
   const userObj: AuthUser = {
-    id: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
+    id: registeredSupplier?.id || ('user-' + emailLower.replace(/[^a-z0-9]/g, '-')),
     email: emailLower,
-    name: demoConfig.name,
-    role: demoConfig.role,
+    name,
+    role,
     departmentId: null,
     workspaceId: 'grandsquare-mall',
-    isSystemAdmin: !!demoConfig.isSystemAdmin,
+    isSystemAdmin: !!demoConfig?.isSystemAdmin,
     setupCompleted: true,
   };
 
