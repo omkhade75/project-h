@@ -95,8 +95,9 @@ export class HealthService implements OnModuleInit {
     }
 
     const dbResponseTime = Date.now() - dbStartTime;
-    if (isDbConnected && dbResponseTime > 5000) {
-      issues.push(`⚠️ DATABASE SLOW: Response time ${dbResponseTime}ms (>5s threshold)`);
+    // Only flag slow DB if response time exceeds 12s AND server has passed cold boot warm-up phase (uptime > 3 mins)
+    if (isDbConnected && dbResponseTime > 12000 && process.uptime() > 180) {
+      issues.push(`⚠️ DATABASE SLOW: Response time ${dbResponseTime}ms (>12s threshold)`);
     }
 
     // 2. BACKEND API ENDPOINT CONTROLLER AUDIT
