@@ -136,24 +136,24 @@ function Suppliers() {
   const openAdd = () => {
     setFormName("");
     setFormContact("");
-    setFormEmail("supplier@gmail.com");
-    setFormPhone("+917588021256");
+    setFormEmail("");
+    setFormPhone("");
     setFormAddress("");
     setFormTerms("Net 30");
     setFormLead("5");
-    setFormPassword("123456789");
+    setFormPassword("");
     setAddOpen(true);
   };
 
   const openEdit = () => {
     if (!sel) return;
-    setFormName(sel.name);
-    setFormContact(sel.contact);
-    setFormEmail(sel.email);
-    setFormPhone(sel.phone);
-    setFormAddress(sel.address);
-    setFormTerms(sel.paymentTerms);
-    setFormLead(sel.lead.toString());
+    setFormName(sel.name || "");
+    setFormContact(sel.contact || "");
+    setFormEmail(sel.email || "");
+    setFormPhone(sel.phone || "");
+    setFormAddress(sel.address || "");
+    setFormTerms(sel.paymentTerms || "Net 30");
+    setFormLead((sel.lead || 5).toString());
     setEditOpen(true);
   };
 
@@ -175,8 +175,14 @@ function Suppliers() {
         rating: 4.9,
         status: "Active",
         score: 98,
+        spend: 0,
+        pending: 0,
         pendingPayment: 0,
         openPOs: 0,
+        onTime: 95,
+        quality: 95,
+        risk: "Low",
+        category: "General Vendor",
       };
 
       db.addSupplier(newSup);
@@ -261,7 +267,7 @@ function Suppliers() {
     }
   };
 
-  const totalPending = suppliers.reduce((sum, s) => sum + s.pending, 0);
+  const totalPending = suppliers.reduce((sum, s) => sum + (Number(s.pending) || Number(s.pendingPayment) || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -337,13 +343,13 @@ function Suppliers() {
                         <p className="font-medium">{s.name}</p>
                         <p className="text-[10px] text-muted-foreground">{s.contact}</p>
                       </td>
-                      <td className="py-2.5 text-muted-foreground">{s.category}</td>
-                      <td className="py-2.5 text-right">{fmtINR(s.spend, { compact: true })}</td>
+                      <td className="py-2.5 text-muted-foreground">{s.category || "General Vendor"}</td>
+                      <td className="py-2.5 text-right">{fmtINR(Number(s.spend) || 0, { compact: true })}</td>
                       <td className="py-2.5 text-right text-warning">
-                        {fmtINR(s.pending, { compact: true })}
+                        {fmtINR(Number(s.pending) || Number(s.pendingPayment) || 0, { compact: true })}
                       </td>
-                      <td className="py-2.5 text-right">{s.onTime}%</td>
-                      <td className="py-2.5 text-right font-semibold">{s.score}</td>
+                      <td className="py-2.5 text-right">{s.onTime ?? s.reliability ?? 95}%</td>
+                      <td className="py-2.5 text-right font-semibold">{s.score ?? 98}</td>
                       <td className="py-2.5 pl-4">
                         <StatusPill
                           tone={
@@ -354,7 +360,7 @@ function Suppliers() {
                                 : "success"
                           }
                         >
-                          {s.risk}
+                          {s.risk || "Low"}
                         </StatusPill>
                       </td>
                     </tr>
@@ -457,15 +463,15 @@ function Suppliers() {
             </div>
 
             <div className="mt-4 space-y-3">
-              <ScoreBar label="Price Competitiveness" v={94 - (100 - sel.score) / 2} />
-              <ScoreBar label="Reliability" v={sel.onTime} />
-              <ScoreBar label="Quality" v={sel.quality} />
-              <ScoreBar label="Delivery Speed" v={100 - sel.lead * 6} />
+              <ScoreBar label="Price Competitiveness" v={sel.priceCompetitiveness ?? Math.round(94 - (100 - (sel.score ?? 98)) / 2)} />
+              <ScoreBar label="Reliability" v={sel.onTime ?? sel.reliability ?? 95} />
+              <ScoreBar label="Quality" v={sel.quality ?? 95} />
+              <ScoreBar label="Delivery Speed" v={Math.max(40, 100 - (sel.lead || 5) * 6)} />
               <div className="hairline-t pt-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Overall AI Score</span>
                   <span className="font-display text-xl font-semibold text-primary">
-                    {sel.score}/100
+                    {sel.score ?? 98}/100
                   </span>
                 </div>
               </div>
