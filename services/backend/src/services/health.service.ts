@@ -1,5 +1,6 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Optional, Inject } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { MongodbService } from '../mongodb/mongodb.service';
 import * as os from 'os';
 
 const ADMIN_EMAIL = process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com';
@@ -18,7 +19,10 @@ export class HealthService implements OnModuleInit {
   private readonly logger = new Logger(HealthService.name);
   private lastAlertTime = 0; // Debounce: don't spam emails
 
-  constructor(private prisma: DatabaseService) {}
+  constructor(
+    private prisma: DatabaseService,
+    @Optional() private mongo?: MongodbService,
+  ) {}
 
   onModuleInit() {
     this.logger.log('🩺 Health Monitor initialized. Running first check in 30 seconds...');
@@ -274,11 +278,16 @@ export class HealthService implements OnModuleInit {
 
     const allIssues = [...remainingIssues, ...warnings];
 
+    const isMongoConnected = this.mongo?.isConnected || false;
+    const mongoDbStatus = isMongoConnected ? 'connected' : 'active_ha_mode';
+
     const report = {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       dbStatus,
       dbError,
+      mongoDbStatus,
+      mongoDbConnected: isMongoConnected,
       responseTimeMs: dbResponseTime,
       dbResponseTimeMs: dbResponseTime,
       totalCheckTimeMs: totalResponseTime,
