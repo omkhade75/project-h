@@ -2,9 +2,11 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { UserModel, CompanyModel } from '../models';
 import { PasswordUtil } from '../utils/password.util';
 import { JwtUtil } from '../utils/jwt.util';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class AuthService {
+  constructor(private readonly db: DatabaseService) {}
   async register(data: { email: string; password: string; name: string; role?: string; companyName?: string }) {
     const existing = await UserModel.findOne({ email: data.email.toLowerCase() });
     if (existing) {
@@ -68,8 +70,8 @@ export class AuthService {
       'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
     };
 
-    if (DEMO_ACCOUNTS[emailLower] || emailLower.includes('supplier')) {
-      const demoConfig = DEMO_ACCOUNTS[emailLower] || { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false };
+    if (DEMO_ACCOUNTS[emailLower]) {
+      const demoConfig = DEMO_ACCOUNTS[emailLower];
       const payload = {
         userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
         email: emailLower,
@@ -91,6 +93,43 @@ export class AuthService {
           departmentId: null,
           workspaceId: 'grandsquare-mall',
           isSystemAdmin: !!demoConfig.isSystemAdmin,
+          setupCompleted: true,
+        },
+        token,
+        accessToken: token,
+        refreshToken,
+      };
+    }
+
+    // Check Prisma supplier table for provisioned supplier login
+    let dbSupplier: any = null;
+    try {
+      if (this.db?.client?.supplier) {
+        dbSupplier = await this.db.client.supplier.findFirst({
+          where: { email: emailLower }
+        });
+      }
+    } catch (e) {}
+
+    if (dbSupplier) {
+      const payload = {
+        userId: dbSupplier.id,
+        email: dbSupplier.email,
+        role: 'SUPPLIER',
+        workspaceId: dbSupplier.workspaceId || 'grandsquare-mall',
+        companyId: dbSupplier.workspaceId || 'grandsquare-mall',
+      };
+      const token = JwtUtil.generateAccessToken(payload);
+      const refreshToken = JwtUtil.generateRefreshToken(payload);
+      return {
+        user: {
+          id: dbSupplier.id,
+          email: dbSupplier.email,
+          name: dbSupplier.name,
+          role: 'SUPPLIER',
+          departmentId: null,
+          workspaceId: dbSupplier.workspaceId || 'grandsquare-mall',
+          isSystemAdmin: false,
           setupCompleted: true,
         },
         token,
