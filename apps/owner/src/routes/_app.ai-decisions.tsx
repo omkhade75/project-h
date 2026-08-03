@@ -158,7 +158,8 @@ function AskBizora() {
     const ctx = buildAIContext(queryToSubmit, activeDate, user?.role);
 
     try {
-      // 1. Dispatch Gemini server action
+      const summary = getBusinessSummary(activeDate);
+      // 1. Dispatch Gemini server action with live telemetry payload
       const response = await askBizoraServer({
         data: {
           query: queryToSubmit,
@@ -167,6 +168,11 @@ function AskBizora() {
           resolvedDate: ctx.resolvedDate,
           role: user?.role || "owner",
           email: user?.email || "",
+          clientGrossRevenue: summary.grossRevenue,
+          clientOrdersCount: summary.orders,
+          clientProductsCount: products.length,
+          clientOutOfStockCount: products.filter((p) => p.stock === 0).length,
+          clientLowStockItems: products.filter((p) => p.stock <= p.reorder),
         },
       });
 

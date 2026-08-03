@@ -49,16 +49,16 @@ export class HealthService implements OnModuleInit {
 
     try {
       await this.prisma.$connect();
+      await this.prisma.$queryRaw`SELECT 1`;
       isDbConnected = true;
     } catch (connErr: any) {
+      isDbConnected = false;
       dbStatus = 'offline';
-      dbError = connErr.message || 'Database connection unconfigured or offline';
+      dbError = 'Database connection unconfigured or offline';
     }
 
     if (isDbConnected) {
       try {
-        await this.prisma.$queryRaw`SELECT 1`;
-
         // Deep entity count checks (safely default to 0 if table empty or pending push)
         entityCounts.products = await this.prisma.product.count().catch(() => 0);
         entityCounts.transactions = await this.prisma.transaction.count().catch(() => 0);
