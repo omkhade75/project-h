@@ -238,6 +238,7 @@ model Supplier {
   email              String
   phone              String
   address            String
+  password           String            @default("123456789")
   paymentTerms       String
   leadTimeDays       Int
   onTimeDeliveryRate Decimal           @default(100.00) @db.Decimal(5, 2)

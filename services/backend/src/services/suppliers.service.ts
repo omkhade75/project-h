@@ -22,12 +22,15 @@ export class SuppliersService {
 
   async create(data: any, workspaceId: string) {
     try {
+      const supplierCode = data.supplierCode || ('SUP-' + Date.now().toString(36).toUpperCase());
       const cleanData = {
+        supplierCode,
         name: String(data.name || 'New Supplier'),
         contactPerson: String(data.contactPerson || data.contact || data.name || 'Contact'),
         email: String(data.email || 'supplier@store.com'),
         phone: String(data.phone || '+910000000000'),
         address: String(data.address || 'Vendor Network'),
+        password: String(data.password || '123456789'),
         paymentTerms: String(data.paymentTerms || 'Net 30'),
         leadTimeDays: Number(data.leadTimeDays || data.lead) || 5,
         workspaceId: workspaceId || 'ws-grand-square-mall',
