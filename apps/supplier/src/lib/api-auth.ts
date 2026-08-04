@@ -64,10 +64,9 @@ export const loginServer = async (data: { data: { email: string; password: strin
     (s: any) => (s.email || '').toLowerCase().trim() === emailLower
   );
 
-  const isProvisionedSupplier = demoConfig || registeredSupplier || /^supplier[0-9]*@/i.test(emailLower);
-
-  // Reject unprovisioned email addresses strictly
-  if (!isProvisionedSupplier) {
+  // Only allow demo accounts and suppliers registered in localStorage (created by owner)
+  // Do NOT allow arbitrary emails — no regex pattern bypass
+  if (!demoConfig && !registeredSupplier) {
     throw new Error('Invalid supplier email. Account not provisioned by store owner.');
   }
 

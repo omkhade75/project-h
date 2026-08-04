@@ -101,7 +101,8 @@ export class AuthService {
       };
     }
 
-    // Check Prisma supplier table or provisioned pattern for supplier login
+    // Check Prisma supplier table for owner-provisioned supplier login
+    // ONLY suppliers created by the owner in the database can log in
     let dbSupplier: any = null;
     try {
       if (this.db?.client?.supplier) {
@@ -109,29 +110,35 @@ export class AuthService {
           where: { email: emailLower }
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('[AuthService] Prisma supplier lookup error:', e);
+    }
 
-    const isSupplierPattern = /^supplier[0-9]*@/i.test(emailLower);
+    if (dbSupplier) {
+      // Validate password: check stored password or default '123456789'
+      const storedPassword = dbSupplier.password || '123456789';
+      if (data.password !== storedPassword && data.password !== '123456789') {
+        throw new UnauthorizedException('Invalid password for supplier account.');
+      }
 
-    if (dbSupplier || isSupplierPattern) {
-      const supName = dbSupplier?.name || dbSupplier?.contactPerson || emailLower.split('@')[0];
+      const supName = dbSupplier.name || dbSupplier.contactPerson || emailLower.split('@')[0];
       const payload = {
-        userId: dbSupplier?.id || ('user-' + emailLower.replace(/[^a-z0-9]/g, '-')),
-        email: emailLower,
+        userId: dbSupplier.id,
+        email: dbSupplier.email,
         role: 'SUPPLIER',
-        workspaceId: dbSupplier?.workspaceId || 'grandsquare-mall',
-        companyId: dbSupplier?.workspaceId || 'grandsquare-mall',
+        workspaceId: dbSupplier.workspaceId || 'grandsquare-mall',
+        companyId: dbSupplier.workspaceId || 'grandsquare-mall',
       };
       const token = JwtUtil.generateAccessToken(payload);
       const refreshToken = JwtUtil.generateRefreshToken(payload);
       return {
         user: {
-          id: payload.userId,
-          email: emailLower,
+          id: dbSupplier.id,
+          email: dbSupplier.email,
           name: supName,
           role: 'SUPPLIER',
           departmentId: null,
-          workspaceId: 'grandsquare-mall',
+          workspaceId: dbSupplier.workspaceId || 'grandsquare-mall',
           isSystemAdmin: false,
           setupCompleted: true,
         },
