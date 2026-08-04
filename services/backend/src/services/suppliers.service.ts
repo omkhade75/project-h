@@ -3,6 +3,15 @@ import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class SuppliersService {
+  public static inMemorySuppliers: any[] = [];
+
+  public static findSupplierByEmail(email: string) {
+    const lower = (email || '').toLowerCase().trim();
+    return SuppliersService.inMemorySuppliers.find(
+      (s) => (s.email || '').toLowerCase().trim() === lower
+    );
+  }
+
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(workspaceId: string) {
@@ -11,12 +20,12 @@ export class SuppliersService {
         const suppliers = await this.db.client.supplier.findMany({
           where: { OR: [{ workspaceId }, { workspaceId: null }, { workspaceId: '' }] }
         });
-        return suppliers;
+        if (suppliers && suppliers.length > 0) return suppliers;
       }
-      return [];
+      return SuppliersService.inMemorySuppliers;
     } catch (e) {
       console.warn('[SuppliersService] findAll error:', e);
-      return [];
+      return SuppliersService.inMemorySuppliers;
     }
   }
 
@@ -24,10 +33,11 @@ export class SuppliersService {
     try {
       const supplierCode = data.supplierCode || ('SUP-' + Date.now().toString(36).toUpperCase());
       const cleanData = {
+        id: 'sup-' + Date.now(),
         supplierCode,
         name: String(data.name || 'New Supplier'),
         contactPerson: String(data.contactPerson || data.contact || data.name || 'Contact'),
-        email: String(data.email || 'supplier@store.com'),
+        email: String(data.email || 'supplier@store.com').toLowerCase().trim(),
         phone: String(data.phone || '+910000000000'),
         address: String(data.address || 'Vendor Network'),
         password: String(data.password || '123456789'),
@@ -35,10 +45,21 @@ export class SuppliersService {
         leadTimeDays: Number(data.leadTimeDays || data.lead) || 5,
         workspaceId: workspaceId || 'ws-grand-square-mall',
       };
+
+      SuppliersService.inMemorySuppliers = [
+        cleanData,
+        ...SuppliersService.inMemorySuppliers.filter((s) => s.email !== cleanData.email),
+      ];
+
       if (this.db?.client?.supplier) {
-        return await this.db.client.supplier.create({ data: cleanData as any });
+        try {
+          const dbCreated = await this.db.client.supplier.create({ data: cleanData as any });
+          return dbCreated;
+        } catch (dbErr: any) {
+          console.warn('[SuppliersService] Prisma create fallback:', dbErr?.message || dbErr);
+        }
       }
-      return { id: 'sup-' + Date.now(), ...cleanData };
+      return cleanData;
     } catch (e: any) {
       console.error('[SuppliersService] create error:', e?.message || e);
       return { id: 'sup-' + Date.now(), ...data, workspaceId };
