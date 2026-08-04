@@ -30,24 +30,42 @@ export const loginServer = async (data: { data: { email: string; password: strin
     throw new Error('Email and password are required.');
   }
 
-  // 1. Attempt REST backend login
+  // 1. Attempt REST backend login (direct fetch, not fetchApi which swallows errors)
   try {
-    const result = await fetchApi<{ user: AuthUser; token: string }>('/api/auth/login', {
+    const baseUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL
+      ? import.meta.env.VITE_API_URL
+      : 'https://bizora-backend-gtoe.onrender.com';
+
+    const res = await fetch(baseUrl + '/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailLower, password }),
     });
 
-    if (result.success && (result.data?.token || (result as any).token)) {
-      const token = result.data?.token || (result as any).token;
-      const user = result.data?.user || (result as any).user;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bizora_access_token', token);
-        if (user) localStorage.setItem('bizora_user_session', JSON.stringify(user));
+    const result = await res.json().catch(() => null);
+
+    if (res.ok && result) {
+      const token = result.token || result.data?.token || result.accessToken;
+      const user = result.user || result.data?.user;
+      if (token && user) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('bizora_access_token', token);
+          localStorage.setItem('bizora_user_session', JSON.stringify(user));
+        }
+        return { success: true, user };
       }
-      return { success: true, user };
+    }
+
+    // If backend explicitly rejected (401/403), don't fall through to client-side
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(result?.message || 'Invalid email or password.');
     }
   } catch (err: any) {
-    console.warn('[Auth API] REST login error fallback active:', err);
+    // If it's an auth rejection from the backend, re-throw it
+    if (err.message && !err.message.includes('fetch') && !err.message.includes('network') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
+    console.warn('[Auth API] REST backend unreachable, using fallback:', err.message);
   }
 
   // 2. Validate against provisioned suppliers & demo accounts
