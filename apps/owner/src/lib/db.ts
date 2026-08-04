@@ -1228,6 +1228,27 @@ class SeededDatabase {
     }
   }
 
+  public deleteSupplier(idOrEmail: string) {
+    if (this.schema.suppliers) {
+      this.schema.suppliers = this.schema.suppliers.filter(
+        (x) => x.id !== idOrEmail && x.email !== idOrEmail
+      );
+      this.save(this.schema);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const stored = window.localStorage.getItem("bizora_custom_suppliers");
+        if (stored) {
+          const list: Supplier[] = JSON.parse(stored);
+          const filtered = list.filter(
+            (x) => x.id !== idOrEmail && x.email !== idOrEmail
+          );
+          window.localStorage.setItem("bizora_custom_suppliers", JSON.stringify(filtered));
+        }
+      } catch (e) {}
+    }
+  }
+
   public getExpenses(): Expense[] {
     return this.schema.expenses;
   }

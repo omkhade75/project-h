@@ -4,7 +4,7 @@ import { useBusinessData } from "@/lib/business-context";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR } from "@/lib/mock-data";
 import { db } from "@/lib/db";
-import { Sparkles, Truck, Plus, Loader2, Edit, Archive, FileText, Phone, Key, Copy, Check, ExternalLink } from "lucide-react";
+import { Sparkles, Truck, Plus, Loader2, Edit, Archive, Trash2, FileText, Phone, Key, Copy, Check, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -267,6 +267,29 @@ function Suppliers() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!user || !sel) return toast.error("Unauthorized");
+    if (!confirm(`Are you sure you want to PERMANENTLY delete supplier "${sel.name}" (${sel.email || sel.id})?`)) return;
+    try {
+      db.deleteSupplier(sel.id);
+      if (sel.email) db.deleteSupplier(sel.email);
+
+      await archiveSupplierServer({
+        data: {
+          id: sel.id,
+          role: user.role,
+          emailUser: user.email,
+        },
+      }).catch(() => {});
+
+      toast.success("Supplier deleted successfully");
+      setSel(null);
+      await loadSuppliers();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete supplier");
+    }
+  };
+
   const totalPending = suppliers.reduce((sum, s) => sum + (Number(s.pending) || Number(s.pendingPayment) || 0), 0);
 
   return (
@@ -390,10 +413,18 @@ function Suppliers() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-hairline bg-surface text-xs font-semibold text-destructive hover:bg-destructive/10"
+                      className="border-hairline bg-surface text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1 text-rose-600" /> Delete
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-hairline bg-surface text-xs font-semibold text-amber-600 hover:bg-amber-50"
                       onClick={handleArchive}
                     >
-                      <Archive className="h-3 w-3 mr-1" /> Archive
+                      <Archive className="h-3 w-3 mr-1 text-amber-600" /> Archive
                     </Button>
                     <Button
                       size="sm"

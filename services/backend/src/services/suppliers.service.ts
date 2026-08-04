@@ -59,7 +59,14 @@ export class SuppliersService {
   async remove(id: string, workspaceId: string) {
     try {
       if (this.db?.client?.supplier) {
-        return await this.db.client.supplier.deleteMany({ where: { id, workspaceId } });
+        return await this.db.client.supplier.deleteMany({
+          where: {
+            OR: [
+              { id },
+              { email: id },
+            ]
+          }
+        });
       }
       return { count: 1 };
     } catch (e) {
