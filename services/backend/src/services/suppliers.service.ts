@@ -33,7 +33,6 @@ export class SuppliersService {
     try {
       const supplierCode = data.supplierCode || ('SUP-' + Date.now().toString(36).toUpperCase());
       const cleanData = {
-        id: 'sup-' + Date.now(),
         supplierCode,
         name: String(data.name || 'New Supplier'),
         contactPerson: String(data.contactPerson || data.contact || data.name || 'Contact'),
@@ -51,12 +50,44 @@ export class SuppliersService {
         ...SuppliersService.inMemorySuppliers.filter((s) => s.email !== cleanData.email),
       ];
 
-      if (this.db?.client?.supplier) {
+      if (this.db?.client) {
+        const wsId = cleanData.workspaceId;
         try {
-          const dbCreated = await this.db.client.supplier.create({ data: cleanData as any });
-          return dbCreated;
+          if (this.db.client.workspace) {
+            await this.db.client.workspace.upsert({
+              where: { id: wsId },
+              update: {},
+              create: {
+                id: wsId,
+                name: 'GrandSquare Mall Workspace',
+                status: 'ACTIVE',
+                setupCompleted: true,
+                plan: 'ENTERPRISE',
+              }
+            }).catch(() => {});
+          }
+
+          if (this.db.client.supplier) {
+            const dbCreated = await this.db.client.supplier.upsert({
+              where: {
+                email_workspaceId: {
+                  email: cleanData.email,
+                  workspaceId: wsId,
+                }
+              },
+              update: {
+                name: cleanData.name,
+                contactPerson: cleanData.contactPerson,
+                phone: cleanData.phone,
+                address: cleanData.address,
+                password: cleanData.password,
+              },
+              create: cleanData as any,
+            });
+            return dbCreated;
+          }
         } catch (dbErr: any) {
-          console.warn('[SuppliersService] Prisma create fallback:', dbErr?.message || dbErr);
+          console.warn('[SuppliersService] Prisma create/upsert error:', dbErr?.message || dbErr);
         }
       }
       return cleanData;

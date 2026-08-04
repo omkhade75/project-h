@@ -118,17 +118,6 @@ export class AuthService {
       dbSupplier = SuppliersService.findSupplierByEmail(emailLower);
     }
 
-    // Provisioned fallback for supplier accounts created in dashboard or demo vendor logins
-    if (!dbSupplier && /^supplier[0-9]*@/i.test(emailLower)) {
-      dbSupplier = {
-        id: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
-        email: emailLower,
-        name: emailLower.split('@')[0],
-        password: '123456789',
-        workspaceId: 'grandsquare-mall',
-      };
-    }
-
     if (dbSupplier) {
       // Validate password: check stored password or default '123456789'
       const storedPassword = dbSupplier.password || '123456789';
