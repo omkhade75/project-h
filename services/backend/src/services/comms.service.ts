@@ -239,31 +239,51 @@ export class CommsService {
       logId = log.id;
     } catch (dbErr) {}
 
-    // Dispatch real outbound phone call via Vapi REST API
+    // Dispatch real outbound phone call via Vapi REST API with HD trained voice & noise cancellation
     try {
-      // Build inline assistant config so Vapi speaks the correct script in Hindi
+      // Build trained inline assistant config with noise suppression and calibrated natural speech
       const vapiPayload: any = {
         phoneNumberId: config.vapiPhoneId,
         customer: {
           number: phone,
           name: recipientName,
         },
-        // Override with inline assistant so the AI speaks our exact script
         assistant: {
+          name: "Bizora AI Trained Voice Agent",
+          transcriber: {
+            provider: "deepgram",
+            model: "nova-2",
+            language: "hi",
+            smartFormat: true,
+            backgroundDenoisingEnabled: true,
+          },
           model: {
             provider: "openai",
             model: "gpt-4o-mini",
+            temperature: 0.3,
             messages: [
               {
                 role: "system",
-                content: `You are a friendly and professional Hindi-speaking customer service representative for GrandSquare Supermart powered by Bizora AI. You are calling ${recipientName}. Your job is to deliver this message clearly and naturally in Hindi/Hinglish: "${contextMsg}". Be warm, polite, and conversational. If the customer asks questions, answer helpfully. Keep the conversation brief and professional. Always speak in Hindi or Hinglish. Do not speak English unless the customer speaks English first.`,
+                content: `You are a warm, polite, and articulate Hindi-speaking AI Business Assistant for GrandSquare Supermart powered by Bizora AI. You are calling ${recipientName}.
+
+TRAINED SPEECH & VOICE CLARITY GUIDELINES:
+1. PRIMARY MESSAGE TO DELIVER: "${contextMsg}".
+2. SPEECH PACING: Speak clearly, calmly, and at a steady, natural human speed (0.9x). Use short, well-punctuated sentences with pauses so your voice sounds 100% natural, clear, and unhurried.
+3. NOISE & DISTURBANCE CONTROL: Do not stutter, rush, or repeat phrases. Eliminate awkward pauses. Keep answers polite and 1-2 sentences maximum.
+4. LANGUAGE: Always speak in respectful Hindi or natural Hinglish (e.g. "Namaste ${recipientName} ji! Main GrandSquare Supermart se Bizora AI assistant bol rahi hoon.").
+5. POLITENESS: Use respectful Indian honorifics ("ji", "Aapka dhanyavaad", "Aapka din shubh ho").`,
               },
             ],
           },
           voice: {
             provider: "azure",
             voiceId: "hi-IN-SwaraNeural",
+            speed: 0.92,
+            style: "customerservice",
           },
+          backgroundDenoisingEnabled: true,
+          responseDelaySeconds: 0.4,
+          numWordsToInterrupt: 3,
           firstMessage: `Namaste ${recipientName} ji! Main GrandSquare Supermart se Bizora AI assistant bol rahi hoon. ${contextMsg}`,
           endCallMessage: `Dhanyavaad ${recipientName} ji! Aapka din shubh ho. GrandSquare Supermart mein aapka swagat hai.`,
         },
