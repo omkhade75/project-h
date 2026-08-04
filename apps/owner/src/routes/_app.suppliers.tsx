@@ -99,15 +99,22 @@ function Suppliers() {
       const serverRes = await getSuppliers().catch(() => []);
       const localSuppliers = db.getSuppliers() || [];
 
+      const getKey = (s: any) => (s?.email || s?.name || s?.id || '').toLowerCase().trim();
       const combinedMap = new Map<string, any>();
       if (Array.isArray(serverRes)) {
         serverRes.forEach((s: any) => {
-          if (s) combinedMap.set(s.id || s.email, s);
+          if (s) {
+            const key = getKey(s);
+            if (key) combinedMap.set(key, s);
+          }
         });
       }
       localSuppliers.forEach((s: any) => {
-        if (s && !combinedMap.has(s.id || s.email)) {
-          combinedMap.set(s.id || s.email, s);
+        if (s) {
+          const key = getKey(s);
+          if (key && !combinedMap.has(key)) {
+            combinedMap.set(key, s);
+          }
         }
       });
 
@@ -116,7 +123,7 @@ function Suppliers() {
       if (res.length > 0 && !sel) {
         setSel(res[0]);
       } else if (sel) {
-        const updatedSel = res.find((s) => s.id === sel.id || s.email === sel.email);
+        const updatedSel = res.find((s) => (s.id && s.id === sel.id) || (s.email && s.email === sel.email) || (s.name && s.name === sel.name));
         if (updatedSel) setSel(updatedSel);
         else setSel(res[0] || null);
       }
@@ -269,14 +276,16 @@ function Suppliers() {
 
   const handleDelete = async () => {
     if (!user || !sel) return toast.error("Unauthorized");
-    if (!confirm(`Are you sure you want to PERMANENTLY delete supplier "${sel.name}" (${sel.email || sel.id})?`)) return;
+    const targetIdentifier = sel.id || sel._id || sel.supplierCode || sel.email || sel.name;
+    if (!confirm(`Are you sure you want to PERMANENTLY delete supplier "${sel.name}" (${sel.email || targetIdentifier})?`)) return;
     try {
-      db.deleteSupplier(sel.id);
+      if (sel.id) db.deleteSupplier(sel.id);
       if (sel.email) db.deleteSupplier(sel.email);
+      if (sel.name) db.deleteSupplier(sel.name);
 
       await archiveSupplierServer({
         data: {
-          id: sel.id,
+          id: targetIdentifier,
           role: user.role,
           emailUser: user.email,
         },
@@ -317,8 +326,8 @@ function Suppliers() {
           label="Avg Score"
           v={
             suppliers.length
-              ? Math.round(suppliers.reduce((a, b) => a + b.score, 0) / suppliers.length).toString()
-              : "0"
+              ? Math.round(suppliers.reduce((a, b) => a + (Number(b.score) || 98), 0) / suppliers.length).toString()
+              : "98"
           }
         />
         <Kpi

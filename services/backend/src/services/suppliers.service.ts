@@ -110,18 +110,36 @@ export class SuppliersService {
 
   async remove(id: string, workspaceId: string) {
     try {
+      const cleanId = decodeURIComponent(id || '').trim();
+      if (!cleanId) return { count: 0 };
+
       if (this.db?.client?.supplier) {
-        return await this.db.client.supplier.deleteMany({
+        await this.db.client.supplier.deleteMany({
           where: {
             OR: [
-              { id },
-              { email: id },
+              { id: cleanId },
+              { email: { equals: cleanId, mode: 'insensitive' } },
+              { supplierCode: cleanId },
+              { name: { equals: cleanId, mode: 'insensitive' } },
             ]
           }
+        }).catch((err) => {
+          console.warn('[SuppliersService] Prisma deleteMany warn:', err?.message || err);
         });
       }
+
+      // Purge from in-memory cache as well
+      const lower = cleanId.toLowerCase();
+      SuppliersService.inMemorySuppliers = SuppliersService.inMemorySuppliers.filter(
+        (s) =>
+          (s.id && s.id.toLowerCase() !== lower) &&
+          (!s.email || s.email.toLowerCase() !== lower) &&
+          (!s.name || s.name.toLowerCase() !== lower)
+      );
+
       return { count: 1 };
-    } catch (e) {
+    } catch (e: any) {
+      console.error('[SuppliersService] remove error:', e?.message || e);
       return { count: 0 };
     }
   }

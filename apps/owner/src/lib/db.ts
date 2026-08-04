@@ -1228,10 +1228,15 @@ class SeededDatabase {
     }
   }
 
-  public deleteSupplier(idOrEmail: string) {
+  public deleteSupplier(idOrEmailOrName: string) {
+    if (!idOrEmailOrName) return;
+    const target = idOrEmailOrName.toLowerCase().trim();
     if (this.schema.suppliers) {
       this.schema.suppliers = this.schema.suppliers.filter(
-        (x) => x.id !== idOrEmail && x.email !== idOrEmail
+        (x) =>
+          (!x.id || x.id.toLowerCase().trim() !== target) &&
+          (!x.email || x.email.toLowerCase().trim() !== target) &&
+          (!x.name || x.name.toLowerCase().trim() !== target)
       );
       this.save(this.schema);
     }
@@ -1241,7 +1246,10 @@ class SeededDatabase {
         if (stored) {
           const list: Supplier[] = JSON.parse(stored);
           const filtered = list.filter(
-            (x) => x.id !== idOrEmail && x.email !== idOrEmail
+            (x) =>
+              (!x.id || x.id.toLowerCase().trim() !== target) &&
+              (!x.email || x.email.toLowerCase().trim() !== target) &&
+              (!x.name || x.name.toLowerCase().trim() !== target)
           );
           window.localStorage.setItem("bizora_custom_suppliers", JSON.stringify(filtered));
         }

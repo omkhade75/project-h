@@ -22,8 +22,11 @@ export const editSupplierServer = async (data?: any) => {
 
 export const archiveSupplierServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
-  const id = typeof payload === 'string' ? payload : (payload?.id || payload?.supplierId);
-  return handleResponse(await fetchApi(`/api/suppliers/${id || ''}`, { method: 'DELETE' }));
+  const id = typeof payload === 'string'
+    ? payload
+    : (payload?.id || payload?._id || payload?.supplierId || payload?.email || payload?.name);
+  if (!id) return { success: false, message: 'Supplier identifier is required' };
+  return handleResponse(await fetchApi(`/api/suppliers/${encodeURIComponent(String(id).trim())}`, { method: 'DELETE' }));
 };
 
 export const getPurchaseOrdersServer = async (data?: any) => {
