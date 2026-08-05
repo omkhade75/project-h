@@ -31,7 +31,7 @@ export const Route = createFileRoute("/login")({
 function SupplierLoginPage() {
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("123456789");
+  const [pass, setPass] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { user, login } = useAuth();
   const navigate = useNavigate();

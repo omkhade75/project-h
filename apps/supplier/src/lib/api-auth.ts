@@ -61,59 +61,9 @@ export const loginServer = async (data: { data: { email: string; password: strin
       throw new Error(result?.message || 'Invalid email or password.');
     }
   } catch (err: any) {
-    // If it's an auth rejection from the backend, re-throw it
-    if (err.message && !err.message.includes('fetch') && !err.message.includes('network') && !err.message.includes('Failed to fetch')) {
-      throw err;
-    }
-    console.warn('[Auth API] REST backend unreachable, using fallback:', err.message);
+    console.error('[Auth API] REST login failed:', err);
+    throw new Error(err.message || 'Invalid credentials');
   }
-
-  // 2. Validate against provisioned suppliers & demo accounts
-  let customSuppliers: any[] = [];
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('bizora_custom_suppliers');
-      if (stored) customSuppliers = JSON.parse(stored);
-    } catch {}
-  }
-
-  const demoConfig = DEMO_FALLBACK_ACCOUNTS[emailLower];
-  const registeredSupplier = customSuppliers.find(
-    (s: any) => (s.email || '').toLowerCase().trim() === emailLower
-  );
-
-  // Only allow demo accounts and suppliers registered in localStorage (created by owner)
-  // Do NOT allow arbitrary emails — no regex pattern bypass
-  if (!demoConfig && !registeredSupplier) {
-    throw new Error('Invalid supplier email. Account not provisioned by store owner.');
-  }
-
-  // Verify password matches provisioned password or store default
-  const expectedPassword = registeredSupplier?.password || '123456789';
-  if (password !== expectedPassword && password !== '123456789') {
-    throw new Error('Invalid password for supplier account.');
-  }
-
-  const name = registeredSupplier?.name || registeredSupplier?.contact || demoConfig?.name || emailLower.split('@')[0];
-  const role = demoConfig?.role || 'SUPPLIER';
-
-  const userObj: AuthUser = {
-    id: registeredSupplier?.id || ('user-' + emailLower.replace(/[^a-z0-9]/g, '-')),
-    email: emailLower,
-    name,
-    role,
-    departmentId: null,
-    workspaceId: 'grandsquare-mall',
-    isSystemAdmin: !!demoConfig?.isSystemAdmin,
-    setupCompleted: true,
-  };
-
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('bizora_access_token', 'demo_token_' + userObj.id);
-    localStorage.setItem('bizora_user_session', JSON.stringify(userObj));
-  }
-
-  return { success: true, user: userObj };
 };
 
 export const getCurrentSessionServer = async () => {
@@ -203,3 +153,4 @@ export const stopImpersonatingServer = async () => {
     return { success: false };
   }
 };
+

@@ -8,33 +8,24 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // Default fallback session for open frontend API calls
-      request.user = {
-        userId: 'user-default-owner',
-        email: 'owner@gmail.com',
-        role: 'OWNER',
-        workspaceId: 'grandsquare-mall',
-        companyId: 'grandsquare-mall',
-      };
-      return true;
+      throw new UnauthorizedException('Authorization token required');
     }
 
     const token = authHeader.split(' ')[1];
     
     if (token.startsWith('demo_token_')) {
+      const email = token.replace('demo_token_user-', '').replace(/-/g, '@');
       let role = 'OWNER';
-      let email = 'owner@gmail.com';
-      if (token.includes('admin')) { role = 'ADMIN'; email = 'admin@gmail.com'; }
-      if (token.includes('supplier')) { role = 'SUPPLIER'; email = 'supplier@gmail.com'; }
-      if (token.includes('customer')) { role = 'CUSTOMER'; email = 'customer@gmail.com'; }
-      if (token.includes('khade')) { role = 'OWNER'; email = 'khade8915@gmail.com'; }
+      if (token.includes('admin')) { role = 'ADMIN'; }
+      if (token.includes('supplier')) { role = 'SUPPLIER'; }
+      if (token.includes('customer')) { role = 'CUSTOMER'; }
 
       request.user = {
         userId: token,
-        email,
-        role,
-        workspaceId: 'grandsquare-mall',
-        companyId: 'grandsquare-mall',
+        email: email,
+        role: role,
+        workspaceId: `ws_${email.replace(/[^a-z0-9]/g, '_')}`,
+        companyId: `ws_${email.replace(/[^a-z0-9]/g, '_')}`,
       };
       return true;
     }
@@ -45,7 +36,6 @@ export class JwtAuthGuard implements CanActivate {
       request.user = decoded;
       return true;
     } catch (error) {
-      // Try decoding payload safely without secret validation
       try {
         const decoded = jwt.decode(token);
         if (decoded) {
@@ -54,15 +44,7 @@ export class JwtAuthGuard implements CanActivate {
         }
       } catch (e) {}
 
-      // Fallback user session if token expired or invalid signature
-      request.user = {
-        userId: 'user-fallback',
-        email: 'owner@gmail.com',
-        role: 'OWNER',
-        workspaceId: 'grandsquare-mall',
-        companyId: 'grandsquare-mall',
-      };
-      return true;
+      throw new UnauthorizedException('Invalid or expired token');
     }
   }
 }

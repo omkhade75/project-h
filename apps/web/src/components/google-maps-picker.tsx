@@ -38,20 +38,20 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
           if (res.ok) {
             const data = await res.json();
             const fullAddr = data.display_name || `${data.address?.road || "Main Street"}, ${data.address?.suburb || data.address?.city || "City"}`;
-            const city = data.address?.city || data.address?.town || data.address?.suburb || "Mumbai";
-            const state = data.address?.state || "Maharashtra";
-            const country = data.address?.country || "India";
+            const city = data.address?.city || data.address?.town || data.address?.suburb || data.address?.county || data.address?.state_district || "";
+            const state = data.address?.state || "";
+            const country = data.address?.country || "";
 
             onAddressChange(fullAddr, { lat, lng, city, state, country });
             toast.success("📍 Store Location Auto-Selected from Map!");
           } else {
-            const fallbackAddr = `Store Location (${lat.toFixed(4)}, ${lng.toFixed(4)}), Mumbai, Maharashtra`;
-            onAddressChange(fallbackAddr, { lat, lng, city: "Mumbai", state: "Maharashtra", country: "India" });
+            const fallbackAddr = `Store Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+            onAddressChange(fallbackAddr, { lat, lng, city: "", state: "", country: "" });
             toast.success("📍 Store GPS Location Auto-Filled!");
           }
         } catch (err) {
-          const fallbackAddr = `Store Location (${lat.toFixed(4)}, ${lng.toFixed(4)}), Mumbai`;
-          onAddressChange(fallbackAddr, { lat, lng, city: "Mumbai", state: "Maharashtra", country: "India" });
+          const fallbackAddr = `Store Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+          onAddressChange(fallbackAddr, { lat, lng, city: "", state: "", country: "" });
           toast.success("📍 Store GPS Location Auto-Filled!");
         } finally {
           setDetecting(false);
@@ -115,3 +115,4 @@ export const GoogleMapsPicker: React.FC<GoogleMapsPickerProps> = ({
     </div>
   );
 };
+

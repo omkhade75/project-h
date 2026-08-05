@@ -79,9 +79,9 @@ function RegisterPage() {
     setFormData((prev) => ({
       ...prev,
       address: fullAddr,
-      city: details?.city || prev.city || "Mumbai",
-      state: details?.state || prev.state || "Maharashtra",
-      country: details?.country || prev.country || "India",
+      city: details?.city || prev.city || "",
+      state: details?.state || prev.state || "",
+      country: details?.country || prev.country || "",
     }));
   };
 
@@ -270,11 +270,11 @@ function RegisterPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="city">City *</Label>
-                    <Input id="city" name="city" value={formData.city} onChange={handleChange} required placeholder="Mumbai" />
+                    <Input id="city" name="city" value={formData.city} onChange={handleChange} required placeholder="e.g. Pune" />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="state">State *</Label>
-                    <Input id="state" name="state" value={formData.state} onChange={handleChange} required placeholder="Maharashtra" />
+                    <Input id="state" name="state" value={formData.state} onChange={handleChange} required placeholder="e.g. Maharashtra" />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="country">Country *</Label>
@@ -488,3 +488,4 @@ function RegisterPage() {
     </div>
   );
 }
+

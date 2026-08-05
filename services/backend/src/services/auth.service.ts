@@ -167,7 +167,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       companyId: user.companyId?.toString(),
-      workspaceId: 'grandsquare-mall',
+      workspaceId: user.companyId?.toString() || user._id.toString(),
     };
 
     const accessToken = JwtUtil.generateAccessToken(payload);
@@ -183,7 +183,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        workspaceId: 'grandsquare-mall',
+        workspaceId: payload.workspaceId,
         companyId: user.companyId,
       },
       token: accessToken,

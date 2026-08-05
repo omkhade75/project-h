@@ -47,33 +47,9 @@ export const loginServer = async (data: { data: { email: string; password: strin
       return { success: true, user };
     }
   } catch (err: any) {
-    console.warn('[Auth API] REST login error fallback active:', err);
+    console.error('[Auth API] REST login failed:', err);
+    throw new Error(err.message || 'Invalid credentials');
   }
-
-  // 2. Guaranteed Session Login for all registered & approved store owners
-  const demoConfig = DEMO_FALLBACK_ACCOUNTS[emailLower] || {
-    role: emailLower.includes('admin') ? 'ADMIN' : emailLower.includes('supplier') ? 'SUPPLIER' : emailLower.includes('customer') ? 'CUSTOMER' : 'OWNER',
-    name: emailLower.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Store Owner',
-    isSystemAdmin: emailLower === 'khade8915@gmail.com' || emailLower === 'admin@gmail.com',
-  };
-
-  const userObj: AuthUser = {
-    id: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
-    email: emailLower,
-    name: demoConfig.name,
-    role: demoConfig.role,
-    departmentId: null,
-    workspaceId: 'grandsquare-mall',
-    isSystemAdmin: !!demoConfig.isSystemAdmin,
-    setupCompleted: true,
-  };
-
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('bizora_access_token', 'demo_token_' + userObj.id);
-    localStorage.setItem('bizora_user_session', JSON.stringify(userObj));
-  }
-
-  return { success: true, user: userObj };
 };
 
 export const getCurrentSessionServer = async () => {
@@ -163,3 +139,4 @@ export const stopImpersonatingServer = async () => {
     return { success: false };
   }
 };
+

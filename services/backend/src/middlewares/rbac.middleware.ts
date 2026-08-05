@@ -11,13 +11,7 @@ export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     if (!request.user) {
-      request.user = {
-        userId: 'user-default-owner',
-        email: 'owner@gmail.com',
-        role: 'OWNER',
-        workspaceId: 'grandsquare-mall',
-        companyId: 'grandsquare-mall',
-      };
+      throw new ForbiddenException('User session required');
     }
     return true;
   }
