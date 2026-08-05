@@ -17,7 +17,15 @@ export class SystemAdminService {
     return user || { id: 'admin123', email: process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com' };
   }
 
+  public static memPendingStore: any[] = [];
   private memPending: any[] = [];
+
+  public static findApprovedRegistrationByEmail(email: string) {
+    const target = (email || '').toLowerCase().trim();
+    return SystemAdminService.memPendingStore.find(
+      (p) => p && (p.ownerEmail || '').toLowerCase().trim() === target && p.status === 'Approved'
+    );
+  }
 
   private async sendResendEmail(toEmail: string, subject: string, htmlContent: string) {
     const apiKey = process.env.RESEND_API_KEY || "re_aKZeAQDH_915aDwRpwS1JdaWsMrikuRah";
@@ -98,6 +106,7 @@ export class SystemAdminService {
 
     // Save in memory fallback so registration always shows up in Super Admin UI
     this.memPending.unshift(pendingRecord);
+    SystemAdminService.memPendingStore.unshift(pendingRecord);
 
     // 1. Dispatch Instant WhatsApp Alert to Super Admin
     const adminAlertMsg = `🔔 [NEW COMPANY REGISTRATION ALERT]\n\n🏢 Company: ${companyName}\n👤 Owner: ${ownerName}\n📱 Mobile: ${mobileNumber}\n✉️ Email: ${ownerEmail}\n📍 Location: ${city}\n\n👉 Review & Approve in Super Admin Dashboard: bizora-admin.onrender.com/system-admin`;
@@ -366,6 +375,12 @@ export class SystemAdminService {
 
     // Update in-memory registration status
     this.memPending = this.memPending.map(p => {
+      if (p.id === registration.id || p.ownerEmail === registration.ownerEmail) {
+        return { ...p, status: 'Approved' };
+      }
+      return p;
+    });
+    SystemAdminService.memPendingStore = SystemAdminService.memPendingStore.map(p => {
       if (p.id === registration.id || p.ownerEmail === registration.ownerEmail) {
         return { ...p, status: 'Approved' };
       }

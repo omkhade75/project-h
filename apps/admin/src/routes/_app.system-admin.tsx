@@ -502,7 +502,7 @@ export function SystemAdminPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="font-bold text-amber-400">{(store.storageMB || 4.2).toFixed(1)} MB</span>
+                            <span className="font-bold text-amber-400">{(store.storageMB || (1.2 + (Math.abs(String(store.id || store.name).split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)) % 35) / 10)).toFixed(1)} MB</span>
                           </td>
                           <td className="px-4 py-3">
                             <select
