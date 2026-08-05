@@ -30,36 +30,26 @@ export const loginServer = async (data: { data: { email: string; password: strin
     throw new Error('Email and password are required.');
   }
 
-  // 1. Attempt REST backend login (direct fetch, not fetchApi which swallows errors)
+  // 1. Attempt REST backend login
   try {
-    const baseUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL
-      ? import.meta.env.VITE_API_URL
-      : 'https://bizora-backend-gtoe.onrender.com';
-
-    const res = await fetch(baseUrl + '/api/auth/login', {
+    const result: any = await fetchApi('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: emailLower, password }),
+      body: JSON.stringify(payload),
     });
 
-    const result = await res.json().catch(() => null);
+    const token = result?.token || result?.accessToken || result?.data?.token || result?.data?.accessToken;
+    const user = result?.user || result?.data?.user;
 
-    if (res.ok && result) {
-      const token = result.token || result.data?.token || result.accessToken;
-      const user = result.user || result.data?.user;
-      if (token && user) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('bizora_access_token', token);
-          localStorage.setItem('bizora_user_session', JSON.stringify(user));
-        }
-        return { success: true, user };
+    if (token && user) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bizora_access_token', token);
+        localStorage.setItem('bizora_user_session', JSON.stringify(user));
       }
+      return { success: true, user };
     }
 
-    // If backend explicitly rejected (401/403), don't fall through to client-side
-    if (res.status === 401 || res.status === 403) {
-      throw new Error(result?.message || 'Invalid email or password.');
-    }
+    const errMsg = result?.message || result?.error || 'Invalid credentials';
+    throw new Error(typeof errMsg === 'string' ? errMsg : 'Invalid credentials');
   } catch (err: any) {
     console.error('[Auth API] REST login failed:', err);
     throw new Error(err.message || 'Invalid credentials');
@@ -95,16 +85,14 @@ export const getCurrentSessionServer = async () => {
     }
 
     try {
-      const result = await fetchApi<{ user: AuthUser | null }>('/api/auth/me', {
+      const result: any = await fetchApi('/api/auth/me', {
         method: 'GET',
       });
       
-      if (result.success && result.data) {
-        const user = result.data.user || result.data;
-        if (user) {
-          if (typeof window !== 'undefined') localStorage.setItem('bizora_user_session', JSON.stringify(user));
-          return { user };
-        }
+      const user = result?.user || result?.data?.user || (result?.id ? result : null);
+      if (user) {
+        if (typeof window !== 'undefined') localStorage.setItem('bizora_user_session', JSON.stringify(user));
+        return { user };
       }
     } catch (e) {}
 
