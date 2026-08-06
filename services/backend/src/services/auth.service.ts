@@ -73,6 +73,9 @@ export class AuthService {
     };
 
     if (DEMO_ACCOUNTS[emailLower]) {
+      if (data.password !== '123456789') {
+        throw new UnauthorizedException('Invalid email or password');
+      }
       const demoConfig = DEMO_ACCOUNTS[emailLower];
       const payload = {
         userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
