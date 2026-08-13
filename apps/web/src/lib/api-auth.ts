@@ -54,6 +54,8 @@ export const loginServer = async (data: { data: { email: string; password: strin
     console.error('[Auth API] REST login failed:', err);
     throw new Error(err.message || 'Invalid credentials');
   }
+};
+
 export const loginWithGoogleServer = async (data: { email: string; name?: string; googleToken?: string; picture?: string }) => {
   const emailLower = (data.email || '').toLowerCase().trim();
   if (!emailLower) {
