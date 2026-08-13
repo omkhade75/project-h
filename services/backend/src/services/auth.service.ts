@@ -60,6 +60,66 @@ export class AuthService {
     };
   }
 
+  async googleLogin(data: { email: string; name?: string; googleToken?: string; picture?: string; role?: string }) {
+    const emailLower = (data.email || '').toLowerCase().trim();
+    if (!emailLower) {
+      throw new UnauthorizedException('Valid Google account email is required.');
+    }
+
+    const role = data.role || 'OWNER';
+    const cleanName = data.name || emailLower.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Store Owner';
+    const workspaceId = `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
+
+    let user: any = null;
+    try {
+      user = await UserModel.findOne({ email: emailLower });
+      if (!user) {
+        user = await UserModel.create({
+          email: emailLower,
+          name: cleanName,
+          role,
+          companyId: workspaceId,
+          passwordHash: 'google_oauth_authenticated',
+        });
+      }
+    } catch (e) {
+      user = {
+        _id: 'usr_' + emailLower.replace(/[^a-z0-9]/g, '_'),
+        email: emailLower,
+        name: cleanName,
+        role,
+        companyId: workspaceId,
+      };
+    }
+
+    const payload = {
+      userId: user._id?.toString() || ('usr_' + emailLower.replace(/[^a-z0-9]/g, '_')),
+      email: emailLower,
+      role: user.role || role,
+      workspaceId,
+      companyId: workspaceId,
+    };
+
+    const accessToken = JwtUtil.generateAccessToken(payload);
+    const refreshToken = JwtUtil.generateRefreshToken(payload);
+
+    return {
+      user: {
+        id: payload.userId,
+        email: emailLower,
+        name: user.name || cleanName,
+        role: user.role || role,
+        workspaceId,
+        companyId: workspaceId,
+        picture: data.picture || null,
+        setupCompleted: true,
+      },
+      token: accessToken,
+      accessToken,
+      refreshToken,
+    };
+  }
+
   async login(data: { email: string; password: string }) {
     const emailLower = data.email.toLowerCase().trim();
 

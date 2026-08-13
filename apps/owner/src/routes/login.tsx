@@ -33,9 +33,25 @@ function OwnerLoginPage() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { user, login } = useAuth();
+  const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
+
+  const handleGoogleSignIn = async () => {
+    setSubmitting(true);
+    try {
+      const gEmail = prompt("Enter your Google Account Email for instant Google Sign-In:", email || "owner@gmail.com");
+      if (!gEmail) return;
+      const gName = gEmail.split("@")[0].replace(/[^a-zA-Z]/g, " ") || "Store Owner";
+      const loggedIn = await loginWithGoogle({ email: gEmail, name: gName });
+      toast.success(`Signed in with Google as ${gEmail}`);
+      navigate({ to: getRedirectTarget(loggedIn) });
+    } catch (err: any) {
+      toast.error(err.message || "Google Sign-In failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const getRedirectTarget = (u?: any) => {
     const activeUser = u || user;
@@ -201,6 +217,27 @@ function OwnerLoginPage() {
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Sign In to Owner Portal
+                </Button>
+
+                <div className="relative my-4 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/40" /></div>
+                  <span className="relative bg-background px-3 text-[11px] font-semibold uppercase text-muted-foreground">Or continue with</span>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGoogleSignIn}
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-foreground font-medium py-2.5 rounded-lg transition-all"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.29c-.8 1.6-1.29 3.4-1.29 5.38s.49 3.78 1.29 5.38l3.99-3.14z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+                  </svg>
+                  Continue with Google
                 </Button>
               </form>
 

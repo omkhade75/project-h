@@ -23,6 +23,14 @@ export class AuthController {
     return ResponseUtil.success(result, 'Login successful');
   }
 
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  async googleLogin(@Body() body: any) {
+    const payload = body?.data || body;
+    const result = await this.authService.googleLogin(payload);
+    return ResponseUtil.success(result, 'Google login successful');
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() body: any) {

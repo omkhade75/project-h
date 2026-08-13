@@ -1132,6 +1132,21 @@ export function seedDatabase(): Schema {
   };
 }
 
+export function emptyDatabase(): Schema {
+  return {
+    products: [],
+    batches: [],
+    suppliers: [],
+    customers: [],
+    transactions: [],
+    expenses: [],
+    utilities: [],
+    recommendations: [],
+    anomalies: [],
+    purchaseOrders: [],
+  };
+}
+
 class SeededDatabase {
   public schema: Schema;
   private workspaceId: string = "";
@@ -1159,9 +1174,10 @@ class SeededDatabase {
         }
       }
     }
-    const seedData = seedDatabase();
-    this.save(seedData);
-    return seedData;
+    const isDemoWorkspace = !this.workspaceId || this.workspaceId === "grandsquare-mall" || this.workspaceId === "ws_owner_gmail_com";
+    const initialData = isDemoWorkspace ? seedDatabase() : emptyDatabase();
+    this.save(initialData);
+    return initialData;
   }
 
   public save(schema: Schema) {

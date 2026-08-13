@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getCurrentSessionServer, loginServer, logoutServer, type AuthUser } from "./server-auth";
+import { getCurrentSessionServer, loginServer, loginWithGoogleServer, logoutServer, type AuthUser } from "./server-auth";
 import type { ReactNode } from "react";
 
 export type Role = "owner" | "admin" | "manager" | "staff" | "security";
@@ -20,6 +20,7 @@ interface AuthCtx {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User | undefined>;
+  loginWithGoogle: (payload: { email: string; name?: string; googleToken?: string; picture?: string }) => Promise<User | undefined>;
   logout: () => Promise<void>;
 }
 
@@ -27,6 +28,7 @@ const Ctx = createContext<AuthCtx>({
   user: null,
   loading: true,
   login: async () => undefined,
+  loginWithGoogle: async () => undefined,
   logout: async () => {},
 });
 
@@ -79,13 +81,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (payload: { email: string; name?: string; googleToken?: string; picture?: string }) => {
+    const res = await loginWithGoogleServer(payload);
+    if (res.success && res.user) {
+      const mapped = mapAuthUserToUser(res.user);
+      setUser(mapped);
+      return mapped;
+    }
+  };
+
   const logout = async () => {
     await logoutServer();
     setUser(null);
   };
 
   return (
-    <Ctx.Provider value={{ user, loading, login, logout }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ user, loading, login, loginWithGoogle, logout }}>{children}</Ctx.Provider>
   );
 }
 

@@ -3,6 +3,7 @@
 
 export {
   loginServer,
+  loginWithGoogleServer,
   getCurrentSessionServer,
   logoutServer,
   impersonateTenantServer,
