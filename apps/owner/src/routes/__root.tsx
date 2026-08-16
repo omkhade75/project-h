@@ -195,6 +195,7 @@ function RootShell({ children }: { children: ReactNode }) {
             `,
           }}
         />
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
         <HeadContent />
       </head>
       <body suppressHydrationWarning>

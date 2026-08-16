@@ -80,6 +80,22 @@ function RegisterPage() {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
+  const parseGoogleJwt = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch {
+      return null;
+    }
+  };
+
   const handleGooglePreFillSelect = (gEmail: string, gName?: string) => {
     const cleanEmail = (gEmail || "").toLowerCase().trim();
     if (!cleanEmail || !cleanEmail.includes("@")) {
@@ -96,6 +112,32 @@ function RegisterPage() {
   };
 
   const handleGooglePreFill = () => {
+    if (typeof window !== "undefined" && (window as any).google?.accounts?.id) {
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: "928475928374-example.apps.googleusercontent.com",
+          callback: (response: any) => {
+            if (response?.credential) {
+              const profile = parseGoogleJwt(response.credential);
+              if (profile?.email) {
+                handleGooglePreFillSelect(profile.email, profile.name);
+                return;
+              }
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        (window as any).google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setGoogleModalOpen(true);
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn("[Google GIS Error]", err);
+      }
+    }
     setGoogleModalOpen(true);
   };
 

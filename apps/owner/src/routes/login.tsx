@@ -47,6 +47,22 @@ function OwnerLoginPage() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
 
+  const parseGoogleJwt = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch {
+      return null;
+    }
+  };
+
   const handleGoogleAccountSelect = async (gEmail: string, gName?: string) => {
     const cleanEmail = (gEmail || "").toLowerCase().trim();
     if (!cleanEmail || !cleanEmail.includes("@")) {
@@ -64,6 +80,36 @@ function OwnerLoginPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleNativeGoogleGIS = () => {
+    if (typeof window !== "undefined" && (window as any).google?.accounts?.id) {
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: "928475928374-example.apps.googleusercontent.com",
+          callback: (response: any) => {
+            if (response?.credential) {
+              const profile = parseGoogleJwt(response.credential);
+              if (profile?.email) {
+                handleGoogleAccountSelect(profile.email, profile.name);
+                return;
+              }
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        (window as any).google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setGoogleModalOpen(true);
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn("[Google GIS Error]", err);
+      }
+    }
+    setGoogleModalOpen(true);
   };
 
   const getRedirectTarget = (u?: any) => {
@@ -240,7 +286,7 @@ function OwnerLoginPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setGoogleModalOpen(true)}
+                  onClick={handleNativeGoogleGIS}
                   disabled={submitting}
                   className="w-full flex items-center justify-center gap-2 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-foreground font-medium py-2.5 rounded-lg transition-all"
                 >
