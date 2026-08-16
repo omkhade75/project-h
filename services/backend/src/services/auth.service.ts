@@ -280,7 +280,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const workspaceId = userRecord.workspaceId || userRecord.id || ('ws_' + emailLower.replace(/[^a-z0-9]/g, '_'));
+    const workspaceId = emailLower === 'owner@gmail.com' 
+      ? 'grandsquare-mall' 
+      : (userRecord.workspaceId?.startsWith('ws_') ? userRecord.workspaceId : ('ws_' + emailLower.replace(/[^a-z0-9]/g, '_')));
     const userId = userRecord.id || userRecord._id?.toString() || ('user-' + emailLower.replace(/[^a-z0-9]/g, '-'));
 
     const payload = {

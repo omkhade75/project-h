@@ -168,11 +168,16 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     async function syncData() {
       if (!user) return;
+      if (user.workspaceId) {
+        db.setWorkspace(user.workspaceId);
+      }
       try {
         const payload = {
           data: {
             role: user.role,
             email: user.email,
+            workspaceId: user.workspaceId,
+            companyId: user.workspaceId,
             activeDate,
             timeRange,
           },

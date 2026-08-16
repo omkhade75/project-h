@@ -2,10 +2,11 @@ import { Controller, Get, Post, Put, Delete, Query, Param, Body, UseGuards, Req 
 import { ProductService } from '../services/product.service';
 import { CreateProductSchema, UpdateProductSchema } from '../validators/product.validator';
 import { Roles, RolesGuard } from '../middlewares/rbac.middleware';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ResponseUtil } from '../utils/response.util';
 
 @Controller('api/products')
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 

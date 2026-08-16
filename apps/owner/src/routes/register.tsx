@@ -31,6 +31,11 @@ function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Google Pre-Fill Modal state
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState("");
+  const [customGoogleName, setCustomGoogleName] = useState("");
+
   // Terms & Privacy Modal state
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -73,6 +78,25 @@ function RegisterPage() {
 
   const handleCheckbox = (name: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  const handleGooglePreFillSelect = (gEmail: string, gName?: string) => {
+    const cleanEmail = (gEmail || "").toLowerCase().trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      return toast.error("Please enter a valid Google email address");
+    }
+    const cleanName = gName || cleanEmail.split("@")[0].replace(/[^a-zA-Z]/g, " ") || "Store Owner";
+    setFormData((prev) => ({
+      ...prev,
+      ownerEmail: cleanEmail,
+      ownerName: cleanName,
+    }));
+    setGoogleModalOpen(false);
+    toast.success(`Pre-filled owner details from Google: ${cleanEmail}`);
+  };
+
+  const handleGooglePreFill = () => {
+    setGoogleModalOpen(true);
   };
 
   const handleAddressFromMap = (fullAddr: string, details?: { city?: string; state?: string; country?: string }) => {
@@ -500,6 +524,101 @@ function RegisterPage() {
               Accept Privacy Policy
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Google Account Selector Dialog */}
+      <Dialog open={googleModalOpen} onOpenChange={setGoogleModalOpen}>
+        <DialogContent className="sm:max-w-[425px] p-6 bg-card border-border/60">
+          <DialogHeader className="text-center space-y-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-hairline shadow-sm">
+              <svg className="h-6 w-6" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.29c-.8 1.6-1.29 3.4-1.29 5.38s.49 3.78 1.29 5.38l3.99-3.14z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+              </svg>
+            </div>
+            <DialogTitle className="text-xl font-display font-semibold">Pre-fill with Google</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Select or type your Google Account to auto-fill owner credentials
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-3">
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleGooglePreFillSelect("priyansh123@gmail.com", "Priyansh Dewan")}
+                className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-amber-500/50 bg-surface/40 hover:bg-surface transition-all text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-sm">
+                    P
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold group-hover:text-amber-400 transition-colors">Priyansh Dewan</div>
+                    <div className="text-xs text-muted-foreground">priyansh123@gmail.com</div>
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium text-emerald-500/80 bg-emerald-500/10 px-2 py-0.5 rounded">Select</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleGooglePreFillSelect("omkhade75@gmail.com", "Om Khade")}
+                className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-amber-500/50 bg-surface/40 hover:bg-surface transition-all text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-sm">
+                    O
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold group-hover:text-amber-400 transition-colors">Om Khade</div>
+                    <div className="text-xs text-muted-foreground">omkhade75@gmail.com</div>
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium text-amber-500/80 bg-amber-500/10 px-2 py-0.5 rounded">Select</span>
+              </button>
+            </div>
+
+            <div className="relative my-3 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/40" /></div>
+              <span className="relative bg-card px-2 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Or enter another Google account</span>
+            </div>
+
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="reg-google-email" className="text-xs">Google Email</Label>
+                <Input
+                  id="reg-google-email"
+                  type="email"
+                  placeholder="yourname@gmail.com"
+                  value={customGoogleEmail}
+                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                  className="bg-background text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="reg-google-name" className="text-xs">Full Name</Label>
+                <Input
+                  id="reg-google-name"
+                  placeholder="e.g. Priyansh Dewan"
+                  value={customGoogleName}
+                  onChange={(e) => setCustomGoogleName(e.target.value)}
+                  className="bg-background text-sm"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => handleGooglePreFillSelect(customGoogleEmail, customGoogleName)}
+                disabled={!customGoogleEmail}
+                className="w-full mt-2 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-medium shadow-md"
+              >
+                Use this Google Account
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -64,6 +64,9 @@ export class SystemAdminService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    const cleanEmail = ownerEmail.toLowerCase().trim();
+    const assignedWorkspaceId = cleanEmail === 'owner@gmail.com' ? 'grandsquare-mall' : `ws_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
+
     let pendingRecord;
     try {
       pendingRecord = await this.prisma.pendingRegistration.create({
@@ -74,7 +77,7 @@ export class SystemAdminService {
           gstNumber: payload.gstNumber || null,
           companyWebsite: payload.companyWebsite || null,
           ownerName,
-          ownerEmail: ownerEmail.toLowerCase(),
+          ownerEmail: cleanEmail,
           mobileNumber,
           designation: payload.designation || "Owner",
           country: payload.country || "India",
@@ -90,17 +93,22 @@ export class SystemAdminService {
           status: "Pending",
         },
       });
+      (pendingRecord as any).workspaceId = assignedWorkspaceId;
+      (pendingRecord as any).password = password;
     } catch (err: any) {
       pendingRecord = {
         id: "preg-" + Date.now(),
         companyName,
         businessType,
         ownerName,
-        ownerEmail: ownerEmail.toLowerCase(),
+        ownerEmail: cleanEmail,
         mobileNumber,
         city,
         createdAt: new Date().toISOString(),
         status: "Pending",
+        passwordHash,
+        password,
+        workspaceId: assignedWorkspaceId,
       };
     }
 
@@ -331,12 +339,15 @@ export class SystemAdminService {
       };
     }
     
-    let workspaceId = 'grandsquare-mall';
+    const cleanEmail = (registration.ownerEmail || 'priyansh123@gmail.com').toLowerCase().trim();
+    const assignedWorkspaceId = cleanEmail === 'owner@gmail.com' ? 'grandsquare-mall' : `ws_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
+    let workspaceId = assignedWorkspaceId;
 
     try {
       await this.prisma.$transaction(async (tx) => {
         const workspace = await tx.workspace.create({
           data: {
+            id: assignedWorkspaceId,
             name: registration.companyName || "Priyansh Store",
             industry: registration.industry || "Retail",
             businessType: registration.businessType || "Retail",
@@ -355,10 +366,10 @@ export class SystemAdminService {
         await tx.user.create({
           data: {
             name: registration.ownerName || "Priyansh Dewan",
-            email: (registration.ownerEmail || "priyansh123@gmail.com").toLowerCase(),
+            email: cleanEmail,
             passwordHash: registration.passwordHash || "123456789",
             role: 'OWNER',
-            workspaceId: workspace.id,
+            workspaceId: workspaceId,
             isSystemAdmin: false,
             status: 'Active',
           },
@@ -376,13 +387,13 @@ export class SystemAdminService {
     // Update in-memory registration status
     this.memPending = this.memPending.map(p => {
       if (p.id === registration.id || p.ownerEmail === registration.ownerEmail) {
-        return { ...p, status: 'Approved' };
+        return { ...p, status: 'Approved', workspaceId: assignedWorkspaceId };
       }
       return p;
     });
     SystemAdminService.memPendingStore = SystemAdminService.memPendingStore.map(p => {
       if (p.id === registration.id || p.ownerEmail === registration.ownerEmail) {
-        return { ...p, status: 'Approved' };
+        return { ...p, status: 'Approved', workspaceId: assignedWorkspaceId };
       }
       return p;
     });

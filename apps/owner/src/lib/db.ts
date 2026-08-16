@@ -1152,12 +1152,17 @@ class SeededDatabase {
   private workspaceId: string = "";
 
   constructor() {
-    this.schema = this.loadFromStorage();
+    this.schema = emptyDatabase();
+  }
+
+  public getWorkspaceId(): string {
+    return this.workspaceId;
   }
 
   public setWorkspace(workspaceId: string) {
-    if (this.workspaceId !== workspaceId) {
-      this.workspaceId = workspaceId;
+    const cleanId = (workspaceId || "").trim();
+    if (this.workspaceId !== cleanId || !this.schema || (this.schema.products.length === 0 && cleanId === "grandsquare-mall")) {
+      this.workspaceId = cleanId;
       this.schema = this.loadFromStorage();
     }
   }
@@ -1174,7 +1179,7 @@ class SeededDatabase {
         }
       }
     }
-    const isDemoWorkspace = !this.workspaceId || this.workspaceId === "grandsquare-mall" || this.workspaceId === "ws_owner_gmail_com";
+    const isDemoWorkspace = this.workspaceId === "grandsquare-mall" || this.workspaceId === "ws_owner_gmail_com";
     const initialData = isDemoWorkspace ? seedDatabase() : emptyDatabase();
     this.save(initialData);
     return initialData;

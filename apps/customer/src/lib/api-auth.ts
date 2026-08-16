@@ -79,7 +79,7 @@ export const loginWithGoogleServer = async (data: { email: string; name?: string
       return { success: true, user };
     }
 
-    const workspaceId = `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
+    const workspaceId = emailLower === 'owner@gmail.com' ? 'grandsquare-mall' : `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
     const userObj: AuthUser = {
       id: 'usr_' + emailLower.replace(/[^a-z0-9]/g, '_'),
       email: emailLower,
@@ -97,7 +97,7 @@ export const loginWithGoogleServer = async (data: { email: string; name?: string
     }
     return { success: true, user: userObj };
   } catch (err: any) {
-    const workspaceId = `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
+    const workspaceId = emailLower === 'owner@gmail.com' ? 'grandsquare-mall' : `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
     const userObj: AuthUser = {
       id: 'usr_' + emailLower.replace(/[^a-z0-9]/g, '_'),
       email: emailLower,

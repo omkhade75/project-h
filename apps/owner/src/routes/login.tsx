@@ -9,6 +9,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const loginSearchSchema = z.object({
   redirect: z.string().optional(),
@@ -33,18 +40,24 @@ function OwnerLoginPage() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState("");
+  const [customGoogleName, setCustomGoogleName] = useState("");
   const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleAccountSelect = async (gEmail: string, gName?: string) => {
+    const cleanEmail = (gEmail || "").toLowerCase().trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      return toast.error("Please enter a valid Google email address");
+    }
+    const cleanName = gName || cleanEmail.split("@")[0].replace(/[^a-zA-Z]/g, " ") || "Store Owner";
     setSubmitting(true);
     try {
-      const gEmail = prompt("Enter your Google Account Email for instant Google Sign-In:", email || "owner@gmail.com");
-      if (!gEmail) return;
-      const gName = gEmail.split("@")[0].replace(/[^a-zA-Z]/g, " ") || "Store Owner";
-      const loggedIn = await loginWithGoogle({ email: gEmail, name: gName });
-      toast.success(`Signed in with Google as ${gEmail}`);
+      const loggedIn = await loginWithGoogle({ email: cleanEmail, name: cleanName });
+      toast.success(`Authenticated with Google: ${cleanEmail}`);
+      setGoogleModalOpen(false);
       navigate({ to: getRedirectTarget(loggedIn) });
     } catch (err: any) {
       toast.error(err.message || "Google Sign-In failed");
@@ -227,7 +240,7 @@ function OwnerLoginPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={handleGoogleSignIn}
+                  onClick={() => setGoogleModalOpen(true)}
                   disabled={submitting}
                   className="w-full flex items-center justify-center gap-2 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 text-foreground font-medium py-2.5 rounded-lg transition-all"
                 >
@@ -251,6 +264,106 @@ function OwnerLoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Google One-Click Sign-In Modal */}
+      <Dialog open={googleModalOpen} onOpenChange={setGoogleModalOpen}>
+        <DialogContent className="sm:max-w-[425px] p-6 bg-card border-border/60">
+          <DialogHeader className="text-center space-y-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-surface/80 border border-hairline shadow-sm">
+              <svg className="h-6 w-6" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.29c-.8 1.6-1.29 3.4-1.29 5.38s.49 3.78 1.29 5.38l3.99-3.14z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+              </svg>
+            </div>
+            <DialogTitle className="text-xl font-display font-semibold">Sign In with Google</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Select an authorized store owner account or enter your Google email
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-3">
+            {/* Quick account presets */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleGoogleAccountSelect("owner@gmail.com", "Demo Store Owner")}
+                disabled={submitting}
+                className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-amber-500/50 bg-surface/40 hover:bg-surface transition-all text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-sm">
+                    G
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold group-hover:text-amber-400 transition-colors">GrandSquare Mall (Demo)</div>
+                    <div className="text-xs text-muted-foreground">owner@gmail.com</div>
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium text-amber-500/80 bg-amber-500/10 px-2 py-0.5 rounded">1-Click</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleGoogleAccountSelect("priyansh123@gmail.com", "Priyansh Dewan")}
+                disabled={submitting}
+                className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-amber-500/50 bg-surface/40 hover:bg-surface transition-all text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-sm">
+                    P
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold group-hover:text-amber-400 transition-colors">Priyansh Store</div>
+                    <div className="text-xs text-muted-foreground">priyansh123@gmail.com</div>
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium text-emerald-500/80 bg-emerald-500/10 px-2 py-0.5 rounded">Store</span>
+              </button>
+            </div>
+
+            {/* Custom Google account */}
+            <div className="relative my-3 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/40" /></div>
+              <span className="relative bg-card px-2 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Or use your Google account</span>
+            </div>
+
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="google-email" className="text-xs">Google Email</Label>
+                <Input
+                  id="google-email"
+                  type="email"
+                  placeholder="yourname@gmail.com"
+                  value={customGoogleEmail}
+                  onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                  className="bg-background text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="google-name" className="text-xs">Your Name (Optional)</Label>
+                <Input
+                  id="google-name"
+                  placeholder="e.g. Om Khade"
+                  value={customGoogleName}
+                  onChange={(e) => setCustomGoogleName(e.target.value)}
+                  className="bg-background text-sm"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => handleGoogleAccountSelect(customGoogleEmail, customGoogleName)}
+                disabled={submitting || !customGoogleEmail}
+                className="w-full mt-2 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-medium shadow-md"
+              >
+                {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Sign In with this Google Account
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
