@@ -112,10 +112,11 @@ function RegisterPage() {
   };
 
   const handleGooglePreFill = () => {
-    if (typeof window !== "undefined" && (window as any).google?.accounts?.id) {
+    const googleClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
+    if (googleClientId && typeof window !== "undefined" && (window as any).google?.accounts?.id) {
       try {
         (window as any).google.accounts.id.initialize({
-          client_id: "928475928374-example.apps.googleusercontent.com",
+          client_id: googleClientId,
           callback: (response: any) => {
             if (response?.credential) {
               const profile = parseGoogleJwt(response.credential);
