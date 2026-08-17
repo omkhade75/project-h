@@ -66,38 +66,96 @@ export class AuthService {
       throw new UnauthorizedException('Valid Google account email is required.');
     }
 
-    const role = data.role || 'OWNER';
-    const cleanName = data.name || emailLower.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Store Owner';
-    const workspaceId = `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
+    const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
+      'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
+      'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
+      'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
+      'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
+      'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
+    };
 
-    let user: any = null;
-    try {
-      user = await UserModel.findOne({ email: emailLower });
-      if (!user) {
-        user = await UserModel.create({
-          email: emailLower,
-          name: cleanName,
-          role,
-          companyId: workspaceId,
-          passwordHash: 'google_oauth_authenticated',
-        });
-      }
-    } catch (e) {
-      user = {
-        _id: 'usr_' + emailLower.replace(/[^a-z0-9]/g, '_'),
+    if (DEMO_ACCOUNTS[emailLower]) {
+      const demoConfig = DEMO_ACCOUNTS[emailLower];
+      const payload = {
+        userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
         email: emailLower,
-        name: cleanName,
-        role,
-        companyId: workspaceId,
+        role: demoConfig.role,
+        workspaceId: 'grandsquare-mall',
+        companyId: 'grandsquare-mall',
+        isSystemAdmin: !!demoConfig.isSystemAdmin,
+      };
+      const token = JwtUtil.generateAccessToken(payload);
+      const refreshToken = JwtUtil.generateRefreshToken(payload);
+      return {
+        user: {
+          id: payload.userId,
+          email: emailLower,
+          name: demoConfig.name,
+          role: demoConfig.role,
+          departmentId: null,
+          workspaceId: 'grandsquare-mall',
+          isSystemAdmin: !!demoConfig.isSystemAdmin,
+          setupCompleted: true,
+          companyName: 'GrandSquare Mall',
+        },
+        token,
+        accessToken: token,
+        refreshToken,
       };
     }
 
+    // Check store registration status
+    let regRecord: any = null;
+    try {
+      if (this.db?.client?.pendingRegistration) {
+        regRecord = await this.db.client.pendingRegistration.findFirst({
+          where: { ownerEmail: emailLower },
+          orderBy: { createdAt: 'desc' },
+        });
+      }
+    } catch (e) {}
+
+    if (!regRecord) {
+      regRecord = SystemAdminService.findRegistrationByEmail(emailLower);
+    }
+
+    if (regRecord) {
+      const status = (regRecord.status || '').toLowerCase();
+      if (status === 'pending') {
+        throw new UnauthorizedException('Your store registration is currently pending review and approval by the System Admin. Access will be granted once approved.');
+      }
+      if (status === 'rejected') {
+        throw new UnauthorizedException('Your store registration was rejected by the System Admin.');
+      }
+      if (status === 'suspended') {
+        throw new UnauthorizedException('Your business account has been suspended by the System Admin.');
+      }
+    } else {
+      // Check if user exists in Prisma User table
+      let dbUser: any = null;
+      try {
+        if (this.db?.client?.user) {
+          dbUser = await this.db.client.user.findFirst({ where: { email: emailLower } });
+        }
+      } catch (e) {}
+
+      if (!dbUser) {
+        throw new UnauthorizedException('No registered store found for this Google account. Please register your store first.');
+      }
+      regRecord = dbUser;
+    }
+
+    const cleanName = regRecord.ownerName || regRecord.name || data.name || emailLower.split('@')[0].replace(/[^a-zA-Z]/g, ' ') || 'Store Owner';
+    const companyName = regRecord.companyName || `${cleanName}'s Store`;
+    const workspaceId = regRecord.workspaceId || `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
+
     const payload = {
-      userId: user._id?.toString() || ('usr_' + emailLower.replace(/[^a-z0-9]/g, '_')),
+      userId: regRecord.id || ('usr_' + emailLower.replace(/[^a-z0-9]/g, '_')),
       email: emailLower,
-      role: user.role || role,
+      role: 'OWNER',
       workspaceId,
       companyId: workspaceId,
+      isSystemAdmin: false,
     };
 
     const accessToken = JwtUtil.generateAccessToken(payload);
@@ -107,10 +165,13 @@ export class AuthService {
       user: {
         id: payload.userId,
         email: emailLower,
-        name: user.name || cleanName,
-        role: user.role || role,
+        name: cleanName,
+        role: 'OWNER',
         workspaceId,
         companyId: workspaceId,
+        companyName,
+        businessType: regRecord.businessType || 'Retail',
+        industry: regRecord.industry || 'Retail',
         picture: data.picture || null,
         setupCompleted: true,
       },
@@ -257,6 +318,27 @@ export class AuthService {
     }
 
     if (!userRecord) {
+      let pendingReg: any = null;
+      try {
+        if (this.db?.client?.pendingRegistration) {
+          pendingReg = await this.db.client.pendingRegistration.findFirst({
+            where: { ownerEmail: emailLower }
+          });
+        }
+      } catch (e) {}
+      if (!pendingReg) {
+        pendingReg = SystemAdminService.findRegistrationByEmail(emailLower);
+      }
+
+      if (pendingReg) {
+        const st = (pendingReg.status || '').toLowerCase();
+        if (st === 'pending') {
+          throw new UnauthorizedException('Your store registration is currently pending review and approval by the System Admin. Access will be granted once approved.');
+        }
+        if (st === 'rejected') {
+          throw new UnauthorizedException('Your store registration was rejected by the System Admin.');
+        }
+      }
       throw new UnauthorizedException('Invalid email or password');
     }
 

@@ -75,45 +75,21 @@ export const loginWithGoogleServer = async (data: { email: string; name?: string
       if (typeof window !== 'undefined') {
         localStorage.setItem('bizora_access_token', token);
         localStorage.setItem('bizora_user_session', JSON.stringify(user));
+        if (user.companyName) {
+          localStorage.setItem(`bizora_company_name_${user.workspaceId}`, user.companyName);
+        }
+        if (user.businessType) {
+          localStorage.setItem(`bizora_store_industry_${user.workspaceId}`, user.businessType);
+        }
       }
       return { success: true, user };
     }
 
-    const workspaceId = emailLower === 'owner@gmail.com' ? 'grandsquare-mall' : `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
-    const userObj: AuthUser = {
-      id: 'usr_' + emailLower.replace(/[^a-z0-9]/g, '_'),
-      email: emailLower,
-      name: data.name || emailLower.split('@')[0],
-      role: 'OWNER',
-      departmentId: null,
-      workspaceId,
-      isSystemAdmin: emailLower === 'khade8915@gmail.com' || emailLower === 'admin@gmail.com',
-      setupCompleted: true,
-    };
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('bizora_access_token', 'google_token_' + userObj.id);
-      localStorage.setItem('bizora_user_session', JSON.stringify(userObj));
-    }
-    return { success: true, user: userObj };
+    const errMsg = result?.message || result?.error || 'Google Sign-In failed';
+    throw new Error(typeof errMsg === 'string' ? errMsg : 'Google Sign-In failed');
   } catch (err: any) {
-    const workspaceId = emailLower === 'owner@gmail.com' ? 'grandsquare-mall' : `ws_${emailLower.replace(/[^a-z0-9]/g, '_')}`;
-    const userObj: AuthUser = {
-      id: 'usr_' + emailLower.replace(/[^a-z0-9]/g, '_'),
-      email: emailLower,
-      name: data.name || emailLower.split('@')[0],
-      role: 'OWNER',
-      departmentId: null,
-      workspaceId,
-      isSystemAdmin: emailLower === 'khade8915@gmail.com' || emailLower === 'admin@gmail.com',
-      setupCompleted: true,
-    };
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('bizora_access_token', 'google_token_' + userObj.id);
-      localStorage.setItem('bizora_user_session', JSON.stringify(userObj));
-    }
-    return { success: true, user: userObj };
+    console.error('[Auth API] Google sign-in failed:', err);
+    throw new Error(err.message || 'Google Sign-In failed');
   }
 };
 

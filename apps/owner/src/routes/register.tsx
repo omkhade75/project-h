@@ -172,6 +172,13 @@ function RegisterPage() {
 
     setSubmitting(true);
     try {
+      const cleanEmail = (formData.ownerEmail || "").toLowerCase().trim();
+      const wsId = `ws_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`bizora_company_name_${wsId}`, formData.companyName);
+        localStorage.setItem(`bizora_store_industry_${wsId}`, formData.businessType);
+      }
+
       await registerCompanyServer({ data: formData });
       setSuccess(true);
     } catch (err: any) {
@@ -184,18 +191,21 @@ function RegisterPage() {
   if (success) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="card-elevated w-full max-w-md p-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+        <div className="card-elevated w-full max-w-md p-8 text-center border border-amber-500/30">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
             <CheckCircle2 className="h-8 w-8" />
           </div>
-          <h2 className="mt-6 font-display text-2xl font-semibold">Request Submitted</h2>
-          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            Your registration request has been submitted successfully.
-            <br /><br />
-            The Bizora administrator has been notified. You will receive an email after approval.
-          </p>
-          <Button className="mt-8 w-full" onClick={() => navigate({ to: "/login" })}>
-            Return to Login
+          <h2 className="mt-6 font-display text-2xl font-semibold text-foreground">Store Registration Submitted</h2>
+          <div className="mt-4 space-y-2 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Your store <strong className="text-foreground">{formData.companyName}</strong> has been registered and is currently <span className="text-amber-400 font-semibold">Pending Admin Approval</span>.
+            </p>
+            <p className="text-xs bg-surface p-3 rounded-lg border border-hairline mt-3">
+              🛡️ The Super Admin has been notified. Access will be unlocked as soon as your store is verified and approved in the System Admin dashboard.
+            </p>
+          </div>
+          <Button className="mt-8 w-full gradient-primary text-primary-foreground font-semibold" onClick={() => navigate({ to: "/login" })}>
+            Back to Login
           </Button>
         </div>
       </div>

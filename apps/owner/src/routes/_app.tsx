@@ -448,7 +448,13 @@ function AppShell() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-base font-bold tracking-tight">{"Bizora AI"}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{MALL.name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {typeof window !== "undefined" && user?.workspaceId && localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
+                  ? localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
+                  : (user?.workspaceId === "grandsquare-mall" || user?.email === "owner@gmail.com"
+                      ? "GrandSquare Mall"
+                      : (user?.name ? `${user.name}'s Store` : "Business Store"))}
+              </p>
             </div>
           )}
           {/* Close mobile menu */}

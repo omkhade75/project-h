@@ -23,7 +23,14 @@ export class SystemAdminService {
   public static findApprovedRegistrationByEmail(email: string) {
     const target = (email || '').toLowerCase().trim();
     return SystemAdminService.memPendingStore.find(
-      (p) => p && (p.ownerEmail || '').toLowerCase().trim() === target && p.status === 'Approved'
+      (p) => p && (p.ownerEmail || '').toLowerCase().trim() === target && (p.status === 'Approved' || p.status === 'approved')
+    );
+  }
+
+  public static findRegistrationByEmail(email: string) {
+    const target = (email || '').toLowerCase().trim();
+    return SystemAdminService.memPendingStore.find(
+      (p) => p && (p.ownerEmail || '').toLowerCase().trim() === target
     );
   }
 
