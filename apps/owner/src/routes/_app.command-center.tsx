@@ -31,6 +31,34 @@ import {
   PhoneCall,
   RefreshCw,
   Loader2,
+  Building2,
+  ChefHat,
+  Utensils,
+  Truck,
+  CalendarClock,
+  FileCheck,
+  Thermometer,
+  Barcode,
+  Clock,
+  HeartHandshake,
+  Grid,
+  Tag,
+  Layers,
+  Crown,
+  Cpu,
+  CreditCard,
+  Award,
+  Wrench,
+  BookOpen,
+  Navigation,
+  FileSpreadsheet,
+  Factory,
+  Package,
+  DollarSign,
+  ChevronDown,
+  Store,
+  ShieldAlert,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { KpiCard } from "@/components/kpi-card";
@@ -41,6 +69,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useBusinessData, type KpiItem } from "@/lib/business-context";
 import { getCommandCenterServer, dispatchEodReportServer, getForecastingServer } from "@/lib/server-analytics";
 import { getMessageLogsServer } from "@/lib/server-whatsapp-logs";
+import { getIndustryConfig, INDUSTRY_CONFIGS, type BusinessCategory } from "@/lib/industry-config";
 
 function greetingFor(d: Date) {
   const h = d.getHours();
@@ -109,6 +138,27 @@ export function CommandCenter() {
   ]);
   const [isSendingEod, setIsSendingEod] = useState(false);
   const [forecastData, setForecastData] = useState<any[]>([]);
+
+  // Industry-specific adaptive telemetry state
+  const [activeIndustry, setActiveIndustry] = useState<BusinessCategory>(() => {
+    if (typeof window !== "undefined" && user?.workspaceId) {
+      const saved = localStorage.getItem(`bizora_store_industry_${user.workspaceId}`);
+      if (saved && INDUSTRY_CONFIGS[saved]) return saved as BusinessCategory;
+    }
+    return (getIndustryConfig(user?.departmentId, user?.name).category) as BusinessCategory;
+  });
+
+  const handleIndustryChange = (ind: BusinessCategory) => {
+    setActiveIndustry(ind);
+    if (typeof window !== "undefined" && user?.workspaceId) {
+      localStorage.setItem(`bizora_store_industry_${user.workspaceId}`, ind);
+    }
+    toast.success(`Switched Store Operating Mode: ${ind}`);
+  };
+
+  const currentIndustryConfig = useMemo(() => {
+    return INDUSTRY_CONFIGS[activeIndustry] || INDUSTRY_CONFIGS["Retail Shop / Store"];
+  }, [activeIndustry]);
 
   const [logs, setLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
@@ -345,7 +395,192 @@ export function CommandCenter() {
         }
       />
 
-      {/* KPIs */}
+      {/* Industry Intelligence Adaptive Control Banner */}
+      <div className="relative overflow-hidden rounded-xl border border-hairline bg-gradient-to-r from-card via-surface to-card p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-hairline bg-surface/80 text-primary shadow-sm">
+              <Building2 className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${currentIndustryConfig.badgeColor}`}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                  {currentIndustryConfig.badgeTitle}
+                </span>
+                <span className="text-[11px] text-muted-foreground hidden md:inline">Adaptive Industry Telemetry</span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {currentIndustryConfig.tagline}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-center">
+            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Switch Store Vertical:</span>
+            <select
+              value={activeIndustry}
+              onChange={(e) => handleIndustryChange(e.target.value as BusinessCategory)}
+              className="rounded-lg border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm"
+            >
+              {Object.keys(INDUSTRY_CONFIGS).map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Industry-Specific Live Operational KPIs */}
+      <div>
+        <div className="flex items-center justify-between mb-2.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 text-amber-500" />
+            {currentIndustryConfig.category} Specialized Telemetry
+          </h3>
+          <span className="text-[11px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+            Live AI Telemetry
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {currentIndustryConfig.kpis.map((kpi) => (
+            <div
+              key={kpi.id}
+              className="rounded-xl border border-hairline bg-card/60 p-3.5 backdrop-blur-sm shadow-sm hover:border-hairline/80 transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                  {kpi.label}
+                </span>
+                <span className={`text-[10px] font-semibold ${kpi.color}`}>
+                  {kpi.trend}
+                </span>
+              </div>
+              <div className="mt-1.5 text-xl font-bold font-display tracking-tight text-foreground">
+                {kpi.value}
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground truncate">
+                {kpi.subtext}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Industry Real-Time Anomaly & Recommendation Highlights */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Real-time vertical anomaly */}
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-500">
+                <ShieldAlert className="h-4 w-4" />
+                Live {currentIndustryConfig.category} Radar
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                {currentIndustryConfig.realtimeAnomaly.severity} ALERT
+              </span>
+            </div>
+            <h4 className="text-sm font-semibold text-foreground">
+              {currentIndustryConfig.realtimeAnomaly.title}
+            </h4>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              {currentIndustryConfig.realtimeAnomaly.description}
+            </p>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs h-7 border-amber-500/30 hover:bg-amber-500/10 text-amber-400"
+              onClick={() => {
+                toast.success(`Autonomous mitigation dispatched for: ${currentIndustryConfig.realtimeAnomaly.title}`);
+              }}
+            >
+              Autonomously Mitigate
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs h-7 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate({ to: "/ai-decisions" as never })}
+            >
+              Investigate
+            </Button>
+          </div>
+        </div>
+
+        {/* Industry AI Recommendations (2 cards) */}
+        {currentIndustryConfig.aiRecommendations.slice(0, 2).map((rec) => (
+          <div
+            key={rec.id}
+            className="rounded-xl border border-hairline bg-card p-4 flex flex-col justify-between shadow-sm"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                  {rec.badge}
+                </span>
+                <span className="text-xs font-semibold text-emerald-400">
+                  {rec.impact}
+                </span>
+              </div>
+              <h4 className="text-sm font-semibold text-foreground mt-1">
+                {rec.title}
+              </h4>
+              <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                {rec.description}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="mt-3 w-full text-xs h-7 gradient-primary text-primary-foreground gap-1 font-medium"
+              onClick={() => {
+                toast.success(`Action executed: ${rec.actionText} (${rec.impact})`);
+              }}
+            >
+              <Sparkles className="h-3 w-3" />
+              {rec.actionText}
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      {/* Industry Workflow Shortcuts Grid */}
+      <div className="rounded-xl border border-hairline bg-card/40 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Store className="h-3.5 w-3.5 text-primary" />
+            {currentIndustryConfig.category} Workflow Operations
+          </h4>
+          <span className="text-[11px] text-muted-foreground">Quick Launch Actions</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {currentIndustryConfig.shortcuts.map((sc, idx) => (
+            <button
+              key={idx}
+              onClick={() => navigate({ to: sc.path as never })}
+              className="flex items-center gap-3 p-2.5 rounded-lg border border-hairline/60 bg-surface/40 hover:bg-surface hover:border-primary/40 transition-all text-left group"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <Store className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                  {sc.label}
+                </div>
+                <div className="text-[10px] text-muted-foreground truncate">
+                  {sc.desc}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Financial KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {(() => {
           const calcRevenue = (safeScopedTxns.length > 0 ? safeScopedTxns : safeTxns).reduce(
