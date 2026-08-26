@@ -1,6 +1,7 @@
-import { Injectable, OnModuleInit, Logger, Optional, Inject } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Optional } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { MongodbService } from '../mongodb/mongodb.service';
+import { DatabaseConfig } from '../config/database';
 import * as os from 'os';
 
 const ADMIN_EMAIL = process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com';
@@ -25,13 +26,12 @@ export class HealthService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.logger.log('🩺 Health Monitor initialized. Running first check in 30 seconds...');
-    // Run first check after 30 seconds (let backend fully boot)
+    this.logger.log('🩺 Health Monitor initialized. Running first check in 15 seconds...');
     setTimeout(() => {
       this.runFullHealthCheck();
-    }, 30 * 1000);
+    }, 15 * 1000);
 
-    // Then run every 5 minutes
+    // Run every 5 minutes
     this.startScheduledChecks();
   }
 
@@ -43,65 +43,37 @@ export class HealthService implements OnModuleInit {
     const startTime = Date.now();
     const issues: string[] = [];
     const warnings: string[] = [];
-    let dbStatus = 'up';
-    let dbError: string | null = null;
 
-    // 1. DATABASE CONNECTION & SCHEMA INTEGRITY AUDIT
-    const dbStartTime = Date.now();
-    const entityCounts: Record<string, number> = {};
-    let isDbConnected = false;
+    // 1. POSTGRESQL (SUPABASE / PRISMA) AUDIT
+    const pgHealth = await this.prisma.checkHealth();
+    let pgStatus = pgHealth.ok ? 'up' : 'down';
+    let pgError = pgHealth.error || null;
+    const pgResponseTime = pgHealth.latencyMs;
+    const entityCounts = pgHealth.entityCounts || {};
 
-    try {
-      await this.prisma.$connect();
-      await this.prisma.$queryRaw`SELECT 1`;
-      isDbConnected = true;
-      dbStatus = 'up';
-      dbError = null;
-    } catch (connErr: any) {
-      try {
-        await this.prisma.$disconnect().catch(() => {});
-        await this.prisma.$connect();
-        await this.prisma.$queryRaw`SELECT 1`;
-        isDbConnected = true;
-        dbStatus = 'up';
-        dbError = null;
-      } catch (retryErr: any) {
-        isDbConnected = true;
-        dbStatus = 'up';
-        dbError = null;
-      }
+    if (!pgHealth.ok) {
+      issues.push(`🔴 POSTGRESQL DOWN: ${pgHealth.error || 'Connection failed'}`);
+    } else if (pgResponseTime > 12000 && process.uptime() > 180) {
+      issues.push(`⚠️ POSTGRESQL SLOW: Response time ${pgResponseTime}ms (>12s threshold)`);
     }
 
-    if (isDbConnected) {
-      try {
-        // Deep entity count checks (safely default to 0 if table empty or pending push)
-        entityCounts.products = await this.prisma.product.count().catch(() => 0);
-        entityCounts.transactions = await this.prisma.transaction.count().catch(() => 0);
-        entityCounts.customers = await this.prisma.customer.count().catch(() => 0);
-        entityCounts.suppliers = this.prisma.supplier ? await this.prisma.supplier.count().catch(() => 0) : 0;
-        entityCounts.expenses = await this.prisma.expense.count().catch(() => 0);
-        entityCounts.purchaseOrders = await this.prisma.purchaseOrder.count().catch(() => 0);
-        entityCounts.users = await this.prisma.user.count().catch(() => 0);
-        entityCounts.workspaces = await this.prisma.workspace.count().catch(() => 0);
-      } catch (err: any) {
-        dbStatus = 'degraded';
-        dbError = err.message;
-      }
-    } else {
-      entityCounts.products = 0;
-      entityCounts.transactions = 0;
-      entityCounts.customers = 0;
-      entityCounts.suppliers = 0;
-      entityCounts.expenses = 0;
-      entityCounts.purchaseOrders = 0;
-      entityCounts.users = 0;
-      entityCounts.workspaces = 0;
-    }
+    // 2. MONGODB ATLAS (MONGOOSE & MONGO DRIVER) AUDIT
+    const mongoClientHealth = this.mongo
+      ? await this.mongo.checkHealth()
+      : { ok: false, latencyMs: 0, collections: [] as string[], collectionCounts: {} as Record<string, number>, error: 'Mongo service not initialized' };
+    const mongoosePing = await DatabaseConfig.ping();
+    
+    const isMongoUp = mongoClientHealth.ok || mongoosePing.ok;
+    const mongoStatus = isMongoUp ? 'up' : 'down';
+    const mongoResponseTime = Math.max(mongoClientHealth.latencyMs, mongoosePing.latencyMs);
+    const mongoCollections = mongoClientHealth.collections || [];
+    const mongoCollectionCounts = mongoClientHealth.collectionCounts || {};
+    const mongoError = isMongoUp ? null : (mongoClientHealth.error || mongoosePing.error || 'MongoDB unreachable');
 
-    const dbResponseTime = Date.now() - dbStartTime;
-    // Only flag slow DB if response time exceeds 12s AND server has passed cold boot warm-up phase (uptime > 3 mins)
-    if (isDbConnected && dbResponseTime > 12000 && process.uptime() > 180) {
-      issues.push(`⚠️ DATABASE SLOW: Response time ${dbResponseTime}ms (>12s threshold)`);
+    if (!isMongoUp) {
+      issues.push(`🔴 MONGODB DOWN: ${mongoError || 'Connection failed'}`);
+    } else if (mongoResponseTime > 12000 && process.uptime() > 180) {
+      issues.push(`⚠️ MONGODB SLOW: Response time ${mongoResponseTime}ms (>12s threshold)`);
     }
 
     // 2. BACKEND API ENDPOINT CONTROLLER AUDIT
@@ -185,34 +157,52 @@ export class HealthService implements OnModuleInit {
     // 5. AI SELF-HEALING ENGINE — Active real-time auto-remediation & issue clearance
     const healedActions: string[] = [];
 
-    // Auto-Fix 1: Database Connection Reset & Pool Warm-up if DB slow or dropped
-    if (dbStatus === 'down' || dbResponseTime > 3000) {
+    // Auto-Fix 1: PostgreSQL Connection Reset & Pool Warm-up if DB slow or dropped
+    if (pgStatus === 'down' || pgResponseTime > 5000) {
       try {
-        this.logger.log('🤖 AI Self-Healing: Resetting PostgreSQL connection pool & warming DB...');
+        this.logger.log('🤖 AI Self-Healing: Resetting PostgreSQL pool & warming Supabase connection...');
         await this.prisma.$disconnect().catch(() => {});
         await this.prisma.$connect();
         const healStart = Date.now();
         await this.prisma.$queryRaw`SELECT 1`;
         const healedDbTime = Date.now() - healStart;
 
-        dbStatus = 'up';
-        dbError = null;
+        pgStatus = 'up';
+        pgError = null;
 
-        // Clear DB down / slow issues if healed
-        const idx = issues.findIndex(i => i.includes('DATABASE'));
-        if (idx !== -1) {
-          issues.splice(idx, 1);
-        }
+        const idx = issues.findIndex(i => i.includes('POSTGRESQL'));
+        if (idx !== -1) issues.splice(idx, 1);
 
         const healedMsg = `Restored PostgreSQL pool & warmed connection (Query latency lowered to ${healedDbTime}ms)`;
         healedActions.push(healedMsg);
         this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
       } catch (healErr: any) {
-        this.logger.warn(`AI Self-Healing failed to restore DB: ${healErr.message}`);
+        this.logger.warn(`AI Self-Healing failed to restore PostgreSQL: ${healErr.message}`);
       }
     }
 
-    // Auto-Fix 2: API Endpoint Controller Retry & Warm-up
+    // Auto-Fix 2: MongoDB Connection Reset & Ping Warm-up if dropped
+    if (!isMongoUp || mongoResponseTime > 5000) {
+      try {
+        this.logger.log('🤖 AI Self-Healing: Reconnecting MongoDB Atlas client and Mongoose...');
+        await DatabaseConfig.connect();
+        if (this.mongo) {
+          await this.mongo.onModuleInit();
+        }
+        const mPing = await DatabaseConfig.ping();
+        if (mPing.ok) {
+          const idx = issues.findIndex(i => i.includes('MONGODB'));
+          if (idx !== -1) issues.splice(idx, 1);
+          const healedMsg = `Restored MongoDB Atlas connection (Ping latency: ${mPing.latencyMs}ms)`;
+          healedActions.push(healedMsg);
+          this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
+        }
+      } catch (mHealErr: any) {
+        this.logger.warn(`AI Self-Healing failed to restore MongoDB: ${mHealErr.message}`);
+      }
+    }
+
+    // Auto-Fix 3: API Endpoint Controller Retry & Warm-up
     const failedApis = apiResults.filter(r => !r.ok);
     if (failedApis.length > 0) {
       for (const failedEp of failedApis) {
@@ -241,7 +231,7 @@ export class HealthService implements OnModuleInit {
       }
     }
 
-    // Auto-Fix 3: Memory Cache Purge & Garbage Collection Trigger
+    // Auto-Fix 4: Memory Cache Purge & Garbage Collection Trigger
     if (heapPct > 80 && (global as any).gc) {
       try {
         (global as any).gc();
@@ -251,7 +241,6 @@ export class HealthService implements OnModuleInit {
         healedActions.push(healedMsg);
         this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
 
-        // Clear critical memory issue if dropped
         if (postGcPct < 85) {
           const idx = issues.findIndex(i => i.includes('MEMORY'));
           if (idx !== -1) issues.splice(idx, 1);
@@ -259,7 +248,7 @@ export class HealthService implements OnModuleInit {
       } catch (gcErr) {}
     }
 
-    // Auto-Fix 4: Corrupted / Negative Inventory Stock Auto-Repair
+    // Auto-Fix 5: Corrupted / Negative Inventory Stock Auto-Repair
     try {
       const negativeStockCount = await this.prisma.inventoryStock.count({ where: { availableQty: { lt: 0 } } }).catch(() => 0);
       if (negativeStockCount > 0) {
@@ -272,24 +261,45 @@ export class HealthService implements OnModuleInit {
 
     const totalResponseTime = Date.now() - startTime;
     const remainingIssues = issues.filter((iss) => {
-      if (dbStatus === 'up' && iss.includes('DATABASE CRITICAL DOWN')) return false;
+      if (pgStatus === 'up' && iss.includes('POSTGRESQL DOWN')) return false;
+      if (mongoStatus === 'up' && iss.includes('MONGODB DOWN')) return false;
       return true;
     });
 
     const allIssues = [...remainingIssues, ...warnings];
 
-    const isMongoConnected = this.mongo?.isConnected || false;
-    const mongoDbStatus = isMongoConnected ? 'connected' : 'active_ha_mode';
-
     const report = {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      dbStatus,
-      dbError,
-      mongoDbStatus,
-      mongoDbConnected: isMongoConnected,
-      responseTimeMs: dbResponseTime,
-      dbResponseTimeMs: dbResponseTime,
+      dbStatus: pgStatus,
+      dbError: pgError,
+      postgres: {
+        status: pgStatus,
+        connected: pgHealth.ok,
+        responseTimeMs: pgResponseTime,
+        error: pgError,
+        entityCounts,
+        engine: 'Supabase PostgreSQL 17 (Prisma Pooler)',
+      },
+      mongoDbStatus: mongoStatus,
+      mongoDbConnected: isMongoUp,
+      mongodb: {
+        status: mongoStatus,
+        connected: isMongoUp,
+        responseTimeMs: mongoResponseTime,
+        error: mongoError,
+        collections: mongoCollections,
+        collectionCounts: mongoCollectionCounts,
+        mongooseReadyState: mongoosePing.readyState,
+        engine: 'MongoDB Atlas Cloud (Mongoose & Driver)',
+      },
+      dualDatabases: {
+        bothHealthy: pgStatus === 'up' && mongoStatus === 'up',
+        postgresStatus: pgStatus,
+        mongoStatus: mongoStatus,
+      },
+      responseTimeMs: pgResponseTime,
+      dbResponseTimeMs: pgResponseTime,
       totalCheckTimeMs: totalResponseTime,
       backendApiStatus: apiResults.every(r => r.ok) ? 'up' : 'degraded',
       frontendSiteResults: siteResults,
@@ -314,7 +324,8 @@ export class HealthService implements OnModuleInit {
     // Smart Alert Trigger: Only send email if > 3 critical errors OR database down OR explicit test
     const shouldSendEmail =
       remainingIssues.length >= 3 ||
-      dbStatus === 'down' ||
+      pgStatus === 'down' ||
+      mongoStatus === 'down' ||
       remainingIssues.some((i) => i.includes('CRITICAL') || i.includes('SECURITY'));
 
     if (shouldSendEmail) {
@@ -323,7 +334,7 @@ export class HealthService implements OnModuleInit {
     } else if (remainingIssues.length > 0 || warnings.length > 0) {
       this.logger.warn(`ℹ️ Deep audit found minor issues (${remainingIssues.length} issues, ${warnings.length} warnings) — Email suppressed to preserve Resend quota. AI Healed: ${healedActions.length} item(s).`);
     } else {
-      this.logger.log(`✅ Deep system audit passed. DB: ${dbStatus}, APIs: ${apiResults.filter(a => a.ok).length}/${apiResults.length} OK, Pages: ${siteResults.filter(s => s.ok).length}/${siteResults.length} OK, Audit Time: ${totalResponseTime}ms`);
+      this.logger.log(`✅ Deep system audit passed. Postgres: ${pgStatus}, MongoDB: ${mongoStatus}, APIs: ${apiResults.filter(a => a.ok).length}/${apiResults.length} OK, Pages: ${siteResults.filter(s => s.ok).length}/${siteResults.length} OK, Audit Time: ${totalResponseTime}ms`);
     }
 
     return report;
@@ -398,11 +409,11 @@ export class HealthService implements OnModuleInit {
               </div>
 
               <div style="background-color: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155;">
-                <h3 style="color: #a78bfa; margin: 0 0 12px 0; font-size: 16px;">📊 System Metrics</h3>
+                <h3 style="color: #a78bfa; margin: 0 0 12px 0; font-size: 16px;">📊 Dual-Database &amp; System Metrics</h3>
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #e2e8f0;">
                   <tr><td style="padding: 6px 0; color: #94a3b8;">Timestamp</td><td style="padding: 6px 0; text-align: right;">${report.timestamp}</td></tr>
-                  <tr><td style="padding: 6px 0; color: #94a3b8;">Database</td><td style="padding: 6px 0; text-align: right; color: ${report.dbStatus === 'up' ? '#34d399' : '#ef4444'}; font-weight: bold;">${(report.dbStatus || 'unknown').toUpperCase()}</td></tr>
-                  <tr><td style="padding: 6px 0; color: #94a3b8;">DB Response Time</td><td style="padding: 6px 0; text-align: right;">${report.dbResponseTimeMs || 0} ms</td></tr>
+                  <tr><td style="padding: 6px 0; color: #94a3b8;">🐘 PostgreSQL (Supabase)</td><td style="padding: 6px 0; text-align: right; color: ${report.postgres?.status === 'up' ? '#34d399' : '#ef4444'}; font-weight: bold;">${(report.postgres?.status || 'unknown').toUpperCase()} (${report.postgres?.responseTimeMs || 0}ms)</td></tr>
+                  <tr><td style="padding: 6px 0; color: #94a3b8;">🍃 MongoDB Atlas</td><td style="padding: 6px 0; text-align: right; color: ${report.mongodb?.status === 'up' ? '#34d399' : '#ef4444'}; font-weight: bold;">${(report.mongodb?.status || 'unknown').toUpperCase()} (${report.mongodb?.responseTimeMs || 0}ms, ${report.mongodb?.collections?.length || 0} cols)</td></tr>
                   <tr><td style="padding: 6px 0; color: #94a3b8;">Server Uptime</td><td style="padding: 6px 0; text-align: right;">${Math.round(report.uptime / 60)} minutes</td></tr>
                   <tr><td style="padding: 6px 0; color: #94a3b8;">Heap Memory</td><td style="padding: 6px 0; text-align: right;">${report.memory?.heapUsed ? Math.round(report.memory.heapUsed / 1024 / 1024) + ' MB' : 'N/A'}</td></tr>
                 </table>

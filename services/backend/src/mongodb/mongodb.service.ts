@@ -1,31 +1,73 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { MongoClient } from 'mongodb';
 
+const DEFAULT_MONGODB_URI = "mongodb+srv://khade8915_db_user:dKgedk9DLleq17mZ@cluster0.am7xoun.mongodb.net/bizora?retryWrites=true&w=majority";
+
 @Injectable()
 export class MongodbService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MongodbService.name);
   private client: MongoClient | null = null;
   public isConnected = false;
 
-  async onModuleInit() {
+  public getUri(): string {
     const uri = process.env.MONGODB_URI;
-    if (!uri || uri.includes("placeholder") || uri.includes("YOUR-") || (process.env.NODE_ENV === 'production' && uri.includes('localhost'))) {
-      this.logger.warn('MONGODB_URI is not set, placeholder, or localhost in production. AI/Audit logs will run in mock mode.');
-      return;
+    if (!uri || uri.includes("placeholder") || uri.includes("YOUR-")) {
+      return DEFAULT_MONGODB_URI;
     }
+    return uri;
+  }
+
+  async onModuleInit() {
+    const uri = this.getUri();
 
     try {
       this.client = new MongoClient(uri, {
-        connectTimeoutMS: 5000,
-        socketTimeoutMS: 5000,
+        connectTimeoutMS: 6000,
+        socketTimeoutMS: 10000,
       });
       await this.client.connect();
       this.isConnected = true;
-      this.logger.log('Successfully connected to MongoDB Database.');
-    } catch (error) {
-      this.logger.error('Failed to connect to MongoDB Database, fallback to mock mode:', error);
+      this.logger.log('Successfully connected to MongoDB Atlas Database.');
+    } catch (error: any) {
+      this.logger.error('Failed to connect to MongoDB Atlas Database, fallback to mock mode:', error.message);
       this.client = null;
       this.isConnected = false;
+    }
+  }
+
+  async checkHealth(): Promise<{ ok: boolean; latencyMs: number; collections: string[]; collectionCounts: Record<string, number>; error?: string }> {
+    const start = Date.now();
+    try {
+      if (!this.client || !this.isConnected) {
+        await this.onModuleInit();
+      }
+      if (this.client && this.isConnected) {
+        const db = this.client.db('bizora');
+        await db.command({ ping: 1 });
+        const cols = await db.listCollections().toArray();
+        const collectionNames = cols.map(c => c.name);
+        const collectionCounts: Record<string, number> = {};
+        
+        // Count key collections
+        const keyCols = ['products', 'transactions', 'customers', 'suppliers', 'expenses', 'auditlogs', 'users', 'ai_logs', 'whatsapp_logs'];
+        for (const colName of keyCols) {
+          try {
+            collectionCounts[colName] = await db.collection(colName).countDocuments();
+          } catch (_) {
+            collectionCounts[colName] = 0;
+          }
+        }
+
+        return {
+          ok: true,
+          latencyMs: Date.now() - start,
+          collections: collectionNames,
+          collectionCounts,
+        };
+      }
+      return { ok: false, latencyMs: Date.now() - start, collections: [], collectionCounts: {}, error: 'MongoDB client not connected' };
+    } catch (e: any) {
+      return { ok: false, latencyMs: Date.now() - start, collections: [], collectionCounts: {}, error: e.message };
     }
   }
 
