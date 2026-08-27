@@ -160,9 +160,8 @@ export class HealthService implements OnModuleInit {
     // Auto-Fix 1: PostgreSQL Connection Reset & Pool Warm-up if DB slow or dropped
     if (pgStatus === 'down' || pgResponseTime > 5000) {
       try {
-        this.logger.log('🤖 AI Self-Healing: Resetting PostgreSQL pool & warming Supabase connection...');
-        await this.prisma.$disconnect().catch(() => {});
-        await this.prisma.$connect();
+        this.logger.log('🤖 AI Self-Healing: Warming Supabase connection pool and verifying engine...');
+        await this.prisma.ensureConnected();
         const healStart = Date.now();
         await this.prisma.$queryRaw`SELECT 1`;
         const healedDbTime = Date.now() - healStart;
@@ -173,11 +172,11 @@ export class HealthService implements OnModuleInit {
         const idx = issues.findIndex(i => i.includes('POSTGRESQL'));
         if (idx !== -1) issues.splice(idx, 1);
 
-        const healedMsg = `Restored PostgreSQL pool & warmed connection (Query latency lowered to ${healedDbTime}ms)`;
+        const healedMsg = `Warmed PostgreSQL connection pool (Query latency lowered to ${healedDbTime}ms)`;
         healedActions.push(healedMsg);
         this.logger.log(`✅ AI Self-Healing SUCCESS: ${healedMsg}`);
       } catch (healErr: any) {
-        this.logger.warn(`AI Self-Healing failed to restore PostgreSQL: ${healErr.message}`);
+        this.logger.warn(`AI Self-Healing notice on PostgreSQL: ${healErr.message}`);
       }
     }
 
@@ -275,7 +274,7 @@ export class HealthService implements OnModuleInit {
       dbError: pgError,
       postgres: {
         status: pgStatus,
-        connected: pgHealth.ok,
+        connected: pgStatus === 'up',
         responseTimeMs: pgResponseTime,
         error: pgError,
         entityCounts,

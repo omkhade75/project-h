@@ -8,6 +8,8 @@ export class DatabaseService extends PrismaClient implements OnModuleInit, OnMod
   private readonly logger = new Logger(DatabaseService.name);
   public client: PrismaClient = this;
   public isConnected = false;
+  private connectingPromise: Promise<void> | null = null;
+  private keepAliveInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super({
@@ -19,9 +21,27 @@ export class DatabaseService extends PrismaClient implements OnModuleInit, OnMod
     });
   }
 
+  async ensureConnected(): Promise<void> {
+    if (this.connectingPromise) {
+      return this.connectingPromise;
+    }
+    this.connectingPromise = (async () => {
+      try {
+        await this.$connect();
+        this.isConnected = true;
+      } catch (err: any) {
+        this.isConnected = false;
+        throw err;
+      } finally {
+        this.connectingPromise = null;
+      }
+    })();
+    return this.connectingPromise;
+  }
+
   async onModuleInit() {
     try {
-      await this.$connect();
+      await this.ensureConnected();
       await this.$queryRaw`SELECT 1`;
       this.isConnected = true;
       this.logger.log('Successfully connected to Supabase PostgreSQL Database.');
@@ -31,17 +51,40 @@ export class DatabaseService extends PrismaClient implements OnModuleInit, OnMod
         `PostgreSQL connection init notice: ${err.message}. Auto-remediation enabled.`
       );
     }
+
+    // Start 2-minute keep-alive to keep connection pool warm 24/7
+    this.startKeepAlive();
+  }
+
+  private startKeepAlive() {
+    if (this.keepAliveInterval) return;
+    this.keepAliveInterval = setInterval(async () => {
+      try {
+        await this.$queryRaw`SELECT 1`;
+        this.isConnected = true;
+      } catch (err: any) {
+        this.logger.warn(`Keep-alive ping auto-reconnecting: ${err.message}`);
+        await this.ensureConnected().catch(() => {});
+      }
+    }, 2 * 60 * 1000); // Every 2 minutes
   }
 
   async checkHealth(): Promise<{ ok: boolean; latencyMs: number; entityCounts: Record<string, number>; error?: string }> {
     const start = Date.now();
     try {
-      if (!this.isConnected) {
-        await this.$connect().catch(() => {});
+      // Step 1: Probe query with automatic reconnect & retry if connection dropped
+      try {
+        await this.$queryRaw`SELECT 1`;
+        this.isConnected = true;
+      } catch (probeErr: any) {
+        this.logger.warn(`Initial PostgreSQL probe notice: ${probeErr.message}. Auto-reconnecting engine...`);
+        await this.ensureConnected();
+        // Retry probe after clean reconnect
+        await this.$queryRaw`SELECT 1`;
+        this.isConnected = true;
       }
-      await this.$queryRaw`SELECT 1`;
-      this.isConnected = true;
 
+      // Step 2: Fetch schema entity counts safely
       const entityCounts: Record<string, number> = {};
       try { entityCounts.workspaces = await this.workspace.count().catch(() => 0); } catch (_) {}
       try { entityCounts.users = await this.user.count().catch(() => 0); } catch (_) {}
@@ -71,9 +114,14 @@ export class DatabaseService extends PrismaClient implements OnModuleInit, OnMod
   }
 
   async onModuleDestroy() {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
     if (this.isConnected) {
-      await this.$disconnect();
+      await this.$disconnect().catch(() => {});
     }
   }
 }
+
 
