@@ -39,10 +39,18 @@ function OwnerLoginPage() {
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [googleModalOpen, setGoogleModalOpen] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState("");
   const [customGoogleName, setCustomGoogleName] = useState("");
+
+  // Smart User Experience Modals
+  const [unregisteredModalOpen, setUnregisteredModalOpen] = useState(false);
+  const [unregisteredEmail, setUnregisteredEmail] = useState("");
+  const [unregisteredName, setUnregisteredName] = useState("");
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [rejectedModalOpen, setRejectedModalOpen] = useState(false);
+
   const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
@@ -76,7 +84,22 @@ function OwnerLoginPage() {
       setGoogleModalOpen(false);
       navigate({ to: getRedirectTarget(loggedIn) });
     } catch (err: any) {
-      toast.error(err.message || "Google Sign-In failed");
+      const msg = err.message || "";
+      if (msg.includes("NOT_REGISTERED") || msg.includes("No registered store") || msg.includes("No account or registered store")) {
+        setUnregisteredEmail(cleanEmail);
+        setUnregisteredName(cleanName);
+        setUnregisteredModalOpen(true);
+        setGoogleModalOpen(false);
+      } else if (msg.includes("PENDING_APPROVAL") || msg.includes("pending review and approval")) {
+        setPendingEmail(cleanEmail);
+        setPendingModalOpen(true);
+        setGoogleModalOpen(false);
+      } else if (msg.includes("REJECTED") || msg.includes("rejected by the System Admin")) {
+        setRejectedModalOpen(true);
+        setGoogleModalOpen(false);
+      } else {
+        toast.error(err.message || "Google Sign-In failed");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -138,7 +161,19 @@ function OwnerLoginPage() {
       toast.success("Welcome back, Business Owner");
       navigate({ to: getRedirectTarget(loggedIn) });
     } catch (err: any) {
-      toast.error(err.message || "Owner login failed");
+      const msg = err.message || "";
+      if (msg.includes("NOT_REGISTERED") || msg.includes("No registered store") || msg.includes("No account or registered store")) {
+        setUnregisteredEmail(email.trim());
+        setUnregisteredName("");
+        setUnregisteredModalOpen(true);
+      } else if (msg.includes("PENDING_APPROVAL") || msg.includes("pending review and approval")) {
+        setPendingEmail(email.trim());
+        setPendingModalOpen(true);
+      } else if (msg.includes("REJECTED") || msg.includes("rejected by the System Admin")) {
+        setRejectedModalOpen(true);
+      } else {
+        toast.error(err.message || "Owner login failed");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -377,6 +412,130 @@ function OwnerLoginPage() {
               Continue with Google
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 1. Unregistered Account Modal -> 1-Click Register Flow */}
+      <Dialog open={unregisteredModalOpen} onOpenChange={setUnregisteredModalOpen}>
+        <DialogContent className="sm:max-w-[420px] p-6 bg-card border-border/60">
+          <DialogHeader className="text-center space-y-2">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm">
+              <Building className="h-7 w-7" />
+            </div>
+            <DialogTitle className="text-xl font-display font-semibold">No Registered Store Found</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              We couldn't find an approved business store registered under <strong className="text-foreground">{unregisteredEmail}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-surface p-4 rounded-xl border border-hairline my-2 space-y-2 text-xs">
+            <div className="flex items-center gap-2 text-foreground font-medium">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              <span>Ready to start with Bizora AI?</span>
+            </div>
+            <p className="text-muted-foreground leading-relaxed">
+              Register your retail store, supermarket, or enterprise in under 60 seconds to get your own isolated POS and intelligent business dashboard.
+            </p>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <Button
+              className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-semibold flex items-center justify-center gap-2"
+              onClick={() => {
+                setUnregisteredModalOpen(false);
+                navigate({ to: "/register" });
+              }}
+            >
+              <span>Register My Store (1-Click)</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-hairline text-xs"
+              onClick={() => setUnregisteredModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2. Pending Super Admin Approval Modal */}
+      <Dialog open={pendingModalOpen} onOpenChange={setPendingModalOpen}>
+        <DialogContent className="sm:max-w-[440px] p-6 bg-card border-amber-500/40">
+          <DialogHeader className="text-center space-y-2">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse">
+              <ShieldAlert className="h-7 w-7" />
+            </div>
+            <DialogTitle className="text-xl font-display font-semibold">Store Pending Super Admin Approval</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              Your store registration for <strong className="text-foreground">{pendingEmail}</strong> is currently in the review queue.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 my-2 text-xs">
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200/90 leading-relaxed">
+              <p className="font-semibold text-amber-300 flex items-center gap-1.5 mb-1">
+                <span>🛡️ Status: ⏳ Pending Review</span>
+              </p>
+              The Platform Super Admin has been notified via Email &amp; WhatsApp. Access is granted as soon as the store is approved.
+            </div>
+
+            <div className="p-3 rounded-xl bg-surface border border-hairline space-y-1.5 text-muted-foreground">
+              <div className="flex items-center gap-2 text-foreground font-medium">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                <span>What happens next?</span>
+              </div>
+              <p className="leading-relaxed">
+                1. Super Admin verifies your business details.<br />
+                2. Your isolated workspace &amp; clean dashboard are provisioned.<br />
+                3. You will receive an instant approval notification.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Button
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+              onClick={() => setPendingModalOpen(false)}
+            >
+              Got It, I'll Wait for Approval
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 3. Registration Rejected Modal */}
+      <Dialog open={rejectedModalOpen} onOpenChange={setRejectedModalOpen}>
+        <DialogContent className="sm:max-w-[420px] p-6 bg-card border-destructive/40">
+          <DialogHeader className="text-center space-y-2">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/15 text-destructive border border-destructive/30">
+              <ShieldAlert className="h-7 w-7" />
+            </div>
+            <DialogTitle className="text-xl font-display font-semibold text-destructive">Registration Not Approved</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              Your store registration was not approved by the System Admin. Please contact support or re-register with valid credentials.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 pt-3">
+            <Button
+              className="w-full gradient-primary text-primary-foreground font-semibold"
+              onClick={() => {
+                setRejectedModalOpen(false);
+                navigate({ to: "/register" });
+              }}
+            >
+              Re-Register Store
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-hairline text-xs"
+              onClick={() => setRejectedModalOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

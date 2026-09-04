@@ -446,15 +446,20 @@ function AppShell() {
             <BizoraLogoIcon className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-base font-bold tracking-tight">{"Bizora AI"}</p>
-              <p className="truncate text-[11px] text-muted-foreground">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold tracking-tight text-foreground">
                 {typeof window !== "undefined" && user?.workspaceId && localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
                   ? localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
-                  : (user?.workspaceId === "grandsquare-mall" || user?.email === "owner@gmail.com"
-                      ? "GrandSquare Mall"
-                      : (user?.name ? `${user.name}'s Store` : "Business Store"))}
+                  : ((user as any)?.companyName || (user?.workspaceId === "grandsquare-mall" || user?.email === "owner@gmail.com" ? "GrandSquare Mall" : `${user?.name || "Business"}'s Store`))}
               </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  {((user as any)?.plan || "PRO STORE").toUpperCase()}
+                </span>
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {user?.role === "owner" ? "Store Owner" : user?.role}
+                </span>
+              </div>
             </div>
           )}
           {/* Close mobile menu */}

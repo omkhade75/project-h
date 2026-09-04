@@ -122,13 +122,13 @@ export class AuthService {
     if (regRecord) {
       const status = (regRecord.status || '').toLowerCase();
       if (status === 'pending') {
-        throw new UnauthorizedException('Your store registration is currently pending review and approval by the System Admin. Access will be granted once approved.');
+        throw new UnauthorizedException('PENDING_APPROVAL: Your store registration is currently pending review and approval by the System Admin. Access will be granted once approved.');
       }
       if (status === 'rejected') {
-        throw new UnauthorizedException('Your store registration was rejected by the System Admin.');
+        throw new UnauthorizedException('REJECTED: Your store registration was rejected by the System Admin.');
       }
       if (status === 'suspended') {
-        throw new UnauthorizedException('Your business account has been suspended by the System Admin.');
+        throw new UnauthorizedException('SUSPENDED: Your business account has been suspended by the System Admin.');
       }
     } else {
       // Check if user exists in Prisma User table
@@ -140,7 +140,7 @@ export class AuthService {
       } catch (e) {}
 
       if (!dbUser) {
-        throw new UnauthorizedException('No registered store found for this Google account. Please register your store first.');
+        throw new UnauthorizedException('NOT_REGISTERED: No registered store found for this Google account. Please register your store first.');
       }
       regRecord = dbUser;
     }
@@ -172,6 +172,8 @@ export class AuthService {
         companyName,
         businessType: regRecord.businessType || 'Retail',
         industry: regRecord.industry || 'Retail',
+        plan: regRecord.plan || 'TRIAL',
+        subscriptionStatus: regRecord.subscriptionStatus || 'TRIAL',
         picture: data.picture || null,
         setupCompleted: true,
       },
@@ -333,13 +335,16 @@ export class AuthService {
       if (pendingReg) {
         const st = (pendingReg.status || '').toLowerCase();
         if (st === 'pending') {
-          throw new UnauthorizedException('Your store registration is currently pending review and approval by the System Admin. Access will be granted once approved.');
+          throw new UnauthorizedException('PENDING_APPROVAL: Your store registration is currently pending review and approval by the System Admin. Access will be granted once approved.');
         }
         if (st === 'rejected') {
-          throw new UnauthorizedException('Your store registration was rejected by the System Admin.');
+          throw new UnauthorizedException('REJECTED: Your store registration was rejected by the System Admin.');
+        }
+        if (st === 'suspended') {
+          throw new UnauthorizedException('SUSPENDED: Your business account has been suspended by the System Admin.');
         }
       }
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('NOT_REGISTERED: No account or registered store found with this email. Please register your store first.');
     }
 
     // Validate Password
@@ -366,6 +371,7 @@ export class AuthService {
       ? 'grandsquare-mall' 
       : (userRecord.workspaceId?.startsWith('ws_') ? userRecord.workspaceId : ('ws_' + emailLower.replace(/[^a-z0-9]/g, '_')));
     const userId = userRecord.id || userRecord._id?.toString() || ('user-' + emailLower.replace(/[^a-z0-9]/g, '-'));
+    const companyName = userRecord.companyName || userRecord.name || `${(userRecord.name || userRecord.ownerName || emailLower.split('@')[0])}'s Store`;
 
     const payload = {
       userId,
@@ -386,6 +392,12 @@ export class AuthService {
         role: userRecord.role || 'OWNER',
         workspaceId: workspaceId,
         companyId: workspaceId,
+        companyName,
+        businessType: userRecord.businessType || 'Retail',
+        industry: userRecord.industry || 'Retail',
+        plan: userRecord.plan || 'TRIAL',
+        subscriptionStatus: userRecord.subscriptionStatus || 'TRIAL',
+        setupCompleted: true,
       },
       token: accessToken,
       accessToken,

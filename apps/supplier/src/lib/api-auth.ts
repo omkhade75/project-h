@@ -44,6 +44,12 @@ export const loginServer = async (data: { data: { email: string; password: strin
       if (typeof window !== 'undefined') {
         localStorage.setItem('bizora_access_token', token);
         localStorage.setItem('bizora_user_session', JSON.stringify(user));
+        if (user.companyName && user.workspaceId) {
+          localStorage.setItem(`bizora_company_name_${user.workspaceId}`, user.companyName);
+        }
+        if (user.businessType && user.workspaceId) {
+          localStorage.setItem(`bizora_store_industry_${user.workspaceId}`, user.businessType);
+        }
       }
       return { success: true, user };
     }

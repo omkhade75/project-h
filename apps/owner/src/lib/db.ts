@@ -1214,7 +1214,8 @@ class SeededDatabase {
     let custom: Supplier[] = [];
     if (typeof window !== "undefined") {
       try {
-        const stored = window.localStorage.getItem("bizora_custom_suppliers");
+        const key = this.workspaceId ? `bizora_custom_suppliers_${this.workspaceId}` : "bizora_custom_suppliers";
+        const stored = window.localStorage.getItem(key);
         if (stored) custom = JSON.parse(stored);
       } catch (e) {}
     }
@@ -1239,11 +1240,12 @@ class SeededDatabase {
     }
     if (typeof window !== "undefined") {
       try {
-        const stored = window.localStorage.getItem("bizora_custom_suppliers");
+        const key = this.workspaceId ? `bizora_custom_suppliers_${this.workspaceId}` : "bizora_custom_suppliers";
+        const stored = window.localStorage.getItem(key);
         const list: Supplier[] = stored ? JSON.parse(stored) : [];
         if (!list.some((x) => x.id === s.id || (x.email && x.email === s.email))) {
           list.unshift(s);
-          window.localStorage.setItem("bizora_custom_suppliers", JSON.stringify(list));
+          window.localStorage.setItem(key, JSON.stringify(list));
         }
       } catch (e) {}
     }
@@ -1263,7 +1265,8 @@ class SeededDatabase {
     }
     if (typeof window !== "undefined") {
       try {
-        const stored = window.localStorage.getItem("bizora_custom_suppliers");
+        const key = this.workspaceId ? `bizora_custom_suppliers_${this.workspaceId}` : "bizora_custom_suppliers";
+        const stored = window.localStorage.getItem(key);
         if (stored) {
           const list: Supplier[] = JSON.parse(stored);
           const filtered = list.filter(
@@ -1272,7 +1275,7 @@ class SeededDatabase {
               (!x.email || x.email.toLowerCase().trim() !== target) &&
               (!x.name || x.name.toLowerCase().trim() !== target)
           );
-          window.localStorage.setItem("bizora_custom_suppliers", JSON.stringify(filtered));
+          window.localStorage.setItem(key, JSON.stringify(filtered));
         }
       } catch (e) {}
     }

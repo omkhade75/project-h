@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CommsService } from './comms.service';
+import { UserModel, CompanyModel } from '../models';
 const bcrypt = require('bcryptjs');
 
 @Injectable()
@@ -352,8 +353,9 @@ export class SystemAdminService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        const workspace = await tx.workspace.create({
-          data: {
+        const workspace = await tx.workspace.upsert({
+          where: { id: assignedWorkspaceId },
+          create: {
             id: assignedWorkspaceId,
             name: registration.companyName || "Priyansh Store",
             industry: registration.industry || "Retail",
@@ -366,29 +368,75 @@ export class SystemAdminService {
             subscriptionStatus: 'TRIAL',
             trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
+          update: {
+            name: registration.companyName || "Priyansh Store",
+            industry: registration.industry || "Retail",
+            businessType: registration.businessType || "Retail",
+            status: 'ACTIVE',
+            setupCompleted: true,
+          },
         });
 
         workspaceId = workspace.id;
 
-        await tx.user.create({
-          data: {
-            name: registration.ownerName || "Priyansh Dewan",
-            email: cleanEmail,
-            passwordHash: registration.passwordHash || "123456789",
-            role: 'OWNER',
-            workspaceId: workspaceId,
-            isSystemAdmin: false,
-            status: 'Active',
-          },
-        });
+        const existingUser = await tx.user.findFirst({ where: { email: cleanEmail } });
+        if (existingUser) {
+          await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              name: registration.ownerName || existingUser.name,
+              role: 'OWNER',
+              workspaceId: workspaceId,
+              status: 'Active',
+            },
+          });
+        } else {
+          await tx.user.create({
+            data: {
+              name: registration.ownerName || "Store Owner",
+              email: cleanEmail,
+              passwordHash: registration.passwordHash || "123456789",
+              role: 'OWNER',
+              workspaceId: workspaceId,
+              isSystemAdmin: false,
+              status: 'Active',
+            },
+          });
+        }
 
-        await tx.pendingRegistration.update({
-          where: { id: registration.id },
-          data: { status: 'Approved' },
-        });
+        if (registration.id && !registration.id.startsWith('preg-')) {
+          await tx.pendingRegistration.updateMany({
+            where: { ownerEmail: cleanEmail },
+            data: { status: 'Approved' },
+          });
+        }
       });
     } catch (dbErr) {
       console.warn('[SystemAdminService] DB transaction warning in approveRegistration:', dbErr);
+    }
+
+    // Sync Mongoose MongoDB models
+    try {
+      let mongoComp = await CompanyModel.findOne({ code: assignedWorkspaceId });
+      if (!mongoComp) {
+        mongoComp = await CompanyModel.create({
+          name: registration.companyName || "Priyansh Store",
+          code: assignedWorkspaceId,
+          status: 'ACTIVE',
+        });
+      }
+      let mongoUser = await UserModel.findOne({ email: cleanEmail });
+      if (!mongoUser) {
+        await UserModel.create({
+          email: cleanEmail,
+          name: registration.ownerName || "Store Owner",
+          passwordHash: registration.passwordHash || "123456789",
+          role: 'OWNER',
+          companyId: mongoComp._id,
+        });
+      }
+    } catch (mErr) {
+      console.warn('[SystemAdminService] MongoDB sync warning in approveRegistration:', mErr);
     }
 
     // Update in-memory registration status
