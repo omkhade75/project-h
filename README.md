@@ -1,110 +1,153 @@
 <div align="center">
 
 # 🚀 Bizora AI (OmniMind)
-### **Enterprise AI Business Operating System & Decision Intelligence**
+### **Autonomous Retail Operating System, Multi-Store ERP & Decision Intelligence**
 
 [![CI Build Verification](https://github.com/omkhade75/project-h/actions/workflows/ci.yml/badge.svg)](https://github.com/omkhade75/project-h/actions/workflows/ci.yml)
 [![Live Backend Health Monitor](https://github.com/omkhade75/project-h/actions/workflows/health-cron.yml/badge.svg)](https://github.com/omkhade75/project-h/actions/workflows/health-cron.yml)
 ![Node.js Version](https://img.shields.io/badge/Node.js-v20-brightgreen?style=flat&logo=node.js)
 ![NestJS](https://img.shields.io/badge/NestJS-v10-red?style=flat&logo=nestjs)
-![TypeScript](https://img.shields.io/badge/TypeScript-96%25-blue?style=flat&logo=typescript)
+![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?style=flat&logo=typescript)
 ![License](https://img.shields.io/badge/License-MIT-purple?style=flat)
+![Platform Status](https://img.shields.io/badge/Render-Production%20Live-success?style=flat&logo=render)
 
 <br />
 
-[**🛡️ Super Admin**](https://bizora-admin.onrender.com) &nbsp;•&nbsp;
-[**👑 Owner Portal**](https://bizora-owner.onrender.com) &nbsp;•&nbsp;
+[**👑 Store Owner Portal**](https://bizora-owner.onrender.com) &nbsp;•&nbsp;
+[**🛡️ Super Admin Portal**](https://bizora-admin.onrender.com) &nbsp;•&nbsp;
 [**🚚 Supplier Hub**](https://bizora-supplier.onrender.com) &nbsp;•&nbsp;
 [**🛍️ Customer CRM**](https://bizora-customer.onrender.com) &nbsp;•&nbsp;
 [**🌐 Web Marketing**](https://bizora-web.onrender.com) &nbsp;•&nbsp;
-[**⚙️ Backend API**](https://bizora-backend-gtoe.onrender.com)
+[**⚙️ Backend Microservice**](https://bizora-backend-gtoe.onrender.com)
 
 <br />
 
+📄 **[Download Official Project Architecture PDF (Bizora_AI_Project_Documentation.pdf)](./Bizora_AI_Project_Documentation.pdf)**
+
 </div>
 
-**Bizora AI** is an enterprise-grade, multi-tenant AI Business Operating System designed for modern retail chains, supermarkets, franchises, and multi-department enterprises. It unifies POS Billing, Inventory Stock Control, Double-Entry Accounting, Customer CRM, Supplier Procurement, Vapi Voice AI Calls, Automated WhatsApp Messaging, and Gemini AI Decision Intelligence into a single unified control plane.
+---
+
+## 📖 Executive Summary
+
+**Bizora AI** is an enterprise-grade, multi-tenant autonomous retail operating system and multi-store ERP designed for supermarket chains, multi-branch department stores, and retail enterprises. 
+
+Bizora replaces fragmented, disconnected tools with a unified intelligent core that orchestrates **High-Velocity POS Billing**, **360° Inventory Control & Expiry Monitoring**, **Double-Entry General Ledger Accounting**, **Customer CRM & Loyalty**, **Supplier Procurement**, **Autonomous AI Decision Engine**, **Vapi AI Voice Calling**, and **Instant WhatsApp Receipting** across 5 synchronized role-based portals.
 
 ---
 
-## 🌐 Live Deployed Portals Quick Reference
+## 🌐 Live Production Deployments & Access Directory
 
-All static frontends communicate directly via REST API `fetch()` to the centralized NestJS backend hosted on Render:
+All five client applications and the centralized REST backend are deployed live on Render with automatic HTTPS/TLS, automated environment orchestration, and continuous background diagnostics:
 
-| Portal Role | Live Web URL | Key Capabilities & Features |
+| Portal Role | Live Web Link | Target Audience | Key Capabilities & Features |
+| :--- | :--- | :--- | :--- |
+| **👑 Store Owner Portal** | [https://bizora-owner.onrender.com](https://bizora-owner.onrender.com) | Business Owners, Store Directors | Executive P&L dashboard, double-entry GL ledger, barcode scanner product entry, inventory forecasting, daily sales & AI decisions. |
+| **🛡️ Super Admin Portal** | [https://bizora-admin.onrender.com](https://bizora-admin.onrender.com) | Platform Administrators | Shopkeeper onboarding approvals, tenant workspace provisioning, 5-min system health monitor, audit logs, subscription tier control. |
+| **🚚 Supplier Hub** | [https://bizora-supplier.onrender.com](https://bizora-supplier.onrender.com) | Vendors & Suppliers | Vendor scorecards, inbound Purchase Order (PO) accept/reject, dispatch tracking, automated WhatsApp order alerts, Vapi AI restock calls. |
+| **🛍️ Customer CRM Portal** | [https://bizora-customer.onrender.com](https://bizora-customer.onrender.com) | End Shoppers & Customers | Customer CRM portal, digital POS receipt history, loyalty rewards wallet, live dispatch tracking, feedback and product reviews. |
+| **🌐 Marketing Portal** | [https://bizora-web.onrender.com](https://bizora-web.onrender.com) | Public Visitors & Prospects | Main landing page, platform overview, enterprise subscription pricing, interactive module tours, and self-onboarding. |
+| **⚙️ Backend API Microservice** | [https://bizora-backend-gtoe.onrender.com](https://bizora-backend-gtoe.onrender.com) | Core REST Service | Centralized NestJS REST API microservice (`/api/health`, `/api/products`, `/api/auth`, `/api/system-admin`, `/api/comms`). |
+| **💓 Automated Health Watchdog** | [https://bizora-backend-gtoe.onrender.com/api/health](https://bizora-backend-gtoe.onrender.com/api/health) | DevOps Telemetry | Automated 5-minute heartbeat checks, database connectivity verification, latency benchmarks, and Resend email alerts. |
+
+---
+
+## 🎯 The Core Problem & The Bizora Solution
+
+```
+┌─────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────────────┐
+│              ❌ THE TRADITIONAL RETAIL CHAOS                │              ✅ THE AUTONOMOUS BIZORA OS                    │
+├─────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ • Disconnected Silos: Billing separated from accounting,    │ • Single Control Plane: POS, Accounting, Stock, and CRM     │
+│   requiring manual end-of-day Excel reconciliations.        │   are connected in real-time with zero manual data entry.   │
+│ • Inventory Shrinkage: Perishables expire on shelves        │ • 360° Expiry Watchdog: Dynamic reorder alerts trigger      │
+│   unnoticed; stock-outs happen during peak hours.           │   automated supplier POs before stock reaches zero.         │
+│ • Data Cross-Contamination: Multi-store owners struggle     │ • Strict Multi-Tenant Isolation: Store 1, 2, and 3 have     │
+│   with mixed inventory and conflicting branch cashflows.    │   cryptographically isolated data & clean dashboards.       │
+│ • Passive Retention: Zero tracking of Customer Lifetime     │ • AI Customer Engagement: Automated RFM segmentation,       │
+│   Value (LTV), churn risk, or automated post-sale outreach. │   loyalty points, and Vapi AI voice calls for VIPs.         │
+│ • Manual Vendor Procurement: Chaotic phone calls and lost   │ • Automated Supplier Hub: Instant purchase orders with      │
+│   paper slips cause supply chain delivery bottlenecks.      │   vendor scorecards and automated WhatsApp dispatches.      │
+└─────────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🏢 Multi-Store Isolation & Tenant Security Architecture
+
+A primary architectural foundation of Bizora AI is **Mathematical Tenant Isolation**:
+
+```
++---------------------------------------------------------------------------------------------------------+
+|                                    BIZORA MULTI-PORTAL ARCHITECTURE                                     |
++---------------------------------------------------------------------------------------------------------+
+|                                                                                                         |
+|  +--------------------+  +--------------------+  +--------------------+  +----------------------------+ |
+|  |  👑 OWNER PORTAL   |  |  🛡️ SUPER ADMIN    |  |  🚚 SUPPLIER HUB   |  |  🛍️ CUSTOMER CRM           | |
+|  | (Owner / Manager)  |  | (Platform Overseer)|  | (Vendors/Logistics)|  | (Shoppers / Loyalty)       | |
+|  +---------+----------+  +---------+----------+  +---------+----------+  +-------------+--------------+ |
+|            |                       |                       |                           |                |
+|            +-----------------------+-----------+-----------+---------------------------+                |
+|                                                |                                                        |
+|                                    [Edge Runtime / Nitro SSR]                                           |
+|                                                |                                                        |
+|                                                v                                                        |
+|                             +--------------------------------------+                                    |
+|                             |   ⚙️ NESTJS REST API MICROSERVICE     |                                    |
+|                             |  - Multi-Tenant Auth Guard & RBAC    |                                    |
+|                             |  - Dynamic Product & Inventory APIs  |                                    |
+|                             |  - System Health & Crash Watchdog    |                                    |
+|                             +------------------+-------------------+                                    |
+|                                                |                                                        |
+|                        +-----------------------+-----------------------+                                |
+|                        |                                               |                                |
+|                        v                                               v                                |
+|         +-----------------------------+                 +-----------------------------+                 |
+|         |    🐘 POSTGRESQL DATABASE   |                 |    🤖 EXTERNAL AI & COMMS   |                 |
+|         |  - Prisma Multi-Tenant ORM  |                 |  - Vapi AI Voice Calling    |                 |
+|         |  - Double-Entry Ledger      |                 |  - Resend Automated Alerts  |                 |
+|         |  - Isolated Store Workspaces|                 |  - WhatsApp Dispatch Engine |                 |
+|         +-----------------------------+                 +-----------------------------+                 |
++---------------------------------------------------------------------------------------------------------+
+```
+
+### 3-Step Tenant Lifecycle Pipeline:
+1. **Company Onboarding (`/register`)**: New store owners register their company profile and plan preference (Starter, Pro, Enterprise). The account is initially sandboxed in an unverified state.
+2. **Super Admin Approval (`/system-admin`)**: Platform administrators review new store applications. Approving the request sends an automated welcome email via Resend and initializes a clean tenant database workspace.
+3. **Cryptographic Scope Binding**: Every database read, mutation, inventory balance, and receipt is scoped to the verified `workspaceId`. Random users or unapproved accounts have **zero read/write access** to other stores' data.
+
+---
+
+## 💻 Complete Technology Stack & Detailed Technical Rationale
+
+| Category | Technology | Why This Technology Was Chosen |
 | :--- | :--- | :--- |
-| **🛡️ Super Admin** | [https://bizora-admin.onrender.com](https://bizora-admin.onrender.com) | Shopkeeper approvals, tenant workspace management, 5-min system health monitor, audit logs, subscription control. |
-| **👑 Business Owner** | [https://bizora-owner.onrender.com](https://bizora-owner.onrender.com) | Executive P&L dashboard, double-entry GL ledger, barcode scanner product entry, inventory forecasting, daily sales & AI decisions. |
-| **🛍️ Customer Portal** | [https://bizora-customer.onrender.com](https://bizora-customer.onrender.com) | Customer CRM portal, digital POS receipt history, loyalty rewards wallet, order tracking, product reviews. |
-| **🚚 Supplier Portal** | [https://bizora-supplier.onrender.com](https://bizora-supplier.onrender.com) | Vendor scorecards, inbound PO accept/reject, dispatch status, automated WhatsApp order alerts, Vapi AI outbound calling. |
-| **🌐 Marketing Portal** | [https://bizora-web.onrender.com](https://bizora-web.onrender.com) | Main landing page, platform overview, enterprise pricing, module feature tours, store onboarding. |
-| **⚙️ Backend API** | [https://bizora-backend-gtoe.onrender.com](https://bizora-backend-gtoe.onrender.com) | Centralized NestJS REST API microservice (`/api/health`, `/api/products`, `/api/auth`, `/api/comms`). |
+| **Frontend Framework** | **React 19 + TanStack Start & Router** | **100% End-to-End Type Safety**: TanStack Router ensures strictly typed route parameters and search queries (e.g. `/products?filter=low-stock&store=2`). TanStack Start brings hybrid SSR with zero hydration mismatch and sub-second navigation. |
+| **Edge Server & Bundler** | **Nitro Engine & Vite 8** | **Blazing Builds & Cloud Portability**: Vite 8 provides sub-second HMR. Nitro compiles each portal into a lightweight, cloud-agnostic server worker deployable on Render, Cloudflare, or Node.js with instant cold-start response. |
+| **Styling & Design System** | **Tailwind CSS v4 & Radix UI Primitives** | **Modern Fluid UX & Accessibility**: Tailwind v4 brings zero-runtime CSS variables with modern OKLCH color spaces. Radix UI provides unstyled WAI-ARIA compliant primitives (Dialogs, Slide Drawers, Popovers, Tabs) with silky smooth CSS animations (`popup-pop-in`, `slide-in-right`). |
+| **Backend Architecture** | **NestJS (Node.js & TypeScript)** | **Enterprise Architectural Rigor**: Enforces dependency injection (DI), modular providers, strictly typed request lifecycle pipelines (Guards, Interceptors, Pipes), and maintainable domain boundaries. |
+| **Database & ORM** | **PostgreSQL & Prisma ORM** | **Transactional ACID Guarantee**: Relational consistency is mandatory for double-entry ledgers, stock counts, and sales receipts. Prisma provides compile-time query generation, automated schema migrations, and immunity against SQL injections. |
+| **Server State & Cache** | **TanStack React Query** | **Zero-Refresh Real-Time Sync**: Manages complex server caching with automatic background revalidation, optimistic mutations for rapid barcode scanning, and multi-window cache synchronization without manual page refreshes. |
+| **Voice AI & Telephony** | **Vapi AI Voice Agents** | **Autonomous Human-Like Restocking**: Integrates ultra-low latency conversational voice agents in natural regional languages for automated supplier restocking calls and VIP customer engagement. |
+| **Transactional Email & Alerts**| **Resend API** | **Guaranteed Deliverability & 24/7 Watchdog**: Dispatches instant HTML alert emails to the engineering team (`khade8915@gmail.com`) when server anomalies arise, and notifies owners upon company approval. |
+| **Data Visualization** | **Recharts & D3** | **Responsive Financial Analytics**: Declarative SVG charting optimized for both mobile and desktop. Powers interactive revenue area charts, sparklines, and predictive AI demand curves. |
+| **Hosting & CI/CD** | **Render Cloud Platform** | **Zero-Downtime Continuous Delivery**: Seamless Git-backed deployment pipeline with automated build execution, secret management, and automatic HTTPS/TLS. |
 
 ---
 
-## 🎯 Real-World Problem & Solution
+## 🎨 UI & Mobile Responsiveness Highlights
 
-### 🔴 The Real-World Business Problem
-Small and medium businesses, supermarket owners, retail chains, and franchise managers face severe operational inefficiencies:
-1. **Software Fragmentation**: Store owners juggle 4–6 separate disconnected tools — one app for billing POS, another for accounting, a third for inventory stock tracking, personal WhatsApp for customer receipts, and manual phone calls to suppliers.
-2. **Language Barriers**: Most enterprise ERPs are available in English only. Non-English speaking shopkeepers and staff in Tier 2/3 Indian cities struggle to operate complex desktop software.
-3. **Hardware Expenses**: Expensive hardware barcode scanners ($100–$300) and dedicated handheld devices increase setup costs for new retail stores.
-4. **Data Isolation & Communication Chaos**: Supplier communications, customer loyalty tracking, and store P&L data exist in isolated silos with zero automated intelligence.
-
-### 🟢 How Bizora AI Solves It
-Bizora AI acts as an **All-in-One AI Business Operating System**:
-- **Single Control Plane**: Unifies POS Billing, GL Accounting, Stock Management, Customer CRM, and Supplier Procurement into one connected platform.
-- **AI Voice Agent & WhatsApp Automation**: Outbound voice calls in natural Indian Hindi (`hi-IN-SwaraNeural`) via Vapi AI + digital receipts & low-stock alerts delivered automatically via Twilio WhatsApp API.
-- **12 Indian Regional Languages**: Native UI accessibility in Hindi, Marathi, Gujarati, Tamil, Telugu, Kannada, Malayalam, Bengali, Punjabi, Odia, Assamese, and English.
-- **Hardware-Free Camera Barcode Scanning**: Turn any smartphone or laptop webcam into an instant barcode scanner using the browser `BarcodeDetector` API.
-- **Automated Health & Risk Intelligence**: Continuous 5-minute background diagnostics that alert the admin via email (`khade8915@gmail.com`) whenever database latencies or system anomalies occur.
+- **Ultra-Crisp Brand Identity**: Re-engineered high-contrast vector geometric logo (`BizoraLogo`) featuring pure white contrast cutouts and electric cyan AI core, scaling cleanly down to 16px.
+- **Silky Smooth Micro-Interactions**:
+  - `popup-pop-in`: Spring-damped 0.22s scale entrance animation for all dialogs and modals.
+  - `slide-in-right` / `slide-in-left`: 0.28s cubic-bezier slide transitions for Radix drawers (Product 360, Customer 360, Supplier 360).
+  - `.card-elevated:hover`: Tactile -2px lift with soft shadow transitions for interactive KPI cards.
+- **Mobile-First UX**: Dialogs transform automatically into native iOS/Android-style bottom sheets (`max-height: 85vh`) on small screens, inputs maintain a minimum 16px font size to prevent iOS auto-zoom, and tables support momentum touch scrolling.
+- **Live Sync Beacon**: Pulsing emerald beacon (`Live`) in the top navigation bar indicating real-time background synchronization.
 
 ---
 
-## ⚔️ Market Competition & Why Choose Bizora AI
-
-| Feature / Capability | Bizora AI | [Vyapar App](https://vyaparapp.in) | [Khatabook](https://khatabook.com) | [Zoho Books](https://www.zoho.com/books) | [Odoo ERP](https://www.odoo.com) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **All-in-One Multitenant OS** | ✅ Yes | ❌ Billing Only | ❌ Ledger Only | ⚠️ Complex Addons | ⚠️ Expensive Hosting |
-| **AI Hindi Voice Agent (Vapi)** | ✅ Native | ❌ No | ❌ No | ❌ No | ❌ No |
-| **Automated WhatsApp POS Receipts**| ✅ Native | ⚠️ Manual Share | ⚠️ Manual Share | ⚠️ Paid Extension | ⚠️ Paid Extension |
-| **12 Indian Regional Languages** | ✅ Native | ⚠️ 4 Languages | ⚠️ 5 Languages | ❌ English Only | ❌ English Only |
-| **Camera Barcode Scanner (Web API)**| ✅ Native | ❌ Hardware Only | ❌ No | ❌ Hardware Only | ⚠️ Module Required |
-| **Automated Server Health Monitoring**| ✅ Native (5-min) | ❌ No | ❌ No | ❌ Extra Cost | ❌ Extra Cost |
-| **Multi-Store Tenant Isolation** | ✅ Built-in | ❌ Single Store | ❌ Single Store | ⚠️ Enterprise Tier | ⚠️ Enterprise Tier |
-
-### 🚀 Why Choose Bizora AI? (Unique Value Proposition)
-1. **Zero Hardware Cost**: Start scanning barcodes and billing customers instantly from any mobile phone or browser without buying external barcode guns.
-2. **AI-Driven Automated Operations**: AI voice agents handle reordering calls in natural Hindi/Hinglish, while automated WhatsApp dispatch sends digital receipts and low-stock alerts.
-3. **Localized for Regional Businesses**: Store staff and shopkeepers can operate the entire platform in their native regional language with 1-click toggling.
-4. **Proactive Reliability**: 24/7 automated 5-minute health monitoring ensures store owners and admins are immediately alerted before any operational downtime happens.
-
----
-
-## ✨ Key Features & Technological Highlights
-
-### 1. 🌞 Professional Light & Dark Mode
-- **Clean SaaS Aesthetics**: Warm-cream background palette (`#FAFAF8`) with crisp solid cards, soft shadows, and clean border lines.
-- **Instant Toggle**: Sun/Moon header button on all 5 portals with zero-flicker `localStorage` persistence.
-
-### 2. 🇮🇳 12 Indian Regional Languages Support
-- Supported languages: **English** (`en`), **Hindi** (`hi`), **Marathi** (`mr`), **Gujarati** (`gu`), **Tamil** (`ta`), **Telugu** (`te`), **Kannada** (`kn`), **Malayalam** (`ml`), **Bengali** (`bn`), **Punjabi** (`pa`), **Odia** (`or`), and **Assamese** (`as`).
-- Header Globe selector dropdown with search filtering + dedicated Settings page regional language picker.
-
-### 3. 📷 Camera Barcode Scanner & Simplified Product Entry
-- **Connect Scanner**: Camera viewfinder modal utilizing browser `BarcodeDetector` API for instant barcode detection.
-- **Fast Product Entry**: Simplified form requiring only **Product Name** and **Selling Price** with automated SKU and Barcode generation.
-
-### 4. 🩺 Automated 5-Minute System Health Monitor & Email Alerting
-- **Live Server Checks**: Automated checks for database connectivity (Prisma `$queryRaw`), memory usage, response times, and server uptime.
-- **Email Alerts**: Automatically sends formatted HTML alert emails to `khade8915@gmail.com` via Resend API when database issues or high latencies occur.
-
-### 5. 🎨 Custom Bizora AI Vector Logo Component
-- Custom geometric 3D-gradient vector mark (`BizoraLogo`) with color-coded portal badges across all sidebars and sign-in pages.
-
----
-
-## 🏛️ Platform Architecture & Deployment Topology
+## 📁 Monorepo Structure
 
 ```
 bizora-ai/
@@ -117,73 +160,66 @@ bizora-ai/
 ├── services/
 │   └── backend/               # ⚙️ NestJS REST API Backend (bizora-backend-gtoe.onrender.com)
 │       └── src/
-│           ├── controllers/   # REST Controllers (Auth, POS, Inventory, Health, Comms)
+│           ├── controllers/   # REST Endpoints (Auth, POS, Inventory, Health, Comms)
 │           ├── services/      # Business Logic Services
-│           ├── database/      # Prisma & Database Services
+│           ├── database/      # Prisma Client & Database Service
 │           └── app.module.ts  # Master Module Registration
-└── packages/
-    ├── database/              # Supabase PostgreSQL Prisma Schema
-    ├── ui/                    # Shared UI Components & Design Tokens
-    └── types/                 # Shared TypeScript Contracts
+├── packages/
+│   ├── database/              # PostgreSQL Prisma Schema & Client Generation
+│   ├── ui/                    # Shared UI Components & Tailwind Configuration
+│   └── types/                 # Shared TypeScript Contracts & Schemas
+└── Bizora_AI_Project_Documentation.pdf # 📄 Official Architecture & Project Documentation PDF
 ```
 
 ---
 
-## 🏢 Multi-Tenant SaaS Onboarding & Approval Workflow
+## 🛠️ Key Environment Variables
 
-1. **Store Onboarding**: A store owner registers company details via `bizora-owner.onrender.com/register`.
-2. **Instant Super Admin Notification**:
-   - 📩 **Resend Email Alert**: Dispatched immediately to `khade8915@gmail.com`.
-   - 📱 **WhatsApp Alert**: Sent to the Super Admin's mobile number.
-3. **Super Admin Approval**: Super Admin approves pending shopkeeper requests in `bizora-admin.onrender.com/system-admin`.
-4. **Data Isolation**: Multi-tenant `workspaceId` ensures 100% data isolation per store.
-
----
-
-## 🛠️ Key Backend Environment Variables
-
-Set these environment variables on your Render Web Service (`bizora-backend`):
+Set these environment variables on your Render Backend Web Service (`bizora-backend`):
 
 | Variable Name | Description |
 | :--- | :--- |
-| `DATABASE_URL` | PostgreSQL / Prisma Connection String |
-| `JWT_SECRET` | Secret key for JWT session tokens |
-| `VAPI_AGENT_ID` | `88b76de6-b66b-46f0-a536-8182804fab8a` |
-| `VAPI_PHONE_ID` | `027dfd39-b626-43cf-859f-6583a33f580b` |
-| `TWILIO_ACCOUNT_SID` | `AC0c2e3acc342bd7771e472e2902b8a57f` |
-| `SYSTEM_ADMIN_EMAIL` | `khade8915@gmail.com` |
-| `RESEND_API_KEY` | Resend API Key for health & onboarding emails |
-| `GEMINI_API_KEY` | Google Gemini AI Key for intelligent decision insights |
+| `DATABASE_URL` | PostgreSQL / Prisma Connection String with Connection Pooling |
+| `JWT_SECRET` | Secret key for cryptographic session tokens |
+| `VAPI_AGENT_ID` | Vapi AI Voice Agent identifier for automated calls |
+| `VAPI_PHONE_ID` | Vapi outbound phone number ID |
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID for automated WhatsApp receipts |
+| `SYSTEM_ADMIN_EMAIL` | Admin alert email destination (`khade8915@gmail.com`) |
+| `RESEND_API_KEY` | Resend API key for health alerts and onboarding emails |
+| `GEMINI_API_KEY` | Google Gemini AI key for autonomous decision insights |
 
 ---
 
-## ⚡ Quick Start & Local Development
+## ⚡ Local Setup & Development
 
 ### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Generate Prisma Database Client
+### 2. Generate Prisma Client
 ```bash
 npm run build -w packages/database
 ```
 
-### 3. Build Backend Service
+### 3. Run Development Servers
 ```bash
-npm run build -w services/backend
+npm run dev:backend   # NestJS Backend API (Port 3000)
+npm run dev:owner     # Owner Portal (Port 3001)
+npm run dev:admin     # Super Admin Portal (Port 3002)
+npm run dev:supplier  # Supplier Portal (Port 3003)
+npm run dev:customer  # Customer Portal (Port 3004)
+npm run dev           # Marketing Web Portal (Port 3005)
 ```
 
-### 4. Build Frontends
+### 4. Build for Production
 ```bash
-npm run build -w apps/owner
-npm run build -w apps/admin
-npm run build -w apps/supplier
-npm run build -w apps/customer
-npm run build -w apps/web
+npm run build:render:owner    # Builds Owner Portal (Prisma + Vite + Nitro)
+npm run build:render:admin    # Builds Admin Portal
+npm run build:backend         # Builds NestJS Backend
 ```
 
 ---
 
-## 📄 License
-© 2026 Bizora AI · Enterprise Decision Intelligence & Business OS
+## 📄 License & Intellectual Property
+© 2026 Bizora AI · Enterprise Decision Intelligence & Autonomous Retail Operating System. All Rights Reserved.
