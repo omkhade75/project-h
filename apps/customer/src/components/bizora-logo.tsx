@@ -13,38 +13,46 @@ export function BizoraLogoIcon({ className }: { className?: string }) {
       viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("w-full h-full drop-shadow-sm", className)}
+      className={cn("w-full h-full drop-shadow-sm select-none", className)}
     >
       <defs>
-        <linearGradient id="bz-grad-main" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="bz-icon-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#4F46E5" />
           <stop offset="50%" stopColor="#7C3AED" />
-          <stop offset="100%" stopColor="#0891B2" />
+          <stop offset="100%" stopColor="#06B6D4" />
         </linearGradient>
-        <linearGradient id="bz-grad-accent" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#F43F5E" />
-          <stop offset="100%" stopColor="#8B5CF6" />
+        <linearGradient id="bz-icon-accent" x1="14" y1="18" x2="30" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#38BDF8" />
+          <stop offset="100%" stopColor="#818CF8" />
         </linearGradient>
-        <filter id="bz-glow-filter" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
       </defs>
 
-      {/* Rounded container with vibrant gradient */}
-      <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#bz-grad-main)" />
+      {/* High-definition rounded badge base */}
+      <rect x="1" y="1" width="38" height="38" rx="10" fill="url(#bz-icon-bg)" />
+      <rect x="1.5" y="1.5" width="37" height="37" rx="9.5" stroke="#FFFFFF" strokeOpacity="0.25" strokeWidth="1" />
 
-      {/* Sleek geometric B logo paths */}
+      {/* Crisp White Bold Geometric B */}
       <path
-        d="M11 10H23C26.3137 10 29 12.6863 29 16C29 19.3137 26.3137 22 23 22H11V10Z"
+        d="M10 9H15.5V31H10C9.44772 31 9 30.5523 9 30V10C9 9.44772 9.44772 9 10 9Z"
         fill="#FFFFFF"
-        fillOpacity="0.95"
       />
+
+      {/* Top Loop */}
       <path
-        d="M11 20H24.5C27.8137 20 30.5 22.6863 30.5 26C30.5 29.3137 27.8137 32 24.5 32H11V20Z"
-        fill="url(#bz-grad-accent)"
+        d="M15.5 9H22.5C25.5376 9 28 11.4624 28 14.5C28 17.5376 25.5376 20 22.5 20H15.5V9Z"
+        fill="#FFFFFF"
       />
-      <circle cx="21" cy="21" r="2.5" fill="#FFFFFF" filter="url(#bz-glow-filter)" />
+      <rect x="15.5" y="12.5" width="6.5" height="4" rx="2" fill="#5B21B6" />
+
+      {/* Bottom Loop with vibrant cyan accent */}
+      <path
+        d="M15.5 19.5H23.5C26.8137 19.5 29.5 22.1863 29.5 25.5C29.5 28.8137 26.8137 31.5 23.5 31.5H15.5V19.5Z"
+        fill="#FFFFFF"
+      />
+      <rect x="15.5" y="22.5" width="7.5" height="5.5" rx="2.75" fill="url(#bz-icon-accent)" />
+
+      {/* AI Center Luminescence Node */}
+      <circle cx="21" cy="20" r="1.75" fill="#38BDF8" />
     </svg>
   );
 }
@@ -96,7 +104,7 @@ export function BizoraLogo({
           </span>
         </div>
         {sub && (
-          <span className={cn("mt-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border w-fit leading-none hidden sm:inline-block", badge.color)}>
+          <span className={cn("mt-1 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border w-fit leading-none truncate max-w-[170px] sm:max-w-none inline-block", badge.color)}>
             {sub}
           </span>
         )}

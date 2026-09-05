@@ -330,6 +330,44 @@
   50% { opacity: 0.4; transform: scale(1.1); }
 }
 
+@keyframes popup-pop-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes overlay-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
 @utility animate-float-slow {
   animation: float-slow 15s ease-in-out infinite;
 }
@@ -340,6 +378,80 @@
 
 @utility animate-pulse-slow {
   animation: pulse-slow 8s ease-in-out infinite;
+}
+
+@utility animate-fade-in-up {
+  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-popup {
+  animation: popup-pop-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-live-pulse {
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-out-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+/* Modal Dialog Pop-In Animation */
+div[role="dialog"][data-state="open"] {
+  animation: popup-pop-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* Overlay Fade-In Animation */
+div[data-state="open"] > [class*="DialogOverlay"],
+div[data-state="open"][class*="DialogOverlay"],
+[data-state="open"] > [class*="Overlay"] {
+  animation: overlay-fade-in 0.2s ease-out forwards;
+}
+
+/* Radix Sheet drawer animations */
+[data-state="open"] > [class*="slide-in-from-right"],
+[data-state="open"][class*="slide-in-from-right"] {
+  animation: slide-in-right 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-state="closed"] > [class*="slide-out-to-right"],
+[data-state="closed"][class*="slide-out-to-right"] {
+  animation: slide-out-right 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-state="open"] > [class*="slide-in-from-left"],
+[data-state="open"][class*="slide-in-from-left"] {
+  animation: slide-in-left 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-state="closed"] > [class*="slide-out-to-left"],
+[data-state="closed"][class*="slide-out-to-left"] {
+  animation: slide-out-left 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Card hover and micro-interaction smoothness */
+.card-elevated {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-elevated:hover {
+  transform: translateY(-2px);
 }
 
 /* ═══════════════════════════════════════════════════════════

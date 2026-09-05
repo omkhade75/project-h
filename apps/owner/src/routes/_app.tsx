@@ -589,6 +589,13 @@ function AppShell() {
               <span className="hidden sm:inline font-bold text-foreground">Bizora AI</span>
               <ChevronRight className="hidden sm:inline h-3 w-3 text-muted-foreground/60" />
               <span className="truncate font-semibold text-foreground">{currentLabel}</span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0" title="Real-time Live Sync Active">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                <span className="hidden md:inline">Live</span>
+              </span>
             </div>
 
             <div className="relative ml-3 hidden max-w-xs xl:max-w-sm flex-1 md:block">

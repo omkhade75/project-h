@@ -71,7 +71,7 @@ function AppShell() {
   const [isDark, setIsDark] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = useRouterState({ select: (s: any) => s.location.pathname });
+  const pathname: string = (useRouterState({ select: (s: any) => s.location.pathname }) as unknown as string) || "";
 
   useEffect(() => {
     if (loading) return;
