@@ -39,6 +39,7 @@ import { askBizoraServer } from "@/lib/server-ai";
 import type { AIResponseContract } from "@/lib/tool-types";
 import { initiateVapiCallServer } from "@/lib/server-vapi";
 import { buildAIContext, localQueryFallback } from "@/lib/ai-context-builder";
+import { getBusinessSummary } from "@/lib/analytics-engine";
 
 export const Route = createFileRoute("/_app/ai-decisions")({
   head: () => ({
@@ -125,6 +126,7 @@ function AskBizora() {
   const navigate = useNavigate();
   const {
     activeDate,
+    products,
     addPurchaseOrder,
     applyMarkdown,
     openProduct360,
@@ -171,8 +173,8 @@ function AskBizora() {
           clientGrossRevenue: summary.grossRevenue,
           clientOrdersCount: summary.orders,
           clientProductsCount: products.length,
-          clientOutOfStockCount: products.filter((p) => p.stock === 0).length,
-          clientLowStockItems: products.filter((p) => p.stock <= p.reorder),
+          clientOutOfStockCount: products.filter((p: any) => p.stock === 0).length,
+          clientLowStockItems: products.filter((p: any) => p.stock <= p.reorder),
         },
       });
 

@@ -317,7 +317,7 @@ export function TimeMachine() {
                         <td className="py-2">{tx.customerName || "Walk-in"}</td>
                         <td className="py-2">{tx.dept || "General"}</td>
                         <td className="py-2 font-semibold">{fmtINR(tx.total)}</td>
-                        <td className="py-2">{tx.paymentMethod}</td>
+                        <td className="py-2">{tx.payment}</td>
                       </tr>
                     ))}
                   </tbody>

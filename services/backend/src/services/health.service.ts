@@ -15,10 +15,23 @@ const FRONTEND_URLS = [
   'https://bizora-owner.onrender.com/sales',
 ];
 
+export interface FrontendErrorRecord {
+  id: string;
+  app: string;
+  message: string;
+  stack?: string;
+  url?: string;
+  userEmail?: string;
+  userAgent?: string;
+  timestamp: string;
+}
+
 @Injectable()
 export class HealthService implements OnModuleInit {
   private readonly logger = new Logger(HealthService.name);
   private lastAlertTime = 0; // Debounce: don't spam emails
+  private lastFrontendCrashAlertTime = 0;
+  private recentFrontendErrors: FrontendErrorRecord[] = [];
 
   constructor(
     private prisma: DatabaseService,
@@ -258,6 +271,14 @@ export class HealthService implements OnModuleInit {
       }
     } catch (_) {}
 
+    // Auto-Audit 6: Client Runtime Crash Check (Browser Exceptions)
+    const recentCrashes = this.recentFrontendErrors.filter(
+      (e) => Date.now() - new Date(e.timestamp).getTime() < 15 * 60 * 1000
+    );
+    if (recentCrashes.length > 0) {
+      issues.push(`🔴 ${recentCrashes.length} CLIENT RUNTIME CRASH(ES): "${recentCrashes[0].message}" on ${recentCrashes[0].url || 'portal'}`);
+    }
+
     const totalResponseTime = Date.now() - startTime;
     const remainingIssues = issues.filter((iss) => {
       if (pgStatus === 'up' && iss.includes('POSTGRESQL DOWN')) return false;
@@ -268,6 +289,8 @@ export class HealthService implements OnModuleInit {
     const allIssues = [...remainingIssues, ...warnings];
 
     const report = {
+      recentFrontendErrors: this.recentFrontendErrors,
+      frontendCrashCount: this.recentFrontendErrors.length,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       dbStatus: pgStatus,
@@ -446,6 +469,112 @@ export class HealthService implements OnModuleInit {
     } catch (err: any) {
       this.logger.error(`Error sending health alert email: ${err.message}`);
       return { sent: false, reason: err.message };
+    }
+  }
+
+  public recordFrontendError(errorData: {
+    app?: string;
+    message: string;
+    stack?: string;
+    url?: string;
+    userEmail?: string;
+    userAgent?: string;
+  }): FrontendErrorRecord {
+    const record: FrontendErrorRecord = {
+      id: `err-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      app: errorData.app || 'owner',
+      message: errorData.message || 'Unknown runtime error',
+      stack: errorData.stack,
+      url: errorData.url,
+      userEmail: errorData.userEmail,
+      userAgent: errorData.userAgent,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.recentFrontendErrors.unshift(record);
+    if (this.recentFrontendErrors.length > 50) {
+      this.recentFrontendErrors.pop();
+    }
+
+    this.logger.error(`🚨 [FRONTEND RUNTIME CRASH] App: ${record.app} | URL: ${record.url || 'unknown'} | Error: ${record.message}`);
+
+    // Dispatches email alert to admin immediately
+    this.sendFrontendCrashAlert(record).catch(err => {
+      this.logger.warn(`Failed to dispatch crash email: ${err.message}`);
+    });
+
+    return record;
+  }
+
+  public getRecentFrontendErrors(): FrontendErrorRecord[] {
+    return this.recentFrontendErrors;
+  }
+
+  public clearRecentFrontendErrors() {
+    this.recentFrontendErrors = [];
+  }
+
+  async sendFrontendCrashAlert(error: FrontendErrorRecord) {
+    const now = Date.now();
+    if (now - this.lastFrontendCrashAlertTime < 60 * 1000) {
+      return;
+    }
+    this.lastFrontendCrashAlertTime = now;
+
+    const apiKey = this.getResendApiKey();
+    if (!apiKey) return;
+
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'Bizora Crash Monitor <onboarding@resend.dev>',
+          to: [ADMIN_EMAIL],
+          subject: `🚨 [Bizora Client Crash] ${error.message.slice(0, 60)}`,
+          html: `
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 32px; border-radius: 16px; max-width: 650px; margin: 0 auto; border: 1px solid #ef4444;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <h2 style="color: #ef4444; margin: 0; font-size: 22px;">🚨 Client Runtime JavaScript Crash</h2>
+                <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">A browser page failed to load or threw an unhandled exception</p>
+              </div>
+
+              <div style="background-color: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 16px;">
+                <h3 style="color: #fca5a5; margin: 0 0 8px 0; font-size: 15px;">💥 Error Message</h3>
+                <p style="color: #f87171; font-family: monospace; font-size: 14px; background: #0f172a; padding: 12px; border-radius: 8px; margin: 0;">
+                  ${error.message}
+                </p>
+              </div>
+
+              <div style="background-color: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 16px;">
+                <h3 style="color: #38bdf8; margin: 0 0 12px 0; font-size: 15px;">📍 Crash Context</h3>
+                <table style="width: 100%; font-size: 13px; color: #cbd5e1;">
+                  <tr><td style="padding: 4px 0; color: #94a3b8; width: 100px;">Portal App:</td><td><strong>${error.app.toUpperCase()}</strong></td></tr>
+                  <tr><td style="padding: 4px 0; color: #94a3b8;">URL:</td><td><a href="${error.url || '#'}" style="color: #60a5fa;">${error.url || 'N/A'}</a></td></tr>
+                  <tr><td style="padding: 4px 0; color: #94a3b8;">User:</td><td>${error.userEmail || 'Anonymous / Pre-login'}</td></tr>
+                  <tr><td style="padding: 4px 0; color: #94a3b8;">Timestamp:</td><td>${error.timestamp}</td></tr>
+                </table>
+              </div>
+
+              ${error.stack ? `
+              <div style="background-color: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155;">
+                <h3 style="color: #a78bfa; margin: 0 0 8px 0; font-size: 15px;">📜 Stack Trace</h3>
+                <pre style="color: #94a3b8; font-size: 11px; background: #0f172a; padding: 12px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; margin: 0;">${error.stack.slice(0, 1500)}</pre>
+              </div>` : ''}
+
+              <p style="text-align: center; color: #64748b; font-size: 11px; margin-top: 20px;">
+                Bizora Automated Real-Time Error Monitor
+              </p>
+            </div>
+          `,
+        }),
+      });
+      this.logger.log(`✉️ Crash alert email dispatched to ${ADMIN_EMAIL}`);
+    } catch (err: any) {
+      this.logger.error(`Failed to send crash alert email: ${err.message}`);
     }
   }
 

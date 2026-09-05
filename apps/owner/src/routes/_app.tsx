@@ -172,7 +172,7 @@ function AppShell() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [readNotifs, setReadNotifs] = useState<Set<string>>(new Set());
   const notifRef = useRef<HTMLDivElement>(null);
-  const pathname = useRouterState({ select: (s: any) => s.location.pathname });
+  const pathname: string = (useRouterState({ select: (s: any) => s.location.pathname }) as unknown as string) || "";
 
   const {
     activeProductId,

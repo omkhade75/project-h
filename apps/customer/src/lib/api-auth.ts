@@ -21,10 +21,10 @@ const DEMO_FALLBACK_ACCOUNTS: Record<string, { role: string; name: string; isSys
   'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
 };
 
-export const loginServer = async (data: { data: { email: string; password: string } }) => {
-  const payload = data.data ? data.data : data;
-  const emailLower = (payload.email || '').toLowerCase().trim();
-  const password = payload.password || '';
+export const loginServer = async (data: any) => {
+  const payload = data?.data ? data.data : data;
+  const emailLower = (payload?.email || '').toLowerCase().trim();
+  const password = payload?.password || '';
 
   if (!emailLower || !password) {
     throw new Error('Email and password are required.');

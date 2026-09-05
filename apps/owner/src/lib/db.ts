@@ -45,6 +45,7 @@ export interface Supplier {
   risk: "Low" | "Medium" | "High";
   score: number;
   phone?: string;
+  email?: string;
 }
 
 export interface Customer {
@@ -1221,10 +1222,10 @@ class SeededDatabase {
     }
     const combinedMap = new Map<string, Supplier>();
     memory.forEach((s) => {
-      if (s) combinedMap.set(s.id || s.email, s);
+      if (s && (s.id || s.email)) combinedMap.set(s.id || s.email || '', s);
     });
     custom.forEach((s) => {
-      if (s) combinedMap.set(s.id || s.email, s);
+      if (s && (s.id || s.email)) combinedMap.set(s.id || s.email || '', s);
     });
     return Array.from(combinedMap.values());
   }
@@ -1304,6 +1305,18 @@ class SeededDatabase {
   public updateRecommendationStatus(id: string, status: AIRecommendation["status"]) {
     const updated = this.schema.recommendations.map((r) => (r.id === id ? { ...r, status } : r));
     this.save({ ...this.schema, recommendations: updated });
+  }
+
+  public acceptRecommendation(id: string) {
+    this.updateRecommendationStatus(id, "Accepted");
+  }
+
+  public rejectRecommendation(id: string) {
+    this.updateRecommendationStatus(id, "Rejected");
+  }
+
+  public applyMarkdown(productId: string, batchId: string, markdownPercent: number) {
+    this.updateProductBatchStatus(batchId, "actioned", markdownPercent);
   }
 
   public addPurchaseOrder(po: PurchaseOrder) {

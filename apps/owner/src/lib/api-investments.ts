@@ -23,3 +23,5 @@ export const liquidateInvestmentServer = async (data?: any) => {
 export const getLiveMarketDataServer = async (data?: any) => {
   return handleResponse(await fetchApi('/api/investments/market-data', { method: 'GET' }));
 };
+
+export type { InvestmentItem } from './server-investments';

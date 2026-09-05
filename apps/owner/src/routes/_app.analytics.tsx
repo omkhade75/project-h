@@ -39,7 +39,7 @@ function AnalyticsPage() {
   // Channel split computation
   const channelMap: Record<string, number> = {};
   txns.forEach((t) => {
-    const channel = t.paymentMethod || "Store POS";
+    const channel = t.payment || "Store POS";
     channelMap[channel] = (channelMap[channel] || 0) + 1;
   });
 

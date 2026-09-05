@@ -138,7 +138,7 @@ export function LiveOps() {
   const combinedFeed = [
     ...transactions.map((tx) => ({
       type: "sale",
-      text: `New sale ₹${tx.total.toLocaleString("en-IN")} · ${tx.dept || "General"} · ${tx.paymentMethod}`,
+      text: `New sale ₹${tx.total.toLocaleString("en-IN")} · ${tx.dept || "General"} · ${tx.payment}`,
       t: getTimeAgo(tx.date),
       timestamp: new Date(tx.date).getTime(),
     })),

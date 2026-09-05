@@ -119,7 +119,7 @@ function SystemAdminPage() {
   const fetchWorkspaces = async () => {
     setLoadingWorkspaces(true);
     try {
-      const res = await searchCompaniesServer({ data: { query: workspaceQuery } });
+      const res = await searchCompaniesServer(workspaceQuery);
       setWorkspaces(res.workspaces);
     } catch (err: any) {
       toast.error("Failed to fetch workspaces");

@@ -22,6 +22,8 @@ export interface CustomerListItem {
   churn: number;
   status: string;
   lastVisit: string;
+  loyaltyTier?: string;
+  ordersCount?: number;
 }
 
 export interface Customer360Profile {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { HealthService } from '../services/health.service';
 
 @Controller('api/health')
@@ -11,6 +11,35 @@ export class HealthController {
     return {
       success: report.dbStatus === 'up',
       data: report
+    };
+  }
+
+  @Post('report-error')
+  async reportFrontendError(@Body() body: any) {
+    const errorData = body?.data ? body.data : body;
+    const record = this.healthService.recordFrontendError(errorData);
+    return {
+      success: true,
+      data: record,
+    };
+  }
+
+  @Get('frontend-errors')
+  async getFrontendErrors() {
+    const errors = this.healthService.getRecentFrontendErrors();
+    return {
+      success: true,
+      count: errors.length,
+      data: errors,
+    };
+  }
+
+  @Post('clear-frontend-errors')
+  async clearFrontendErrors() {
+    this.healthService.clearRecentFrontendErrors();
+    return {
+      success: true,
+      message: 'Frontend errors cleared',
     };
   }
 

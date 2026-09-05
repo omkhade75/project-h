@@ -74,17 +74,22 @@ function WhatsappIcon({ className }: { className?: string }) {
 
 const defaultRegisteredCustomer: CustomerListItem = {
   id: "cust-001",
+  customerCode: "CUST-001",
+  name: "Om Khade",
   firstName: "Om",
   lastName: "Khade",
   email: "khade8915@gmail.com",
   phone: "+91 75880 21256",
-  segment: "New Customer",
-  loyaltyTier: "Regular",
-  ordersCount: 0,
-  spend: 0,
-  churn: 0,
   joined: "2026-07-28",
-  prefDept: "Grocery",
+  customerType: "Regular",
+  visits: 0,
+  spend: 0,
+  aov: 0,
+  favDept: "Grocery",
+  segment: "New",
+  churn: 0,
+  status: "Active",
+  lastVisit: "2026-07-28",
 };
 
 export function CustomersPage() {
@@ -268,17 +273,24 @@ export function CustomersPage() {
 
       const newCust: CustomerListItem = {
         id: `cust-${Date.now()}`,
+        customerCode: `CUST-${Date.now().toString().slice(-4)}`,
+        name: `${formFirstName} ${formLastName}`.trim() || "Customer",
         firstName: formFirstName,
         lastName: formLastName,
         email: formEmail,
         phone: formPhone,
-        segment: "New Customer",
+        joined: new Date().toISOString().split("T")[0],
+        customerType: formLoyaltyTier || "Regular",
+        visits: 1,
+        spend: 0,
+        aov: 0,
+        favDept: "General",
+        segment: "New",
+        churn: 5,
+        status: "Active",
+        lastVisit: new Date().toISOString().split("T")[0],
         loyaltyTier: formLoyaltyTier,
         ordersCount: 1,
-        spend: 0,
-        churn: 5,
-        joined: new Date().toISOString().split("T")[0],
-        prefDept: "General",
       };
 
       setCustomers((prev) => [newCust, ...prev.filter(c => c.id !== "cust-001")]);
@@ -769,12 +781,12 @@ export function CustomersPage() {
                         <StatusPill
                           tone={
                             c.loyaltyTier === "Platinum"
-                              ? "indigo"
+                              ? "violet"
                               : c.loyaltyTier === "Gold"
-                              ? "amber"
+                              ? "warning"
                               : c.loyaltyTier === "Silver"
-                              ? "slate"
-                              : "blue"
+                              ? "info"
+                              : "default"
                           }
                         >
                           {c.loyaltyTier || "Regular"}
@@ -783,7 +795,7 @@ export function CustomersPage() {
                       <td className="px-3 py-3">{c.ordersCount}</td>
                       <td className="px-3 py-3 font-semibold">{fmtINR(c.spend)}</td>
                       <td className="px-3 py-3">
-                        <StatusPill tone={c.churn > 50 ? "rose" : c.churn > 25 ? "amber" : "emerald"}>
+                        <StatusPill tone={c.churn > 50 ? "danger" : c.churn > 25 ? "warning" : "success"}>
                           {c.churn}% risk
                         </StatusPill>
                       </td>
@@ -813,7 +825,7 @@ export function CustomersPage() {
                   </h4>
                   <p className="text-[11px] text-muted-foreground">{activeSelectedCust.email}</p>
                 </div>
-                <StatusPill tone="emerald">Active VIP</StatusPill>
+                <StatusPill tone="success">Active VIP</StatusPill>
               </div>
 
               <div className="grid grid-cols-2 gap-2">

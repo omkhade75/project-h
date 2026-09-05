@@ -584,7 +584,7 @@ export function CommandCenter() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {(() => {
           const calcRevenue = (safeScopedTxns.length > 0 ? safeScopedTxns : safeTxns).reduce(
-            (sum, t) => sum + (t.total || t.amount || 0),
+            (sum, t) => sum + (t.total || 0),
             0,
           );
           const calcOrders = (safeScopedTxns.length > 0 ? safeScopedTxns : safeTxns).length;

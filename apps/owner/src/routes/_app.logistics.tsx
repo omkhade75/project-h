@@ -114,8 +114,7 @@ export function LogisticsPage() {
       vehicleNumber: "MH-12-PQ-8841",
       itemsCount: grabbedOrder?.items?.length || 3,
       status: "In Transit",
-      estimatedEtaMins: 8,
-      createdAt: new Date().toISOString(),
+      dispatchedAt: new Date().toISOString(),
     };
 
     setDispatches((prev) => [newDispatch, ...prev]);
@@ -258,7 +257,7 @@ export function LogisticsPage() {
                   <MapPin className="h-3.5 w-3.5 text-amber-500" /> {ord.address}
                 </p>
                 <div className="pt-1 flex flex-wrap gap-1">
-                  {ord.items.map((it, i) => (
+                  {ord.items.map((it: string, i: number) => (
                     <span key={i} className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
                       {it}
                     </span>

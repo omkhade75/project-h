@@ -19,3 +19,5 @@ export const updateLogisticsStatusServer = async (data?: any) => {
   const id = payload?.id || payload?.dispatchId;
   return handleResponse(await fetchApi(`/api/logistics/${id || ''}/status`, { method: 'PUT', body: payload ? JSON.stringify(payload) : undefined }));
 };
+
+export type { DeliveryItem } from './server-logistics';

@@ -108,7 +108,7 @@ export function DataImportPage() {
                 sold: 0,
                 revenue: 0,
                 margin: price > 0 ? parseFloat((((price - cost) / price) * 100).toFixed(1)) : 25,
-                status: (stock <= 15 ? "low_stock" : "ok") as const,
+                status: (stock <= 15 ? "low" : "ok") as "low" | "ok",
               };
             });
             dbInstance.importProducts(parsedProducts);
@@ -124,7 +124,7 @@ export function DataImportPage() {
               const price = parseFloat(r["price"] || "100");
               const total = parseFloat(r["total"] || (qty * price).toString());
               const paymentRaw = (r["payment"] || r["payment method"] || "UPI").toUpperCase();
-              const paymentMethod = (paymentRaw.includes("CASH") ? "Cash" : paymentRaw.includes("CARD") ? "Card" : "UPI") as const;
+              const paymentMethod: "Cash" | "Card" | "UPI" = paymentRaw.includes("CASH") ? "Cash" : paymentRaw.includes("CARD") ? "Card" : "UPI";
 
               return {
                 id: invNo,
@@ -137,7 +137,7 @@ export function DataImportPage() {
                 tax: Math.round(total * 0.05),
                 discount: 0,
                 total: total,
-                paymentMethod,
+                payment: paymentMethod,
                 status: "Completed" as const,
                 cashier: "CSV Auto-Import",
                 items: [{ productId: `PROD-${i + 1}`, name: prodName, quantity: qty, price, cost: price * 0.7 }],
@@ -160,15 +160,14 @@ export function DataImportPage() {
               return {
                 id: cid,
                 name,
-                phone,
-                email,
-                tier,
-                totalSpend: Math.floor(Math.random() * 5000) + 1000,
-                ordersCount: Math.floor(Math.random() * 8) + 1,
-                lastPurchaseDate: new Date().toISOString().split("T")[0],
+                joined: new Date().toISOString().split("T")[0],
+                visits: Math.floor(Math.random() * 8) + 1,
+                spend: Math.floor(Math.random() * 5000) + 1000,
+                aov: Math.floor(Math.random() * 500) + 200,
                 favDept: "General",
-                churnRiskScore: 10,
-                notes: `City: ${r["city"] || "N/A"}, State: ${r["state"] || "N/A"}`,
+                lastVisit: new Date().toISOString().split("T")[0],
+                segment: "New" as const,
+                churn: 10,
               };
             });
             dbInstance.importCustomers(parsedCusts);
@@ -195,20 +194,20 @@ export function DataImportPage() {
           recordCount = 10;
           const todayStr = new Date().toISOString().split("T")[0];
           const sampleTxns = [
-            { id: "INV1001", date: todayStr, time: "10:15", dept: "Supermarket Main", customerId: "C001", customerName: "Rahul Patil", subtotal: 60, tax: 3, discount: 0, total: 60, paymentMethod: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU001", name: "Amul Milk 500ml", quantity: 2, price: 30, cost: 27 }] },
-            { id: "INV1002", date: todayStr, time: "11:20", dept: "Supermarket Main", customerId: "C002", customerName: "Sneha Shah", subtotal: 135, tax: 6, discount: 0, total: 135, paymentMethod: "Cash" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU002", name: "Parle-G 500g", quantity: 3, price: 45, cost: 38 }] },
-            { id: "INV1003", date: todayStr, time: "14:10", dept: "Supermarket Main", customerId: "C003", customerName: "Amit Joshi", subtotal: 55, tax: 3, discount: 0, total: 55, paymentMethod: "Card" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU003", name: "Coca-Cola 750ml", quantity: 1, price: 55, cost: 48 }] },
-            { id: "INV1004", date: todayStr, time: "15:45", dept: "Supermarket Main", customerId: "C004", customerName: "Priya Kulkarni", subtotal: 90, tax: 4, discount: 0, total: 90, paymentMethod: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU004", name: "Maggi 70g", quantity: 5, price: 18, cost: 14 }] },
-            { id: "INV1005", date: todayStr, time: "16:30", dept: "Supermarket Main", customerId: "C005", customerName: "Rohan Desai", subtotal: 320, tax: 16, discount: 0, total: 320, paymentMethod: "Cash" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU005", name: "Aashirvaad Atta 5kg", quantity: 1, price: 320, cost: 290 }] },
+            { id: "INV1001", date: todayStr, time: "10:15", dept: "Supermarket Main", customerId: "C001", customerName: "Rahul Patil", subtotal: 60, tax: 3, discount: 0, total: 60, payment: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU001", name: "Amul Milk 500ml", quantity: 2, price: 30, cost: 27 }] },
+            { id: "INV1002", date: todayStr, time: "11:20", dept: "Supermarket Main", customerId: "C002", customerName: "Sneha Shah", subtotal: 135, tax: 6, discount: 0, total: 135, payment: "Cash" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU002", name: "Parle-G 500g", quantity: 3, price: 45, cost: 38 }] },
+            { id: "INV1003", date: todayStr, time: "14:10", dept: "Supermarket Main", customerId: "C003", customerName: "Amit Joshi", subtotal: 55, tax: 3, discount: 0, total: 55, payment: "Card" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU003", name: "Coca-Cola 750ml", quantity: 1, price: 55, cost: 48 }] },
+            { id: "INV1004", date: todayStr, time: "15:45", dept: "Supermarket Main", customerId: "C004", customerName: "Priya Kulkarni", subtotal: 90, tax: 4, discount: 0, total: 90, payment: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU004", name: "Maggi 70g", quantity: 5, price: 18, cost: 14 }] },
+            { id: "INV1005", date: todayStr, time: "16:30", dept: "Supermarket Main", customerId: "C005", customerName: "Rohan Desai", subtotal: 320, tax: 16, discount: 0, total: 320, payment: "Cash" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU005", name: "Aashirvaad Atta 5kg", quantity: 1, price: 320, cost: 290 }] },
           ];
           dbInstance.importTransactions(sampleTxns);
         } else if (targetCategory === "customer") {
           fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Member Sheet Photo OCR" : "Customer CRM";
           recordCount = 11;
           const sampleCusts = [
-            { id: "C001", name: "Rahul Patil", phone: "9876543210", email: "rahul.patil@gmail.com", tier: "Gold" as const, totalSpend: 4500, ordersCount: 6, lastPurchaseDate: "2026-07-29", favDept: "Dairy", churnRiskScore: 8, notes: "Kolhapur, Maharashtra" },
-            { id: "C002", name: "Sneha Shah", phone: "9876543211", email: "sneha.shah@gmail.com", tier: "Silver" as const, totalSpend: 2800, ordersCount: 4, lastPurchaseDate: "2026-07-29", favDept: "Biscuits", churnRiskScore: 15, notes: "Pune, Maharashtra" },
-            { id: "C003", name: "Amit Joshi", phone: "9876543212", email: "amit.joshi@gmail.com", tier: "Platinum" as const, totalSpend: 12500, ordersCount: 14, lastPurchaseDate: "2026-07-30", favDept: "Beverages", churnRiskScore: 5, notes: "Mumbai, Maharashtra" },
+            { id: "C001", name: "Rahul Patil", joined: "2026-07-01", visits: 6, spend: 4500, aov: 750, favDept: "Dairy", lastVisit: "2026-07-29", segment: "Loyal" as const, churn: 8 },
+            { id: "C002", name: "Sneha Shah", joined: "2026-06-15", visits: 4, spend: 2800, aov: 700, favDept: "Biscuits", lastVisit: "2026-07-29", segment: "Frequent" as const, churn: 15 },
+            { id: "C003", name: "Amit Joshi", joined: "2026-01-10", visits: 14, spend: 12500, aov: 893, favDept: "Beverages", lastVisit: "2026-07-30", segment: "VIP" as const, churn: 5 },
           ];
           dbInstance.importCustomers(sampleCusts);
         } else {

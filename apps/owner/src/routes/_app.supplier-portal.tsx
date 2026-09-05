@@ -95,7 +95,7 @@ function SupplierPortal() {
           label="Quality Score"
           value={purchaseOrders.length > 0 ? 98 : 0}
           icon={<ShieldCheck className="h-4 w-4 text-green-500" />}
-          format="percent"
+          format="num"
         />
       </div>
 
@@ -130,7 +130,7 @@ function SupplierPortal() {
                         <td className="p-3 text-right font-medium">{fmtINR(po.totalCost)}</td>
                         <td className="p-3 text-center">
                           <StatusPill
-                            tone={po.status === "Received" || po.status === "Completed" ? "success" : "warning"}
+                            tone={(po.status as string) === "Received" || (po.status as string) === "Completed" ? "success" : "warning"}
                           >
                             {po.status}
                           </StatusPill>

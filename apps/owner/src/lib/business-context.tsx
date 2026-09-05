@@ -209,22 +209,25 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const safeAnoms = Array.isArray(anoms) ? anoms : [];
         const safeUtils = Array.isArray(utils?.readings) ? utils.readings : [];
 
-        const mappedProducts = safeProds.map((p) => ({
+        const mappedProducts: Product[] = safeProds.map((p) => ({
           id: p.id,
           name: p.name,
-          sku: p.sku,
           dept: p.dept || "General",
           category: p.category || "General",
+          brand: (p as any).brand || "General",
           price: p.price,
           cost: p.cost,
           stock: p.stock,
-          reorder: p.reorderLevel,
-          status: p.status as any,
-          batches: p.batches || [],
-          locationBreakdown: p.locationBreakdown || { warehouse: p.stock, retailFloor: 0 },
+          reorder: p.reorderLevel ?? 15,
+          expiry: (p as any).expiry || null,
+          supplier: (p as any).supplier || "General",
+          sold: (p as any).sold || 0,
+          revenue: (p as any).revenue || 0,
+          margin: (p as any).margin || 25,
+          status: ((p.stock <= (p.reorderLevel ?? 15)) ? "low" : "ok") as any,
         }));
 
-        const mappedTransactions = safeTxns.map((t) => ({
+        const mappedTransactions: Transaction[] = safeTxns.map((t) => ({
           id: t.id,
           date: t.date,
           time: t.time || "12:00",
@@ -235,35 +238,38 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           tax: t.tax,
           discount: t.discount,
           total: t.total,
-          paymentMethod: t.paymentMethod as any,
-          status: t.status as any,
-          cashier: t.cashier || "System",
+          payment: (t.paymentMethod as any) || "UPI",
+          status: (t.status as any) || "Completed",
           items: t.items || [],
         }));
 
-        const mappedCustomers = safeCusts.map((c) => ({
+        const mappedCustomers: Customer[] = safeCusts.map((c) => ({
           id: c.id,
           name: c.name,
-          phone: c.phone,
-          tier: c.tier as any,
-          totalSpend: c.totalSpend,
-          ordersCount: c.ordersCount,
-          lastPurchaseDate: c.lastPurchaseDate,
+          joined: (c as any).joined || c.lastPurchaseDate || "2026-01-01",
+          visits: (c as any).visits || c.ordersCount || 1,
+          spend: (c as any).spend || c.totalSpend || 0,
+          aov: (c as any).aov || Math.round((c.totalSpend || 0) / (c.ordersCount || 1)),
           favDept: c.favDept || "General",
-          churnRiskScore: c.churnRiskScore,
-          notes: c.notes,
+          lastVisit: c.lastPurchaseDate || "2026-01-01",
+          segment: ((c.tier === "Platinum" || c.tier === "Gold") ? "VIP" : "Loyal") as any,
+          churn: c.churnRiskScore || 5,
         }));
 
-        const mappedSuppliers = safeSupps.map((s) => ({
+        const mappedSuppliers: Supplier[] = safeSupps.map((s) => ({
           id: s.id,
           name: s.name,
-          contactName: s.contactPerson || s.contactName || "Contact Person",
+          category: Array.isArray(s.categories) ? s.categories[0] : "General",
+          contact: s.contactPerson || s.contactName || "Contact Person",
+          spend: (s as any).spend || 50000,
+          pending: (s as any).pending || 0,
+          onTime: s.onTimeDeliveryPct || 98,
+          quality: s.qualityRating || 95,
+          lead: s.leadTimeDays || 3,
+          risk: "Low" as const,
+          score: Math.round(((s.onTimeDeliveryPct || 98) + (s.qualityRating || 95)) / 2),
           phone: s.phone,
-          suppliedDepts: s.categories || ["General"],
-          leadTimeDays: s.leadTimeDays || 3,
-          onTimeDeliveryPct: s.onTimeDeliveryPct || 98,
-          qualityRating: s.qualityRating || 95,
-          activeOrders: s.activeOrders || 0,
+          email: (s as any).email,
         }));
 
         const mappedExpenses = safeExps.map((e) => ({

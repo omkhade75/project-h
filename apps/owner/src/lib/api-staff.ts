@@ -5,6 +5,12 @@ const handleResponse = (result: any, fallback: any = []) => {
   return fallback;
 };
 
+export const getStaffAttendanceServer = async (data?: any) => {
+  return handleResponse(await fetchApi('/api/staff/attendance', { method: 'GET' }));
+};
+
+export type { StaffListItem } from './server-staff';
+
 export const getStaffServer = async (data?: any) => {
   return handleResponse(await fetchApi('/api/staff', { method: 'GET' }));
 };

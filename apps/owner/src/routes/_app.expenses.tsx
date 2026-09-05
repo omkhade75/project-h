@@ -71,7 +71,7 @@ function Expenses() {
   }, [scopedExpenses]);
 
   const totalRevenue = useMemo(() => {
-    return (scopedTransactions || []).reduce((sum, t) => sum + (t.total || t.amount || 0), 0);
+    return (scopedTransactions || []).reduce((sum, t) => sum + (t.total || 0), 0);
   }, [scopedTransactions]);
 
   const expenseRevenueRatio = useMemo(() => {

@@ -1,7 +1,7 @@
 import { BizoraLogo } from "@/components/bizora-logo";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Eye, EyeOff, Building, TrendingUp, Loader2, ArrowLeft, Crown, DollarSign, PieChart } from "lucide-react";
+import { Eye, EyeOff, Building, TrendingUp, Loader2, ArrowLeft, Crown, DollarSign, PieChart, Sparkles, ArrowRight, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

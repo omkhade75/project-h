@@ -170,7 +170,7 @@ function PurchaseOrders() {
       m.getPurchaseOrderDetailsServer({ data: { poId: po.dbId } }).then((fullPo) => {
         setReceivingPo(fullPo);
         const initialReceive: Record<string, number> = {};
-        fullPo?.items.forEach((i: any) => {
+        ((fullPo as any)?.items || []).forEach((i: any) => {
           initialReceive[i.id] = Math.max(0, i.quantity - i.receivedQuantity);
         });
         setReceiveItems(initialReceive);

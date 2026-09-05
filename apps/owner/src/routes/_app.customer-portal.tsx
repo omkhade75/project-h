@@ -46,7 +46,7 @@ function CustomerPortal() {
     return transactions.filter(
       (t) =>
         t.customerName?.toLowerCase() === user.name?.toLowerCase() ||
-        t.customerPhone === user.phone
+        t.customerId === user.email
     );
   }, [transactions, user]);
 
@@ -106,10 +106,10 @@ function CustomerPortal() {
           format="num"
         />
         <KpiCard
-          label="Membership Tier"
-          value={profile.membershipTier}
+          label={`Tier: ${profile.membershipTier}`}
+          value={profile.loyaltyPoints}
           icon={<Star className="h-4 w-4 text-yellow-500" />}
-          format="string"
+          format="num"
         />
         <KpiCard
           label="Active Tickets"
