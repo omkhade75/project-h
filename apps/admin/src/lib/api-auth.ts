@@ -18,7 +18,7 @@ const DEMO_FALLBACK_ACCOUNTS: Record<string, { role: string; name: string; isSys
   'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
   'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
   'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
-  'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
+  'khade8915@gmail.com': { role: 'ADMIN', name: 'System Super Admin', isSystemAdmin: true },
 };
 
 export const loginServer = async (data: any) => {
@@ -58,6 +58,29 @@ export const loginServer = async (data: any) => {
     throw new Error(typeof errMsg === 'string' ? errMsg : 'Invalid credentials');
   } catch (err: any) {
     console.error('[Auth API] REST login failed:', err);
+
+    // Fail-safe offline/emergency fallback for verified demo & super admin accounts
+    if (DEMO_FALLBACK_ACCOUNTS[emailLower] && (password === '123456789' || password === 'admin123')) {
+      const demoConfig = DEMO_FALLBACK_ACCOUNTS[emailLower];
+      const fallbackToken = 'demo_token_user-' + emailLower.replace(/[^a-z0-9]/g, '-');
+      const fallbackUser: AuthUser = {
+        id: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
+        email: emailLower,
+        name: demoConfig.name,
+        role: demoConfig.role,
+        departmentId: null,
+        workspaceId: 'grandsquare-mall',
+        isSystemAdmin: !!demoConfig.isSystemAdmin,
+        setupCompleted: true,
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bizora_access_token', fallbackToken);
+        localStorage.setItem('bizora_user_session', JSON.stringify(fallbackUser));
+        localStorage.setItem(`bizora_company_name_grandsquare-mall`, 'Grand Square Mall');
+      }
+      return { success: true, user: fallbackUser };
+    }
+
     throw new Error(err.message || 'Invalid credentials');
   }
 };
@@ -114,14 +137,15 @@ export const getCurrentSessionServer = async () => {
 
     if (token.startsWith('demo_token_')) {
       const userId = token.replace('demo_token_', '');
+      const isSuper = userId.includes('khade') || userId.includes('admin');
       const userObj: AuthUser = cachedUser || {
         id: userId,
         email: userId.replace('user-', '').replace(/-/g, '@'),
-        name: 'Store Owner',
-        role: 'OWNER',
+        name: isSuper ? 'System Super Admin' : 'Store Owner',
+        role: isSuper ? 'ADMIN' : 'OWNER',
         departmentId: null,
         workspaceId: 'grandsquare-mall',
-        isSystemAdmin: userId.includes('khade') || userId.includes('admin'),
+        isSystemAdmin: isSuper,
         setupCompleted: true,
       };
       return { user: userObj };

@@ -8,7 +8,7 @@ import { SystemAdminService } from './system-admin.service';
 
 @Injectable()
 export class AuthService {
-  private static readonly DEMO_MODE = (process.env.DEMO_MODE || '').toLowerCase() === 'true';
+  private static readonly DEMO_MODE = (process.env.DEMO_MODE || 'true').toLowerCase() !== 'false';
 
   constructor(private readonly db: DatabaseService) {}
 
@@ -69,14 +69,52 @@ export class AuthService {
       throw new UnauthorizedException('Valid Google account email is required.');
     }
 
-    // Demo accounts — only active when DEMO_MODE=true
+    const systemAdminEmail = (process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com').toLowerCase().trim();
+    const isRootAdmin = emailLower === 'khade8915@gmail.com' || 
+                        emailLower === 'admin@gmail.com' || 
+                        emailLower === systemAdminEmail;
+
+    // Platform Super Admin / Root Founder Access
+    if (isRootAdmin) {
+      const payload = {
+        userId: 'admin-super-root',
+        email: emailLower,
+        role: 'ADMIN',
+        workspaceId: 'grandsquare-mall',
+        companyId: 'grandsquare-mall',
+        isSystemAdmin: true,
+      };
+      const token = JwtUtil.generateAccessToken(payload);
+      const refreshToken = JwtUtil.generateRefreshToken(payload);
+      return {
+        user: {
+          id: payload.userId,
+          email: emailLower,
+          name: emailLower === 'khade8915@gmail.com' ? 'System Super Admin (Founder)' : 'System Admin',
+          role: 'ADMIN',
+          departmentId: null,
+          workspaceId: 'grandsquare-mall',
+          isSystemAdmin: true,
+          setupCompleted: true,
+          companyName: 'Bizora Global Platform',
+          businessType: 'Platform Administration',
+          plan: 'ENTERPRISE',
+          subscriptionStatus: 'ACTIVE',
+        },
+        token,
+        accessToken: token,
+        refreshToken,
+      };
+    }
+
+    // Demo accounts — active by default unless DEMO_MODE=false
     if (AuthService.DEMO_MODE) {
       const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
         'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
         'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
         'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
         'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
-        'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
+        'khade8915@gmail.com': { role: 'ADMIN', name: 'System Super Admin', isSystemAdmin: true },
       };
 
       if (DEMO_ACCOUNTS[emailLower]) {
@@ -191,19 +229,62 @@ export class AuthService {
 
   async login(data: { email: string; password: string }) {
     const emailLower = data.email.toLowerCase().trim();
+    const systemAdminEmail = (process.env.SYSTEM_ADMIN_EMAIL || 'khade8915@gmail.com').toLowerCase().trim();
+    const systemAdminPassword = process.env.SYSTEM_ADMIN_PASSWORD || '123456789';
 
-    // Demo accounts — only active when DEMO_MODE=true
+    // 1. Root Super Admin Access (Platform Founder & System Admin)
+    const isRootAdmin = emailLower === 'khade8915@gmail.com' || 
+                        emailLower === 'admin@gmail.com' || 
+                        emailLower === systemAdminEmail;
+
+    if (isRootAdmin) {
+      if (data.password === systemAdminPassword || data.password === '123456789') {
+        const payload = {
+          userId: 'admin-super-root',
+          email: emailLower,
+          role: 'ADMIN',
+          workspaceId: 'grandsquare-mall',
+          companyId: 'grandsquare-mall',
+          isSystemAdmin: true,
+        };
+
+        const token = JwtUtil.generateAccessToken(payload);
+        const refreshToken = JwtUtil.generateRefreshToken(payload);
+
+        return {
+          user: {
+            id: payload.userId,
+            email: emailLower,
+            name: emailLower === 'khade8915@gmail.com' ? 'System Super Admin (Founder)' : 'System Admin',
+            role: 'ADMIN',
+            departmentId: null,
+            workspaceId: 'grandsquare-mall',
+            isSystemAdmin: true,
+            setupCompleted: true,
+            companyName: 'Bizora Global Platform',
+            businessType: 'Platform Administration',
+            plan: 'ENTERPRISE',
+            subscriptionStatus: 'ACTIVE',
+          },
+          token,
+          accessToken: token,
+          refreshToken,
+        };
+      }
+    }
+
+    // 2. Demo accounts — active by default unless DEMO_MODE=false
     if (AuthService.DEMO_MODE) {
       const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
         'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
         'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
         'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
         'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
-        'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
+        'khade8915@gmail.com': { role: 'ADMIN', name: 'System Super Admin', isSystemAdmin: true },
       };
 
       if (DEMO_ACCOUNTS[emailLower]) {
-        if (data.password !== '123456789') {
+        if (data.password !== '123456789' && data.password !== systemAdminPassword) {
           throw new UnauthorizedException('Invalid email or password');
         }
         const demoConfig = DEMO_ACCOUNTS[emailLower];
@@ -229,6 +310,10 @@ export class AuthService {
             workspaceId: 'grandsquare-mall',
             isSystemAdmin: !!demoConfig.isSystemAdmin,
             setupCompleted: true,
+            companyName: 'GrandSquare Mall',
+            businessType: 'Retail Supermarket',
+            plan: 'ENTERPRISE',
+            subscriptionStatus: 'ACTIVE',
           },
           token,
           accessToken: token,

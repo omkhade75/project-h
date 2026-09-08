@@ -140,6 +140,26 @@ function AdminLoginPage() {
                   Sign In to Shopkeeper Approval Console
                 </Button>
               </form>
+
+              {/* Quick autofill helper for investor & judges demo */}
+              <div className="mt-5 p-3 rounded-lg border border-rose-500/20 bg-rose-500/5 text-xs flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-rose-300">Root Super Admin Demo</div>
+                  <div className="font-mono text-[11px] text-muted-foreground">khade8915@gmail.com • 123456789</div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-rose-500/30 text-rose-300 hover:bg-rose-500/20 text-xs h-7 px-2.5 cursor-pointer"
+                  onClick={() => {
+                    setEmail("khade8915@gmail.com");
+                    setPass("123456789");
+                  }}
+                >
+                  Quick Fill
+                </Button>
+              </div>
             </div>
           </div>
         </div>
