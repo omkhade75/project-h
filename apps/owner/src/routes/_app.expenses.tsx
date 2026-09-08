@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { useBusinessData } from "@/lib/business-context";
+import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR } from "@/lib/mock-data";
 import { useMemo, useState } from "react";
@@ -111,19 +112,26 @@ function Expenses() {
     return `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`;
   }, [scopedExpenses, total]);
 
-  // Construct a trend based strictly on actual database entries
+  // Construct a trend based strictly on actual database entries across the trailing 12 months
   const trend = useMemo(() => {
-    const months = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"];
-    if (scopedExpenses.length === 0) {
-      return months.map((m) => ({ m, v: 0 }));
-    }
-    return months.map((m, idx) => {
-      const monthPrefix = `2026-0${idx + 1}`;
-      const monthExps = scopedExpenses.filter((e) => e.date && e.date.startsWith(monthPrefix));
+    const result = [];
+    const base = new Date(activeDate || new Date());
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const monthKey = `${yyyy}-${mm}`;
+      const monthName = d.toLocaleString("default", { month: "short" });
+
+      const monthExps = (scopedExpenses || []).filter((e) => {
+        const dStr = (e.date || "").split("T")[0];
+        return dStr.startsWith(monthKey);
+      });
       const monthTotal = monthExps.reduce((sum, e) => sum + (e.amount || 0), 0);
-      return { m, v: monthTotal };
-    });
-  }, [scopedExpenses]);
+      result.push({ m: monthName, v: monthTotal });
+    }
+    return result;
+  }, [scopedExpenses, activeDate]);
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,13 +140,28 @@ function Expenses() {
       return;
     }
     setSaving(true);
+    const parsedAmt = parseFloat(amount) || 0;
     try {
+      // 1. Immediately record in local state for instant chart update
+      const localId = `EXP-${Date.now().toString().slice(-6)}`;
+      db.addExpense({
+        id: localId,
+        category,
+        desc: description,
+        vendor,
+        amount: parsedAmt,
+        date: date || new Date().toISOString().split("T")[0],
+        receipt: null,
+      } as any);
+      forceRefresh();
+
+      // 2. Persist to backend server
       await addExpenseServer({
         data: {
           category,
           description,
           vendor,
-          amount: parseFloat(amount) || 0,
+          amount: parsedAmt,
           date,
           paymentMethod,
           role: user?.role || "owner",
@@ -160,6 +183,9 @@ function Expenses() {
 
   const handleVoidExpense = async (id: string) => {
     try {
+      db.removeExpense(id);
+      forceRefresh();
+
       await archiveExpenseServer({
         data: {
           id,

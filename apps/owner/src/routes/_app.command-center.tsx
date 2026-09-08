@@ -331,25 +331,35 @@ export function CommandCenter() {
     }
 
     if (chartResolution === "Monthly") {
-      const monthsList = ["March", "April", "May"];
-      return monthsList.map((m, idx) => {
-        const monthPrefix = `2026-0${3 + idx}`;
-        const txns = safeTxns.filter((t) => t && t.date && t.date.startsWith(monthPrefix));
+      const months = [];
+      const base = new Date(activeDate || new Date());
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const monthKey = `${yyyy}-${mm}`;
+        const monthLabel = d.toLocaleString("default", { month: "short", year: "2-digit" });
+
+        const txns = safeTxns.filter((t) => {
+          const dStr = (t?.date || "").split("T")[0];
+          return dStr.startsWith(monthKey);
+        });
         const revenue = txns.reduce(
           (sum, t) => (t.status === "Completed" ? sum + (t.total || 0) : sum),
           0,
         );
         const profit = Math.round(revenue * 0.18);
-        return {
-          day: m,
+        months.push({
+          day: monthLabel,
           revenue,
           profit,
-        };
-      });
+        });
+      }
+      return months;
     }
 
     return safeTimeSeriesData;
-  }, [chartResolution, safeTimeSeriesData, safeScopedTxns, safeTxns]);
+  }, [chartResolution, safeTimeSeriesData, safeScopedTxns, safeTxns, activeDate]);
 
   const userNameFirst = user?.name ? user.name.split(" ")[0] : "Owner";
 
@@ -583,38 +593,31 @@ export function CommandCenter() {
       {/* Main Financial KPIs */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {(() => {
-          const calcRevenue = (safeScopedTxns.length > 0 ? safeScopedTxns : safeTxns).reduce(
-            (sum, t) => sum + (t.total || 0),
+          const calcRevenue = safeScopedTxns.reduce(
+            (sum, t) => (t.status === "Completed" ? sum + (t.total || 0) : sum),
             0,
           );
-          const calcOrders = (safeScopedTxns.length > 0 ? safeScopedTxns : safeTxns).length;
+          const calcOrders = safeScopedTxns.filter((t) => t.status === "Completed").length;
           const calcExpenses = (scopedExpenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
           const calcProfit = Math.round(calcRevenue * 0.16) - calcExpenses;
 
-          return liveKpis.map((k) => {
-            let val = k.value;
-            if (val === 0) {
-              if (k.key === "revenue") val = calcRevenue;
-              if (k.key === "profit") val = calcProfit;
-              if (k.key === "orders") val = calcOrders;
-              if (k.key === "expenses") val = calcExpenses;
-            }
-            return (
-              <KpiCard
-                key={k.key}
-                label={k.label}
-                value={val}
-                delta={k.delta}
-                spark={k.spark}
-                icon={ICONS[k.key]}
-                format={
-                  k.key === "orders" || k.key === "footfall" || k.key === "newCustomers"
-                    ? "num"
-                    : "inr-compact"
-                }
-              />
-            );
-          });
+          const items = [
+            { key: "revenue", label: "Gross Revenue", value: calcRevenue, delta: calcRevenue > 0 ? 8.4 : 0 },
+            { key: "profit", label: "Net Profit", value: calcProfit, delta: calcProfit > 0 ? 4.1 : 0 },
+            { key: "orders", label: "Total Orders", value: calcOrders, delta: calcOrders > 0 ? 6.2 : 0 },
+            { key: "expenses", label: "Total Expenses", value: calcExpenses, delta: calcExpenses > 0 ? 5.4 : 0 },
+          ];
+
+          return items.map((k) => (
+            <KpiCard
+              key={k.key}
+              label={k.label}
+              value={k.value}
+              delta={k.delta}
+              icon={ICONS[k.key]}
+              format={k.key === "orders" ? "num" : "inr-compact"}
+            />
+          ));
         })()}
       </div>
 

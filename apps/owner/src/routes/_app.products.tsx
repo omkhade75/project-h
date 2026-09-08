@@ -34,6 +34,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useBusinessData } from "@/lib/business-context";
+import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR, fmtNum } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -360,6 +361,30 @@ function Products() {
           emailUser: user?.email || "",
         },
       });
+      // Update local db immediately so Inventory 360 and Billing charts see it instantly
+      try {
+        const catName = categories.find((c) => c.id === formCategory)?.name || "General";
+        const deptName = departments.find((d) => d.id === formDepartment)?.name || "General";
+        const suppName = suppliers.find((s) => s.id === formSupplier)?.name || "General";
+        db.importProducts([{
+          id: finalSku,
+          name: formName,
+          dept: deptName,
+          category: catName,
+          brand: formBrand || "Generic",
+          price: Number(formSellingPrice),
+          cost: Number(formCostPrice) || Math.round(Number(formSellingPrice) * 0.7),
+          stock: Number(formInitialStock) || 0,
+          reorder: Number(formReorderLevel) || 5,
+          expiry: formExpDate || null,
+          supplier: suppName,
+          sold: 0,
+          revenue: 0,
+          margin: 25,
+          status: "ok",
+        }]);
+      } catch (_) {}
+
       toast.success(`Successfully registered SKU ${finalSku}`);
       setAddOpen(false);
       resetForm();

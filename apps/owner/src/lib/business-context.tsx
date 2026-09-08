@@ -465,36 +465,49 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const filterByTimeRange = <T extends { date: string }>(items: T[]): T[] => {
     if (!Array.isArray(items) || items.length === 0) return [];
     
+    const activeDateClean = (activeDate || new Date().toISOString().split("T")[0]).split("T")[0];
+    const activeDateObjClean = new Date(activeDateClean);
+
     let filtered: T[] = items;
     if (timeRange === "today") {
-      filtered = items.filter((item) => item.date === activeDate || !item.date);
+      filtered = items.filter((item) => {
+        const d = (item.date || "").split("T")[0].split(" ")[0];
+        return d === activeDateClean || !d;
+      });
     } else if (timeRange === "yesterday") {
-      const yesterday = new Date(activeDateObj);
+      const yesterday = new Date(activeDateObjClean);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split("T")[0];
-      filtered = items.filter((item) => item.date === yesterdayStr);
+      filtered = items.filter((item) => {
+        const d = (item.date || "").split("T")[0].split(" ")[0];
+        return d === yesterdayStr;
+      });
     } else if (timeRange === "7d") {
-      const limit = new Date(activeDateObj);
+      const limit = new Date(activeDateObjClean);
       limit.setDate(limit.getDate() - 7);
       filtered = items.filter((item) => {
-        const itemDate = new Date(item.date);
-        return itemDate >= limit && itemDate <= activeDateObj;
+        const d = (item.date || "").split("T")[0].split(" ")[0];
+        if (!d) return true;
+        const itemDate = new Date(d);
+        return itemDate >= limit && itemDate <= activeDateObjClean;
       });
     } else if (timeRange === "30d") {
-      const limit = new Date(activeDateObj);
+      const limit = new Date(activeDateObjClean);
       limit.setDate(limit.getDate() - 30);
       filtered = items.filter((item) => {
-        const itemDate = new Date(item.date);
-        return itemDate >= limit && itemDate <= activeDateObj;
+        const d = (item.date || "").split("T")[0].split(" ")[0];
+        if (!d) return true;
+        const itemDate = new Date(d);
+        return itemDate >= limit && itemDate <= activeDateObjClean;
       });
     } else {
-      filtered = items.filter((item) => new Date(item.date) <= activeDateObj);
+      filtered = items.filter((item) => {
+        const d = (item.date || "").split("T")[0].split(" ")[0];
+        if (!d) return true;
+        return new Date(d) <= activeDateObjClean;
+      });
     }
 
-    // Smart Fallback: If date range filtering results in 0 items but data exists, return all items so graphs & charts NEVER show ₹0!
-    if (filtered.length === 0 && items.length > 0) {
-      return items;
-    }
     return filtered;
   };
 

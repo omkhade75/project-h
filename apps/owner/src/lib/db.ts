@@ -1368,6 +1368,21 @@ class SeededDatabase {
     return this.schema.batches.filter((b) => b.productId === productId);
   }
 
+  public importExpenses(newExps: Expense[]) {
+    const updated = [...newExps, ...this.schema.expenses];
+    this.save({ ...this.schema, expenses: updated });
+  }
+
+  public addExpense(exp: Expense) {
+    const updated = [exp, ...this.schema.expenses];
+    this.save({ ...this.schema, expenses: updated });
+  }
+
+  public removeExpense(id: string) {
+    const updated = this.schema.expenses.filter((e) => e.id !== id);
+    this.save({ ...this.schema, expenses: updated });
+  }
+
   public reset() {
     const seedData = seedDatabase();
     this.save(seedData);
@@ -1375,12 +1390,18 @@ class SeededDatabase {
 
   // Aggregate daily statistics for the Time Machine & AI Reasoning
   public getDailySnapshot(date: string): DailySnapshot {
-    const targetDateStr = (date || new Date().toISOString().split("T")[0]).split("T")[0];
-    const exactTxns = this.schema.transactions.filter((t) => t.date && t.date.split("T")[0] === targetDateStr);
-    const exactExps = this.schema.expenses.filter((e) => e.date && e.date.split("T")[0] === targetDateStr);
+    const targetDateStr = (date || new Date().toISOString().split("T")[0]).split("T")[0].split(" ")[0];
+    const exactTxns = this.schema.transactions.filter((t) => {
+      const d = (t.date || "").split("T")[0].split(" ")[0];
+      return d === targetDateStr;
+    });
+    const exactExps = this.schema.expenses.filter((e) => {
+      const d = (e.date || "").split("T")[0].split(" ")[0];
+      return d === targetDateStr;
+    });
 
-    const txns = exactTxns.length > 0 ? exactTxns : this.schema.transactions;
-    const exps = exactExps.length > 0 ? exactExps : this.schema.expenses;
+    const txns = exactTxns;
+    const exps = exactExps;
 
     const grossRevenue = txns.reduce(
       (sum, t) => (t.status === "Completed" ? sum + (t.total || 0) : sum),

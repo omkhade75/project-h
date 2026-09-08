@@ -482,6 +482,16 @@ function RouteComponent() {
             payment: formPaymentMethod as any,
             status: "Completed" as const,
           }]);
+
+          // Deduct purchased quantities from product inventory in local DB
+          calculatedItems.forEach((ci) => {
+            const currentProd = db.getProducts().find((p) => p.id === ci.productId);
+            if (currentProd) {
+              const newStock = Math.max(0, currentProd.stock - ci.quantity);
+              db.updateProductStock(ci.productId, newStock);
+            }
+          });
+
           forceRefresh();
         } catch (_) {}
         setCartItems([]);

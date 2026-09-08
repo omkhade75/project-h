@@ -27,7 +27,7 @@ import {
   Settings,
   Loader2,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -198,25 +198,37 @@ function Inventory() {
   const stockoutProducts = stockList.filter((s) => s.status === "Stockout");
   const overstockProducts = stockList.filter((s) => s.totalQty > s.reorderLevel * 2.5);
 
-  // Group by department
-  const depts = [
-    "Fashion",
-    "Electronics",
-    "Grocery",
-    "Beauty & Cosmetics",
-    "Sports & Outdoors",
-    "Others",
-  ];
-  const deptData = depts.map((d) => {
-    const value = stockList
-      .filter((s) => s.dept === d)
-      .reduce((sum, s) => {
-        const prod = productList.find((p) => p.id === s.productId);
-        const cost = prod ? prod.cost : 100;
-        return sum + s.totalQty * cost;
-      }, 0);
-    return { name: d.split(" ")[0], v: value };
-  });
+  // Group by department dynamically
+  const deptData = useMemo(() => {
+    const deptMap: Record<string, number> = {};
+    stockList.forEach((s) => {
+      const d = s.dept || "General";
+      const prod = productList.find((p) => p.id === s.productId);
+      const cost = prod ? prod.cost : 100;
+      deptMap[d] = (deptMap[d] || 0) + (s.totalQty || 0) * cost;
+    });
+
+    // Also include any departments from productList
+    productList.forEach((p) => {
+      const d = p.dept || "General";
+      if (deptMap[d] === undefined) {
+        deptMap[d] = (p.stock || 0) * (p.cost || 100);
+      }
+    });
+
+    if (Object.keys(deptMap).length === 0) {
+      return [
+        { name: "Grocery", v: 0 },
+        { name: "Fashion", v: 0 },
+        { name: "Electronics", v: 0 },
+      ];
+    }
+
+    return Object.entries(deptMap).map(([name, value]) => ({
+      name: name.split(" ")[0],
+      v: value,
+    }));
+  }, [stockList, productList]);
 
   return (
     <div className="space-y-6">

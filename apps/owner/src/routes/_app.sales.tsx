@@ -38,7 +38,7 @@ import {
   YAxis,
 } from "recharts";
 import { fmtINR, fmtNum } from "@/lib/mock-data";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   getTransactionsServer,
   createTransactionServer,
@@ -248,21 +248,29 @@ function RouteComponent() {
   // Group by date for 30-day Area chart (using completed transaction totals)
   const dateRevenueMap: Record<string, number> = {};
   safeTransactions.forEach((t) => {
-    const d = t?.date || "";
-    if (d) dateRevenueMap[d] = (dateRevenueMap[d] || 0) + (t?.total || 0);
+    const d = (t?.date || "").split("T")[0];
+    if (d && (t?.status === "Completed" || !t?.status)) {
+      dateRevenueMap[d] = (dateRevenueMap[d] || 0) + (t?.total || 0);
+    }
   });
 
-  // Rebuild 30 day timeseries data dynamically
-  const timeSeriesData = Array.from({ length: 30 }, (_, i) => {
-    const day = i + 1;
-    const dateStr = `2026-05-${String(day).padStart(2, "0")}`;
-    const dailyRev = dateRevenueMap[dateStr] || 0;
-    return {
-      day: `${day}`,
-      revenue: Math.round(dailyRev),
-      prev: Math.round(dailyRev * 0.9 + 5000), // simulated comparison baseline
-    };
-  });
+  // Rebuild 30 day timeseries data dynamically based on the current 30-day window
+  const timeSeriesData = useMemo(() => {
+    const baseDate = new Date();
+    return Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() - (29 - i));
+      const dateStr = d.toISOString().split("T")[0];
+      const dailyRev = dateRevenueMap[dateStr] || 0;
+      const dayNum = d.getDate();
+      return {
+        day: `${dayNum}`,
+        date: dateStr,
+        revenue: Math.round(dailyRev),
+        prev: Math.round(dailyRev * 0.85),
+      };
+    });
+  }, [dateRevenueMap]);
 
   // Estimate total cart amount
   const cartTotal = cartItems.reduce((sum, item) => {
