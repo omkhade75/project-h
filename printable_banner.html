@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bizora AI — Official Printable Launch Banner & Standee</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body {
+    background: #090d16; color: #f8fafc; width: 210mm; min-height: 297mm;
+    margin: 0 auto; padding: 8mm 12mm 6mm 12mm; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(245, 158, 11, 0.4); padding-bottom: 4mm; }
+  .logo-wrap { display: flex; align-items: center; gap: 12px; }
+  .logo-box { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; color: #090d16; }
+  .logo-text h1 { font-size: 24px; font-weight: 800; color: #ffffff; }
+  .logo-text p { font-size: 10px; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; }
+  .badge { background: #10b981; color: #022c22; font-weight: 800; font-size: 10px; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; }
+  .hero { text-align: center; margin: 3mm 0 2mm 0; }
+  .hero-tag { display: inline-block; font-size: 10px; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; padding: 3px 12px; border-radius: 12px; margin-bottom: 2mm; text-transform: uppercase; letter-spacing: 1.5px; }
+  .hero-title { font-size: 27px; font-weight: 900; line-height: 1.15; color: #ffffff; }
+  .hero-title span { color: #f59e0b; }
+  .hero-sub { font-size: 11px; color: #94a3b8; margin-top: 2mm; max-width: 95%; margin-left: auto; margin-right: auto; line-height: 1.35; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5mm; margin: 2mm 0; }
+  .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 2.5mm 3mm; }
+  .card.hi { border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.05); }
+  .card-icon { font-size: 17px; margin-bottom: 1mm; }
+  .card-title { font-size: 11px; font-weight: 800; color: #f8fafc; }
+  .card-desc { font-size: 8.5px; color: #94a3b8; line-height: 1.3; margin-top: 1mm; }
+  .strip { background: linear-gradient(90deg, #1e1b4b, #0f172a); border: 1px solid #38bdf8; border-radius: 10px; padding: 2.5mm; display: flex; justify-content: space-around; text-align: center; margin: 2mm 0; }
+  .strip-title { font-size: 10px; font-weight: 800; color: #ffffff; }
+  .strip-url { font-size: 8px; color: #38bdf8; font-family: monospace; }
+  .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5mm; margin: 2mm 0; }
+  .p-card { background: #0f172a; border: 1.5px solid #1e293b; border-radius: 10px; padding: 3mm; text-align: center; position: relative; }
+  .p-card.pop { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); }
+  .p-pop-badge { position: absolute; top: -8px; right: 10px; background: #f59e0b; color: #090d16; font-size: 7.5px; font-weight: 900; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; }
+  .p-name { font-size: 11px; font-weight: 800; color: #ffffff; }
+  .p-price { font-size: 17px; font-weight: 900; color: #f59e0b; margin: 1mm 0; }
+  .p-price span { font-size: 8px; color: #94a3b8; font-weight: 600; }
+  .p-feat { list-style: none; font-size: 8px; color: #cbd5e1; text-align: left; display: flex; flex-direction: column; gap: 1mm; margin-top: 1.5mm; }
+  .p-feat li::before { content: "✓ "; color: #10b981; font-weight: 900; }
+  .footer { background: #020617; border: 2px solid #f59e0b; border-radius: 12px; padding: 3mm 5mm; display: flex; justify-content: space-between; align-items: center; }
+  .f-left h3 { font-size: 12.5px; font-weight: 800; color: #ffffff; }
+  .f-left p { font-size: 8.5px; color: #94a3b8; margin-top: 1px; }
+  .f-right { text-align: right; }
+  .f-right p { font-size: 8px; color: #94a3b8; }
+  .f-right strong { font-size: 10.5px; color: #38bdf8; font-family: monospace; display: block; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo-box">B</div>
+      <div class="logo-text">
+        <h1>Bizora AI</h1>
+        <p>OmniMind Autonomous Retail OS</p>
+      </div>
+    </div>
+    <div class="badge">● 2026 Commercial Launch Ready</div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-tag">The Autonomous Operating System for Indian Retail</div>
+    <h2 class="hero-title">Upgrade Your Shop Into An <span>AI Smart Supermarket</span></h2>
+    <p class="hero-sub">Eliminate stock leaks, slow manual registers, and perishable spoilage with hardware-free camera barcode POS, automated WhatsApp bills, and autonomous Hindi & English voice reordering.</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="card hi">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Camera Barcode POS</div>
+      <div class="card-desc">Scan products directly using phone camera. Zero expensive barcode guns needed.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📱</div>
+      <div class="card-title">WhatsApp Digital Receipts</div>
+      <div class="card-desc">Itemized receipts sent via WhatsApp instantly. Save up to ₹1,800/mo on thermal rolls.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">Vapi Voice AI Restock</div>
+      <div class="card-desc">Autonomous AI phone calls placed to distributors in natural Hindi when stock runs low.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Double-Entry P&L</div>
+      <div class="card-desc">Real-time daily net revenue, cash balances, expenses, and automated GST compliance.</div>
+    </div>
+    <div class="card hi">
+      <div class="card-icon">🛍️</div>
+      <div class="card-title">10-Min Customer Delivery</div>
+      <div class="card-desc">Local shoppers order from your online store catalog. First store to accept delivers!</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🚚</div>
+      <div class="card-title">Vendor & Supplier Hub</div>
+      <div class="card-desc">Direct supplier portal with digital PO approvals, delivery tracking, and invoice matching.</div>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div>
+      <div class="strip-title">👑 Store Owner Portal</div>
+      <div class="strip-url">bizora-owner.onrender.com</div>
+    </div>
+    <div>
+      <div class="strip-title">🛍️ Customer Storefront</div>
+      <div class="strip-url">bizora-customer.onrender.com</div>
+    </div>
+    <div>
+      <div class="strip-title">🚚 Supplier Hub</div>
+      <div class="strip-url">bizora-supplier.onrender.com</div>
+    </div>
+    <div>
+      <div class="strip-title">🛡️ Super Admin</div>
+      <div class="strip-url">bizora-admin.onrender.com</div>
+    </div>
+  </div>
+
+  <div class="pricing">
+    <div class="p-card">
+      <div class="p-name">Kirana / Starter</div>
+      <div class="p-price">₹0 <span>Forever</span></div>
+      <ul class="p-feat">
+        <li>Camera Barcode POS Billing</li>
+        <li>Up to 200 Products</li>
+        <li>English & Hindi UI</li>
+        <li>Digital Thermal Invoicing</li>
+        <li>1 Counter User</li>
+      </ul>
+    </div>
+    <div class="p-card pop">
+      <div class="p-pop-badge">Most Popular</div>
+      <div class="p-name">Retailer / Growth</div>
+      <div class="p-price">₹699 <span>/ month</span></div>
+      <ul class="p-feat">
+        <li>Unlimited Products & Bills</li>
+        <li>500 WhatsApp Bills/mo</li>
+        <li>10 Vapi Voice Restock Calls/mo</li>
+        <li>FIFO Expiry Batch Radar</li>
+        <li>3 Staff Counter Accounts</li>
+      </ul>
+    </div>
+    <div class="p-card">
+      <div class="p-name">Enterprise Chain</div>
+      <div class="p-price">₹1,999 <span>/ month</span></div>
+      <ul class="p-feat">
+        <li>Multi-Store Branch Control</li>
+        <li>Unlimited WhatsApp Receipts</li>
+        <li>100 Vapi Voice Call Mins/mo</li>
+        <li>10 Staff Roles & Hierarchy</li>
+        <li>24/7 Dedicated Support</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="f-left">
+      <h3>Start Your 14-Day Free Store Trial Today</h3>
+      <p>Zero credit card required. Register your shop in under 2 minutes.</p>
+    </div>
+    <div class="f-right">
+      <p>Visit Live Portal:</p>
+      <strong>https://bizora-owner.onrender.com</strong>
+    </div>
+  </div>
+</body>
+</html>

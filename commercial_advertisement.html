@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bizora AI — Official Interactive 60-Second Video Commercial</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background: #020617; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .video-container { width: 100%; max-width: 900px; aspect-ratio: 16/9; background: #090d16; border: 2px solid #f59e0b; border-radius: 20px; position: relative; overflow: hidden; box-shadow: 0 0 50px rgba(245, 158, 11, 0.2); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; }
+  .scene { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 50px; opacity: 0; pointer-events: none; transition: opacity 0.8s ease; }
+  .scene.active { opacity: 1; pointer-events: auto; }
+  .badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px; }
+  .badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+  .badge-gold { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+  .badge-cyan { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+  .badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+  h2 { font-size: 38px; font-weight: 900; line-height: 1.2; margin-bottom: 16px; }
+  p { font-size: 18px; color: #94a3b8; max-width: 700px; line-height: 1.5; }
+  .controls { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
+  button { background: #f59e0b; color: #090d16; font-weight: 800; font-size: 15px; border: none; border-radius: 10px; padding: 12px 28px; cursor: pointer; transition: all 0.2s; }
+  button:hover { background: #fbbf24; transform: translateY(-2px); }
+  .progress-bar { width: 100%; max-width: 900px; height: 8px; background: #1e293b; border-radius: 4px; margin-top: 14px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #38bdf8); transition: width 0.3s linear; }
+  .timer { font-size: 14px; color: #64748b; font-family: monospace; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div class="video-container" id="videoContainer">
+    <div class="scene active" id="scene1">
+      <span class="badge badge-red">Problem Statement</span>
+      <h2>Tired of Chaos in Your Retail Store?</h2>
+      <p>Long customer billing queues. Expired inventory rotting on shelves. Hours spent manually balancing paper registers after midnight.</p>
+    </div>
+    <div class="scene" id="scene2">
+      <span class="badge badge-gold">The Breakthrough</span>
+      <h2>Meet Bizora AI: The Autonomous Retail OS</h2>
+      <p>Turn any mobile phone or tablet into an instant camera barcode POS terminal. Zero expensive barcode guns needed.</p>
+    </div>
+    <div class="scene" id="scene3">
+      <span class="badge badge-green">Instant WhatsApp Billing</span>
+      <h2>Digital Receipts on WhatsApp in 1 Second</h2>
+      <p>Delight customers with itemized WhatsApp invoices. Cut thermal paper roll expenses by ₹1,800 every single month.</p>
+    </div>
+    <div class="scene" id="scene4">
+      <span class="badge badge-cyan">Voice AI Calling</span>
+      <h2>Autonomous Voice AI Calls Suppliers</h2>
+      <p>When stock runs low, Bizora AI calls your distributors in natural Hindi and English to reorder items before shelves go empty.</p>
+    </div>
+    <div class="scene" id="scene5">
+      <span class="badge badge-gold">Quick-Commerce Storefront</span>
+      <h2>Your Own 10-Minute Online Delivery</h2>
+      <p>Neighborhood shoppers order directly from your local store catalog. Compete with quick-commerce and keep 100% of your margins.</p>
+    </div>
+    <div class="scene" id="scene6">
+      <span class="badge badge-green">Start Today</span>
+      <h2>Launch Your Store with Bizora AI</h2>
+      <p>14-Day Free Trial • No Credit Card Required • Live in 60 Seconds</p>
+      <div style="margin-top: 20px; font-family: monospace; font-size: 20px; color: #38bdf8; font-weight: 800;">
+        bizora-owner.onrender.com
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="timer" id="timer">00:00 / 01:00</div>
+
+  <div class="controls">
+    <button id="playBtn" onclick="togglePlay()">▶ Play 60s Commercial</button>
+    <button style="background: #1e293b; color: #f8fafc;" onclick="resetVideo()">↺ Replay</button>
+  </div>
+
+  <script>
+    let isPlaying = false;
+    let currentSec = 0;
+    let timerInterval = null;
+    const totalSec = 60;
+
+    const scenes = [
+      { id: 'scene1', start: 0, end: 10 },
+      { id: 'scene2', start: 10, end: 22 },
+      { id: 'scene3', start: 22, end: 34 },
+      { id: 'scene4', start: 34, end: 46 },
+      { id: 'scene5', start: 46, end: 54 },
+      { id: 'scene6', start: 54, end: 60 }
+    ];
+
+    function togglePlay() {
+      if (isPlaying) {
+        pauseVideo();
+      } else {
+        startVideo();
+      }
+    }
+
+    function startVideo() {
+      isPlaying = true;
+      document.getElementById('playBtn').innerText = '❚❚ Pause Commercial';
+      timerInterval = setInterval(() => {
+        currentSec++;
+        updateDisplay();
+        if (currentSec >= totalSec) {
+          pauseVideo();
+        }
+      }, 1000);
+    }
+
+    function pauseVideo() {
+      isPlaying = false;
+      document.getElementById('playBtn').innerText = '▶ Play 60s Commercial';
+      clearInterval(timerInterval);
+    }
+
+    function resetVideo() {
+      pauseVideo();
+      currentSec = 0;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const pct = (currentSec / totalSec) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      const m = String(Math.floor(currentSec / 60)).padStart(2, '0');
+      const s = String(currentSec % 60).padStart(2, '0');
+      document.getElementById('timer').innerText = `${m}:${s} / 01:00`;
+
+      scenes.forEach(sc => {
+        const el = document.getElementById(sc.id);
+        if (currentSec >= sc.start && currentSec < sc.end) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
