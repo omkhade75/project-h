@@ -442,9 +442,9 @@ function Suppliers() {
                       onClick={() => {
                         setCreatedCredentials({
                           name: sel.name,
-                          email: sel.email || "supplier@gmail.com",
-                          password: "123456789",
-                          phone: sel.phone || "+917588021256",
+                          email: sel.email || `${sel.id.toLowerCase()}@vendor.bizora.internal`,
+                          password: sel.password || "Vendor@2026",
+                          phone: sel.phone || "",
                         });
                         setCredsOpen(true);
                       }}

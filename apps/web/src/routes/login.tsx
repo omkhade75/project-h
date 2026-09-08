@@ -77,8 +77,8 @@ function LoginPage() {
 
   const handleAdminLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminEmail !== "khade8915@gmail.com" || adminPassword !== "123456789") {
-      toast.error("Incorrect admin credentials. Please enter khade8915@gmail.com and 123456789.");
+    if (!adminEmail.trim() || !adminPassword.trim()) {
+      toast.error("Please enter both admin email and password.");
       return;
     }
     setAdminSubmitting(true);
@@ -262,7 +262,7 @@ function LoginPage() {
           <DialogHeader>
             <DialogTitle>System Admin Login</DialogTitle>
             <DialogDescription>
-              Please enter username as <span className="font-semibold text-primary">khade8915@gmail.com</span> and password <span className="font-semibold text-primary">123456789</span>.
+              Please enter your system administrator credentials to access the console.
             </DialogDescription>
           </DialogHeader>
 

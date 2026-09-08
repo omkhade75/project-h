@@ -443,120 +443,150 @@ export function CommandCenter() {
         </div>
       </div>
 
-      {/* Industry-Specific Live Operational KPIs */}
-      <div>
-        <div className="flex items-center justify-between mb-2.5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Zap className="h-3.5 w-3.5 text-amber-500" />
-            {currentIndustryConfig.category} Specialized Telemetry
-          </h3>
-          <span className="text-[11px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
-            Live AI Telemetry
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {currentIndustryConfig.kpis.map((kpi) => (
-            <div
-              key={kpi.id}
-              className="rounded-xl border border-hairline bg-card/60 p-3.5 backdrop-blur-sm shadow-sm hover:border-hairline/80 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                  {kpi.label}
-                </span>
-                <span className={`text-[10px] font-semibold ${kpi.color}`}>
-                  {kpi.trend}
-                </span>
-              </div>
-              <div className="mt-1.5 text-xl font-bold font-display tracking-tight text-foreground">
-                {kpi.value}
-              </div>
-              <div className="mt-1 text-[11px] text-muted-foreground truncate">
-                {kpi.subtext}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Industry Real-Time Anomaly & Recommendation Highlights */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Real-time vertical anomaly */}
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex flex-col justify-between">
+      {/* Industry-Specific Live Operational KPIs — only show when store has real data */}
+      {safeScopedTxns.filter((t) => t.status === "Completed").length > 0 ? (
+        <>
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-500">
-                <ShieldAlert className="h-4 w-4" />
-                Live {currentIndustryConfig.category} Radar
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
-                {currentIndustryConfig.realtimeAnomaly.severity} ALERT
+            <div className="flex items-center justify-between mb-2.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+                {currentIndustryConfig.category} Specialized Telemetry
+              </h3>
+              <span className="text-[11px] text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                Live AI Telemetry
               </span>
             </div>
-            <h4 className="text-sm font-semibold text-foreground">
-              {currentIndustryConfig.realtimeAnomaly.title}
-            </h4>
-            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              {currentIndustryConfig.realtimeAnomaly.description}
-            </p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {currentIndustryConfig.kpis.map((kpi) => (
+                <div
+                  key={kpi.id}
+                  className="rounded-xl border border-hairline bg-card/60 p-3.5 backdrop-blur-sm shadow-sm hover:border-hairline/80 transition-all group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                      {kpi.label}
+                    </span>
+                    <span className={`text-[10px] font-semibold ${kpi.color}`}>
+                      {kpi.trend}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-xl font-bold font-display tracking-tight text-foreground">
+                    {kpi.value}
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted-foreground truncate">
+                    {kpi.subtext}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="mt-3 flex items-center gap-2">
+
+          {/* Industry Real-Time Anomaly & Recommendation Highlights */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-500">
+                    <ShieldAlert className="h-4 w-4" />
+                    Live {currentIndustryConfig.category} Radar
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                    {currentIndustryConfig.realtimeAnomaly.severity} ALERT
+                  </span>
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">
+                  {currentIndustryConfig.realtimeAnomaly.title}
+                </h4>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  {currentIndustryConfig.realtimeAnomaly.description}
+                </p>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 border-amber-500/30 hover:bg-amber-500/10 text-amber-400"
+                  onClick={() => {
+                    toast.success(`Autonomous mitigation dispatched for: ${currentIndustryConfig.realtimeAnomaly.title}`);
+                  }}
+                >
+                  Autonomously Mitigate
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs h-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate({ to: "/ai-decisions" as never })}
+                >
+                  Investigate
+                </Button>
+              </div>
+            </div>
+
+            {currentIndustryConfig.aiRecommendations.slice(0, 2).map((rec) => (
+              <div
+                key={rec.id}
+                className="rounded-xl border border-hairline bg-card p-4 flex flex-col justify-between shadow-sm"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                      {rec.badge}
+                    </span>
+                    <span className="text-xs font-semibold text-emerald-400">
+                      {rec.impact}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-semibold text-foreground mt-1">
+                    {rec.title}
+                  </h4>
+                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                    {rec.description}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  className="mt-3 w-full text-xs h-7 gradient-primary text-primary-foreground gap-1 font-medium"
+                  onClick={() => {
+                    toast.success(`Action executed: ${rec.actionText} (${rec.impact})`);
+                  }}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {rec.actionText}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        /* Onboarding prompt when store has zero transactions */
+        <div className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary mb-4">
+            <Sparkles className="h-7 w-7" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground">Get Started With Your Store</h3>
+          <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            Add your products, process your first sale in Billing (POS), and watch real-time business intelligence metrics appear here automatically.
+          </p>
+          <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
             <Button
-              size="sm"
+              onClick={() => navigate({ to: "/products" as never })}
               variant="outline"
-              className="text-xs h-7 border-amber-500/30 hover:bg-amber-500/10 text-amber-400"
-              onClick={() => {
-                toast.success(`Autonomous mitigation dispatched for: ${currentIndustryConfig.realtimeAnomaly.title}`);
-              }}
+              className="text-xs h-9 gap-1.5"
             >
-              Autonomously Mitigate
+              <Store className="h-3.5 w-3.5" />
+              Add Products
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
-              className="text-xs h-7 text-muted-foreground hover:text-foreground"
-              onClick={() => navigate({ to: "/ai-decisions" as never })}
+              onClick={() => navigate({ to: "/billing" as never })}
+              className="text-xs h-9 gap-1.5 gradient-primary text-primary-foreground"
             >
-              Investigate
+              <Sparkles className="h-3.5 w-3.5" />
+              Create First Sale
             </Button>
           </div>
         </div>
-
-        {/* Industry AI Recommendations (2 cards) */}
-        {currentIndustryConfig.aiRecommendations.slice(0, 2).map((rec) => (
-          <div
-            key={rec.id}
-            className="rounded-xl border border-hairline bg-card p-4 flex flex-col justify-between shadow-sm"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                  {rec.badge}
-                </span>
-                <span className="text-xs font-semibold text-emerald-400">
-                  {rec.impact}
-                </span>
-              </div>
-              <h4 className="text-sm font-semibold text-foreground mt-1">
-                {rec.title}
-              </h4>
-              <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                {rec.description}
-              </p>
-            </div>
-            <Button
-              size="sm"
-              className="mt-3 w-full text-xs h-7 gradient-primary text-primary-foreground gap-1 font-medium"
-              onClick={() => {
-                toast.success(`Action executed: ${rec.actionText} (${rec.impact})`);
-              }}
-            >
-              <Sparkles className="h-3 w-3" />
-              {rec.actionText}
-            </Button>
-          </div>
-        ))}
-      </div>
+      )}
 
       {/* Industry Workflow Shortcuts Grid */}
       <div className="rounded-xl border border-hairline bg-card/40 p-4">

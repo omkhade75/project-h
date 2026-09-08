@@ -168,6 +168,21 @@ function AppShell() {
   const [readNotifs, setReadNotifs] = useState<Set<string>>(new Set());
   const notifRef = useRef<HTMLDivElement>(null);
   const pathname: string = (useRouterState({ select: (s: any) => s.location.pathname }) as unknown as string) || "";
+  const [activePlanName, setActivePlanName] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("bizora_active_plan_name") || "14-Day Free Trial";
+    }
+    return "14-Day Free Trial";
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem("bizora_active_plan_name");
+      if (saved) setActivePlanName(saved);
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const {
     activeProductId,
@@ -451,7 +466,7 @@ function AppShell() {
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  {((user as any)?.plan || "PRO STORE").toUpperCase()}
+                  {activePlanName.toUpperCase()}
                 </span>
                 <span className="truncate text-[10px] text-muted-foreground">
                   {user?.role === "owner" ? "Store Owner" : user?.role}

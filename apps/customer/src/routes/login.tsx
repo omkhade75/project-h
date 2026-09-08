@@ -68,11 +68,6 @@ function CustomerLoginPage() {
     }
   };
 
-  const fillDemoCustomer = () => {
-    setEmail("customer@gmail.com");
-    setPass("123456789");
-    toast.info("Loaded demo shopper credentials");
-  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -134,7 +129,7 @@ function CustomerLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Bizora Hyperlocal Shopping Hub</span>
-            <span className="font-medium text-amber-400">customer@gmail.com</span>
+            <span className="font-medium text-amber-400">Instant Shopper Access</span>
           </div>
         </div>
 

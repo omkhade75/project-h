@@ -89,7 +89,7 @@ function SupplierLandingPage() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Sign in with <code className="rounded bg-surface px-1.5 py-0.5 text-foreground">supplier@gmail.com</code> / password <code className="rounded bg-surface px-1.5 py-0.5 text-foreground">123456789</code>
+            Registered supplier? Sign in above to manage your purchase orders and dispatches.
           </p>
         </section>
 

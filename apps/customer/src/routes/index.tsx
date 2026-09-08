@@ -90,7 +90,7 @@ function CustomerLandingPage() {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Customer sign in: <code className="rounded bg-surface px-1.5 py-0.5 text-foreground font-mono">customer@gmail.com</code> / password <code className="rounded bg-surface px-1.5 py-0.5 text-foreground font-mono">123456789</code>
+            Already have an account? Sign in above to start shopping from your nearest stores.
           </p>
         </section>
 

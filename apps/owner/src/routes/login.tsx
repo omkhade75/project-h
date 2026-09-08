@@ -180,11 +180,7 @@ function OwnerLoginPage() {
     }
   };
 
-  const fillDemoOwner = () => {
-    setEmail("owner@gmail.com");
-    setPass("123456789");
-    toast.info("Loaded Owner demo credentials");
-  };
+
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">

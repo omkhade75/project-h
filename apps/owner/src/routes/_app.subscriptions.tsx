@@ -34,7 +34,12 @@ export const Route = createFileRoute("/_app/subscriptions")({
 export function OwnerSubscriptionsPage() {
   const { user } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState("growth");
+  const [selectedPlan, setSelectedPlan] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("bizora_active_plan") || "growth";
+    }
+    return "growth";
+  });
   const [billsPerMonth, setBillsPerMonth] = useState<number>(1200);
   const [avgBillValue, setAvgBillValue] = useState<number>(450);
 
@@ -45,6 +50,11 @@ export function OwnerSubscriptionsPage() {
 
   const handleSelectPlan = (planId: string, planName: string) => {
     setSelectedPlan(planId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("bizora_active_plan", planId);
+      localStorage.setItem("bizora_active_plan_name", planName);
+      window.dispatchEvent(new Event("storage"));
+    }
     toast.success(`Upgraded store to ${planName} Plan!`, {
       description: "Your workspace quotas have been updated instantly.",
     });

@@ -50,11 +50,6 @@ function AdminLoginPage() {
     }
   };
 
-  const fillDemoAdmin = () => {
-    setEmail("khade8915@gmail.com");
-    setPass("123456789");
-    toast.info("Loaded Super Admin credentials");
-  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">

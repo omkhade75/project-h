@@ -68,11 +68,6 @@ function SupplierLoginPage() {
     }
   };
 
-  const fillDemoSupplier = () => {
-    setEmail("supplier@gmail.com");
-    setPass("123456789");
-    toast.info("Loaded Supplier demo credentials");
-  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -134,7 +129,7 @@ function SupplierLoginPage() {
 
           <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-4">
             <span>Supplier & Logistics Portal</span>
-            <span className="font-medium text-emerald-400">supplier@gmail.com</span>
+            <span className="font-medium text-emerald-400">Authorized B2B Portal</span>
           </div>
         </div>
 
