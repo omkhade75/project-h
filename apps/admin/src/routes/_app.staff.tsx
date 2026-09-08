@@ -171,7 +171,7 @@ function StaffPage() {
             {Object.entries(deptCount).map(([dept, count]) => (
               <li key={dept} className="flex justify-between py-2.5 text-xs">
                 <span className="font-medium text-muted-foreground">{dept}</span>
-                <span className="font-semibold text-foreground">{count} present</span>
+                <span className="font-semibold text-foreground">{String(count)} present</span>
               </li>
             ))}
             {Object.keys(deptCount).length === 0 && (

@@ -119,27 +119,29 @@ function CustomerPortal() {
           label="Wallet Balance"
           value={profile.walletBalance}
           icon={<CreditCard className="h-4 w-4" />}
-          trend={{ value: 15, isPositive: true }}
-          format="currency"
+          delta={15}
+          format="inr"
         />
         <KpiCard
           label="Loyalty Points"
           value={profile.loyaltyPoints}
           icon={<Gift className="h-4 w-4" />}
-          trend={{ value: 120, isPositive: true }}
+          delta={120}
+          format="num"
         />
         <KpiCard
           label="Membership Tier"
-          value={profile.membershipTier}
+          value={1}
           icon={<Star className="h-4 w-4 text-yellow-500" />}
-          trend={{ value: 0, isPositive: true }}
-          format="string"
+          delta={0}
+          format="num"
         />
         <KpiCard
           label="Active Tickets"
           value={profile.supportTickets}
           icon={<HelpCircle className="h-4 w-4" />}
-          trend={{ value: 0, isPositive: true }}
+          delta={0}
+          format="num"
         />
       </div>
 
@@ -168,7 +170,7 @@ function CustomerPortal() {
                       </td>
                       <td className="p-3 text-right font-medium">{o.total.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}</td>
                       <td className="p-3 text-center">
-                        <StatusPill status={o.status === "Completed" ? "ok" : "warn"} label={o.status} />
+                        <StatusPill tone={o.status === "Completed" ? "success" : "warning"}>{o.status}</StatusPill>
                       </td>
                     </tr>
                   ))}

@@ -55,9 +55,11 @@ export function SectionCard({
 export function StatusPill({
   tone = "default",
   children,
+  className,
 }: {
   tone?: "default" | "success" | "warning" | "danger" | "info" | "violet";
   children: ReactNode;
+  className?: string;
 }) {
   const tones: Record<string, string> = {
     default: "bg-muted text-muted-foreground",
@@ -72,6 +74,7 @@ export function StatusPill({
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
         tones[tone],
+        className,
       )}
     >
       {children}

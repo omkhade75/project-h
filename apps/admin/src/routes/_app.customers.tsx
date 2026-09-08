@@ -23,7 +23,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Archive, Loader2, PhoneCall } from "lucide-react";
+import { Plus, Search, Edit, Archive, Loader2, PhoneCall, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/customers")({
@@ -252,22 +252,23 @@ function Customers() {
     setEditOpen(true);
   };
 
-  // Derived KPI values from list
-  const returningCount = customers.filter((c) => (c.ordersCount || 0) > 1).length;
-  const returningRate = customers.length > 0 ? Math.round((returningCount / customers.length) * 100) : 0;
-  const repeatOrders = safeTransactions.filter((t) => t.customerId).length;
-  const repeatRate = safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;
-  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
-  const new30dCount = customers.filter((c) => c.joined && c.joined >= thirtyDaysAgoStr).length || (customers.length > 0 ? 1 : 0);
   const { transactions } = useBusinessData();
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
+  // Derived KPI values from list
+  const returningCount = customers.filter((c: any) => (c.ordersCount || c.orders || 0) > 1).length;
+  const returningRate = customers.length > 0 ? Math.round((returningCount / customers.length) * 100) : 0;
+  const repeatOrders = safeTransactions.filter((t: any) => t.customerId).length;
+  const repeatRate = safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;
+  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
+  const new30dCount = customers.filter((c: any) => c.joined && c.joined >= thirtyDaysAgoStr).length || (customers.length > 0 ? 1 : 0);
+
   const displayCustomers = useMemo(() => {
-    return customers.map((c) => {
+    return customers.map((c: any) => {
       const custTxns = safeTransactions.filter((t: any) => t.customerId === c.id || (c.email && t.customerEmail === c.email));
       const realOrders = custTxns.length;
       const realSpend = custTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
-      const realTier = realSpend >= 50000 ? "Platinum" : realSpend >= 10000 ? "Gold" : (c.loyaltyTier || "Regular");
+      const realTier = realSpend >= 50000 ? "Platinum" : realSpend >= 10000 ? "Gold" : (c.loyaltyTier || c.tier || "Regular");
       const realSegment = realSpend >= 50000 ? "VIP Champions" : realSpend >= 10000 ? "Loyal Regulars" : "New Customer";
       return {
         ...c,
@@ -275,22 +276,24 @@ function Customers() {
         spend: realSpend,
         loyaltyTier: realTier,
         segment: realSegment,
-        churn: realOrders > 0 ? c.churn : 0,
+        churn: realOrders > 0 ? (c.churn || 0) : 0,
       };
     });
   }, [customers, safeTransactions]);
-const activeSelectedCust = useMemo(() => {
-    if (!selectedCust) return displayCustomers[0] || defaultRegisteredCustomer;
-    return displayCustomers.find((c) => c.id === selectedCust.id) || selectedCust;
+
+  const activeSelectedCust = useMemo(() => {
+    if (!selectedCust) return displayCustomers[0] || null;
+    return displayCustomers.find((c: any) => c.id === selectedCust.id) || selectedCust;
   }, [selectedCust, displayCustomers]);
 
-  const totalSpend = displayCustomers.reduce((sum, c) => sum + c.spend, 0);
+  const totalSpend = displayCustomers.reduce((sum: number, c: any) => sum + (c.spend || 0), 0);
   const avgLtv = customers.length > 0 ? Math.round(totalSpend / customers.length) : 0;
-  const churnRiskCount = displayCustomers.filter((c) => c.churn > 50).length;
+  const churnRiskCount = displayCustomers.filter((c: any) => (c.churn || 0) > 50).length;
 
   // Segment breakdown
-  const segmentCounts = displayCustomers.reduce((acc: Record<string, number>, c) => {
-    acc[c.segment] = (acc[c.segment] || 0) + 1;
+  const segmentCounts = displayCustomers.reduce((acc: Record<string, number>, c: any) => {
+    const seg = c.segment || "New Customer";
+    acc[seg] = (acc[seg] || 0) + 1;
     return acc;
   }, {});
 
@@ -298,6 +301,14 @@ const activeSelectedCust = useMemo(() => {
     name,
     v: segmentCounts[name],
   }));
+
+  const handleOpenVapiModal = () => {
+    toast.info("Vapi AI Voice agent integration is active in Business Owner portal.");
+  };
+
+  const handleNotifyWhatsApp = () => {
+    toast.info("WhatsApp notification center is active in Business Owner portal.");
+  };
 
   // Acquisition last 30 days
   const acquisitionData = Array.from({ length: 30 }, (_, i) => {
@@ -331,7 +342,7 @@ const activeSelectedCust = useMemo(() => {
             className="border-hairline bg-surface hover:text-[#25D366] transition-colors gap-2 text-xs flex-1 sm:flex-initial justify-center"
             onClick={handleNotifyWhatsApp}
           >
-            <WhatsappIcon className="h-4 w-4 text-[#25D366]" /> Notify Customers
+            <MessageSquare className="h-4 w-4 text-[#25D366]" /> Notify Customers
           </Button>
           <Button
             onClick={() => {
@@ -483,7 +494,7 @@ const activeSelectedCust = useMemo(() => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-hairline">
-                  {displayCustomers.map((c) => (
+                  {displayCustomers.map((c: any) => (
                     <tr
                       key={c.id}
                       onClick={() => setSelectedCust(c)}

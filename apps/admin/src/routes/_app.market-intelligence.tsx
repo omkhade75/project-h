@@ -135,9 +135,9 @@ function MarketIntelligencePage() {
       }
 
       // Calculate portfolio total value (only active ones)
-      const activeVal = invs
-        .filter((inv) => inv.status === "Active")
-        .reduce((sum, inv) => sum + Number(inv.totalCost), 0);
+      const activeVal = (invs || [])
+        .filter((inv: any) => inv.status === "Active")
+        .reduce((sum: number, inv: any) => sum + Number(inv.totalCost || 0), 0);
       setPortfolioValue(activeVal);
     } catch (err) {
       console.error(err);

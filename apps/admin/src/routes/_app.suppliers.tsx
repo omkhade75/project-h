@@ -97,7 +97,7 @@ function Suppliers() {
       if (res.length > 0 && !sel) {
         setSel(res[0]);
       } else if (sel) {
-        const updatedSel = res.find((s) => s.id === sel.id);
+        const updatedSel = res.find((s: any) => s.id === sel.id);
         if (updatedSel) setSel(updatedSel);
         else setSel(null);
       }

@@ -124,27 +124,29 @@ function SupplierPortal() {
           label="Pending POs"
           value={purchaseOrders.filter((po) => po.status === "Sent").length}
           icon={<FileText className="h-4 w-4" />}
-          trend={{ value: 1, isPositive: false }}
+          delta={1}
+          format="num"
         />
         <KpiCard
           label="Active Shipments"
           value={stats.activeDeliveriesCount}
           icon={<Truck className="h-4 w-4" />}
-          trend={{ value: 0, isPositive: true }}
+          delta={0}
+          format="num"
         />
         <KpiCard
           label="Total Settlement spend"
           value={stats.totalSpendReceived}
           icon={<CreditCard className="h-4 w-4" />}
-          trend={{ value: 5.8, isPositive: true }}
-          format="currency"
+          delta={5.8}
+          format="inr"
         />
         <KpiCard
           label="Quality Score"
           value={stats.qualityRating}
           icon={<ShieldCheck className="h-4 w-4 text-green-500" />}
-          trend={{ value: 1.2, isPositive: true }}
-          format="percent"
+          delta={1.2}
+          format="num"
         />
       </div>
 
@@ -167,32 +169,33 @@ function SupplierPortal() {
                 <tbody className="divide-y divide-border">
                   {purchaseOrders.map((po) => (
                     <tr key={po.id} className="hover:bg-muted/30">
-                      <td className="p-3 font-mono text-xs">{po.id}</td>
+                      <td className="p-3 font-mono font-medium text-xs">{po.id}</td>
                       <td className="p-3">{po.date}</td>
                       <td className="p-3 font-semibold">{po.productName}</td>
                       <td className="p-3 text-center">{po.quantity}</td>
                       <td className="p-3 text-right font-medium">{po.totalCost.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}</td>
                       <td className="p-3 text-center">
                         {po.status === "Sent" ? (
-                          <div className="flex gap-2 justify-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <Button
-                              onClick={() => handleActionOrder(po.id, "Accept")}
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700 text-xs px-2 h-7"
+                              variant="outline"
+                              className="h-7 text-xs bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20"
+                              onClick={() => handleActionOrder(po.id, "Accept")}
                             >
                               Accept
                             </Button>
                             <Button
-                              onClick={() => handleActionOrder(po.id, "Reject")}
                               size="sm"
-                              variant="destructive"
-                              className="text-xs px-2 h-7"
+                              variant="outline"
+                              className="h-7 text-xs bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20"
+                              onClick={() => handleActionOrder(po.id, "Reject")}
                             >
                               Reject
                             </Button>
                           </div>
                         ) : (
-                          <StatusPill status={po.status === "Received" ? "ok" : "critical"} label={po.status} />
+                          <StatusPill tone={po.status === "Received" ? "success" : "danger"}>{po.status}</StatusPill>
                         )}
                       </td>
                     </tr>
@@ -208,7 +211,7 @@ function SupplierPortal() {
                 <div key={s.id} className="p-4 border rounded-md hover:bg-muted/10 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-sm">Delivery ID: <span className="font-mono text-xs">{s.id}</span></span>
-                    <StatusPill status={s.status === "DELIVERED" ? "ok" : "warn"} label={s.status.replace("_", " ")} />
+                    <StatusPill tone={s.status === "DELIVERED" ? "success" : "warning"}>{s.status.replace("_", " ")}</StatusPill>
                   </div>
                   <div className="grid grid-cols-2 text-xs text-muted-foreground">
                     <div>Origin: <span className="text-foreground font-medium">{s.origin}</span></div>
