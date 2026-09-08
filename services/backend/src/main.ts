@@ -5,16 +5,35 @@ import { DatabaseConfig } from './config/database';
 import { setupSecurityMiddleware } from './middlewares/security.middleware';
 import { CentralExceptionFilter } from './middlewares/error.middleware';
 
+import { HealthService } from './services/health.service';
+
 // 🛡️ Global AI Self-Healing & Process Crash Immunity
 process.on('uncaughtException', (err: any) => {
   console.error('🤖 [AI Watchdog] Caught unhandled exception — Prevented backend process crash:', err?.message || err);
   if (err?.stack) {
     console.error(err.stack);
   }
+  try {
+    HealthService.recordIncidentStatic({
+      path: 'process.uncaughtException',
+      method: 'SYSTEM',
+      status: 500,
+      message: err?.message || 'Uncaught process exception',
+      stack: err?.stack,
+    });
+  } catch (_) {}
 });
 
 process.on('unhandledRejection', (reason: any) => {
   console.error('🤖 [AI Watchdog] Caught unhandled promise rejection — Prevented backend process crash:', reason?.message || reason);
+  try {
+    HealthService.recordIncidentStatic({
+      path: 'process.unhandledRejection',
+      method: 'SYSTEM',
+      status: 500,
+      message: (reason as any)?.message || String(reason) || 'Unhandled promise rejection',
+    });
+  } catch (_) {}
 });
 
 async function bootstrap() {

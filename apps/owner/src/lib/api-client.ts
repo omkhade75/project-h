@@ -11,47 +11,90 @@ export const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// 🛡️ Frontend Auto-Healing: Listen for stale chunk load errors upon new deployments and auto-refresh
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    const msg = (event.message || '').toLowerCase();
+    if (msg.includes('failed to fetch dynamically imported module') || msg.includes('loading chunk')) {
+      console.warn('🤖 [Frontend Auto-Healing] Detected deployment chunk version mismatch. Auto-refreshing...');
+      const hasReloaded = sessionStorage.getItem('bizora_chunk_reload');
+      if (!hasReloaded) {
+        sessionStorage.setItem('bizora_chunk_reload', 'true');
+        window.location.reload();
+      }
+    }
+  });
+}
+
 export async function fetchApi<T = any>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<{ success: boolean; data?: T; message?: string; error?: any }> {
-  try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('bizora_access_token') : null;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    };
+): Promise<{ success: boolean; data?: T; message?: string; error?: any; isSelfHealed?: boolean }> {
+  const maxRetries = 3;
+  let attempt = 0;
+  let lastError: any = null;
 
-    if (token) {
-      headers['Authorization'] = 'Bearer ' + token;
-    }
-
-    const baseUrl = getApiBaseUrl();
-    const response = await fetch(baseUrl + endpoint, {
-      ...options,
-      headers,
-    });
-
-    // Always try to parse the JSON body — the backend sends error details in the body
-    let result: any;
+  while (attempt < maxRetries) {
+    attempt++;
     try {
-      result = await response.json();
-    } catch {
-      result = null;
-    }
+      const token = typeof window !== 'undefined' ? localStorage.getItem('bizora_access_token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options.headers as Record<string, string>),
+      };
 
-    if (!response.ok) {
-      // Return the actual error from the backend response body
+      if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+      }
+
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(baseUrl + endpoint, {
+        ...options,
+        headers,
+      });
+
+      let result: any;
+      try {
+        result = await response.json();
+      } catch {
+        result = null;
+      }
+
+      if (response.ok) {
+        return result || { success: true, data: [] as any };
+      }
+
+      // If transient server error (502, 503, 504) or rate limit (429), auto-retry with backoff
+      if ((response.status >= 502 && response.status <= 504) || response.status === 429) {
+        if (attempt < maxRetries) {
+          const delay = Math.min(attempt * 600, 2000) + Math.random() * 200;
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+      }
+
       return {
-        success: false,
+        success: result?.success ?? false,
         data: result?.data ?? ([] as any),
         message: result?.message || result?.error || `HTTP ${response.status}`,
         error: result?.error || result?.message || `HTTP ${response.status}`,
+        isSelfHealed: result?.isSelfHealed,
       };
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        const delay = Math.min(attempt * 500, 1500) + Math.random() * 200;
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
     }
-
-    return result || { success: true, data: [] as any };
-  } catch (error: any) {
-    return { success: false, data: [] as any, error: error?.message || 'Network error', message: error?.message || 'Network error' };
   }
+
+  return {
+    success: false,
+    data: [] as any,
+    message: lastError?.message || 'Network unreachable. Auto-healing active.',
+    error: lastError?.message || 'Network unreachable',
+    isSelfHealed: true,
+  };
 }

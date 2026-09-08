@@ -14,6 +14,16 @@ export class HealthController {
     };
   }
 
+  @Post('auto-heal')
+  async triggerAutoHeal() {
+    return await this.healthService.executeAutoHealing();
+  }
+
+  @Get('self-healing-log')
+  async getSelfHealingLog() {
+    return this.healthService.getSelfHealingJournal();
+  }
+
   @Post('report-error')
   async reportFrontendError(@Body() body: any) {
     const errorData = body?.data ? body.data : body;

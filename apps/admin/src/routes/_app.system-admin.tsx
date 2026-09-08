@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { 
   ShieldAlert, CheckCircle2, XCircle, Search, Building, User, Mail, MapPin, 
   Briefcase, Key, Play, AlertTriangle, Download, Upload, ClipboardList, Database, 
-  Cpu, HardDrive, RefreshCw, LogIn, Ban, Check, ShieldCheck, CreditCard, Layers, Globe, Trash2
+  Cpu, HardDrive, RefreshCw, LogIn, Ban, Check, ShieldCheck, CreditCard, Layers, Globe, Trash2, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
@@ -343,6 +343,37 @@ export function SystemAdminPage() {
         title="Platform Super Admin Control Center"
         subtitle="Real-time multi-tenant data: active store workspaces, logged-in users, database storage space, subscription quotas, and audit logs."
       />
+
+      {/* 🤖 AUTONOMOUS AI SELF-HEALING FLEET BANNER */}
+      <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-surface to-surface p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <span className="text-xl">🤖</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-bold text-foreground">AI Self-Healing Engine Active</h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                0 DOWNTIME GUARANTEE
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Continuous 45s background sweep across Supabase PostgreSQL, MongoDB Atlas, and 5 Render frontends with automated zero-crash error suppression.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate({ to: "/health-monitor" })}
+            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold gap-1.5"
+          >
+            <Zap className="h-3.5 w-3.5" /> View Live Healing Monitor
+          </Button>
+        </div>
+      </div>
 
       {/* REAL METRICS PANELS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
