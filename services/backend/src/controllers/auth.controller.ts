@@ -31,6 +31,14 @@ export class AuthController {
     return ResponseUtil.success(result, 'Google login successful');
   }
 
+  @Post('impersonate')
+  @HttpCode(HttpStatus.OK)
+  async impersonate(@Body() body: any) {
+    const payload = body?.data || body;
+    const result = await this.authService.impersonate(payload);
+    return ResponseUtil.success(result, 'Impersonation successful');
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() body: any) {

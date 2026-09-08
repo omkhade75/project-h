@@ -32,7 +32,9 @@ export class SystemAdminController {
   }
 
   @Post('delete')
-  async deleteRegistration(@Req() req, @Body('id') id: string) {
+  async deleteRegistration(@Req() req, @Body() body: any) {
+    const payload = body?.data || body;
+    const id = typeof payload === 'string' ? payload : (payload?.id || payload?.registrationId);
     return await this.sysAdminService.deleteRegistration(req.user, id);
   }
 
@@ -57,8 +59,12 @@ export class SystemAdminController {
   }
 
   @Post('delete-workspace')
-  async deleteWorkspace(@Req() req, @Body('id') id: string) {
-    return await this.sysAdminService.deleteWorkspace(req.user, id, req.ip, req.headers['user-agent']);
+  async deleteWorkspace(@Req() req, @Body() body: any) {
+    const payload = body?.data || body;
+    const id = typeof payload === 'string' ? payload : (payload?.id || payload?.workspaceId);
+    const email = payload?.email;
+    const registrationId = payload?.registrationId;
+    return await this.sysAdminService.deleteWorkspace(req.user, id, req.ip, req.headers['user-agent'], email, registrationId);
   }
 
   @Post('reset-password')

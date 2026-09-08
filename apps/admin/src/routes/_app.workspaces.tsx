@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Building, Search, User, LogIn, HardDrive, ShieldCheck, Loader2 } from "lucide-react";
+import { Building, Search, User, LogIn, HardDrive, ShieldCheck, Loader2, Trash2 } from "lucide-react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
-import { searchCompaniesServer } from "@/lib/server-system-admin";
+import { searchCompaniesServer, deleteWorkspaceServer } from "@/lib/server-system-admin";
 import { impersonateTenantServer } from "@/lib/server-auth";
 import { toast } from "sonner";
 import { redirect } from "@tanstack/react-router";
@@ -29,6 +29,7 @@ export function WorkspacesPage() {
   const [query, setQuery] = useState("");
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchWorkspaces = async () => {
     setLoading(true);
@@ -47,14 +48,59 @@ export function WorkspacesPage() {
     fetchWorkspaces();
   }, [user]);
 
-  const handleImpersonate = async (workspaceId: string) => {
-    if (!confirm("Are you sure you want to log in as this store owner?")) return;
+  const handleImpersonate = async (store: any) => {
+    const storeId = typeof store === "string" ? store : store.id;
+    const storeEmail = typeof store === "object" ? (store.users?.[0]?.email || store.ownerEmail) : "";
+    const storeName = typeof store === "object" ? (store.name || storeId) : storeId;
+
+    if (!confirm(`Log in to live Owner Portal as storekeeper for "${storeName}"?`)) return;
     try {
-      await impersonateTenantServer({ data: { workspaceId } });
-      toast.success("Impersonating workspace Owner user.");
-      window.location.href = "/workspaces";
+      const res: any = await impersonateTenantServer({ 
+        data: { 
+          workspaceId: storeId, 
+          email: storeEmail 
+        } 
+      });
+      const targetUrl = res?.ownerUrl || res?.data?.ownerUrl;
+      if (targetUrl) {
+        toast.success(`Opening Storekeeper portal for ${storeName}...`);
+        window.open(targetUrl, "_blank");
+      } else {
+        toast.success("Storekeeper session authenticated.");
+        window.open("https://bizora-owner.onrender.com/command-center", "_blank");
+      }
     } catch (err: any) {
       toast.error(err.message || "Impersonation failed");
+    }
+  };
+
+  const handleDeleteStore = async (store: any) => {
+    const storeId = store.id;
+    const storeName = store.name || storeId;
+    const storeEmail = store.users?.[0]?.email || store.ownerEmail;
+
+    if (storeId === "grandsquare-mall") {
+      return toast.error("The default root workspace (grandsquare-mall) cannot be deleted.");
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete store workspace "${storeName}" (${storeId})?\n\nThis will remove all associated store data and users.`)) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await deleteWorkspaceServer({ 
+        data: { 
+          id: storeId, 
+          email: storeEmail 
+        } 
+      });
+      toast.success(`Store workspace "${storeName}" deleted successfully.`);
+      await fetchWorkspaces();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete workspace");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -151,14 +197,27 @@ export function WorkspacesPage() {
                       </StatusPill>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10 font-bold"
-                        onClick={() => handleImpersonate(store.id)}
-                      >
-                        <LogIn className="h-3.5 w-3.5 mr-1" /> Login As Storekeeper
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10 font-bold"
+                          onClick={() => handleImpersonate(store)}
+                        >
+                          <LogIn className="h-3.5 w-3.5 mr-1" /> Login As Storekeeper
+                        </Button>
+                        {store.id !== "grandsquare-mall" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-400 border-red-500/40 hover:bg-red-500/10 hover:text-red-300 font-bold"
+                            onClick={() => handleDeleteStore(store)}
+                            disabled={isProcessing}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

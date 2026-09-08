@@ -19,6 +19,8 @@ import {
 
 const loginSearchSchema = z.object({
   redirect: z.string().optional(),
+  token: z.string().optional(),
+  impersonate: z.string().optional(),
 });
 
 export const Route = createFileRoute("/login")({
@@ -54,7 +56,53 @@ function OwnerLoginPage() {
 
   const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
+  const { redirect, token, impersonate } = Route.useSearch();
+
+  useEffect(() => {
+    const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const qToken = token || urlParams?.get("token");
+    const isImpersonate = impersonate === "true" || urlParams?.get("impersonate") === "true";
+
+    if (qToken) {
+      try {
+        localStorage.setItem("bizora_access_token", qToken);
+        const base64Url = qToken.split(".")[1];
+        if (base64Url) {
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const payloadStr = decodeURIComponent(
+            atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join("")
+          );
+          const parsed = JSON.parse(payloadStr);
+          const userObj = {
+            id: parsed.userId || parsed.id || "usr_store",
+            email: parsed.email,
+            name: parsed.name || parsed.email?.split("@")[0] || "Store Owner",
+            role: parsed.role || "OWNER",
+            departmentId: null,
+            workspaceId: parsed.workspaceId || parsed.companyId || "grandsquare-mall",
+            companyId: parsed.companyId || parsed.workspaceId || "grandsquare-mall",
+            companyName: parsed.companyName || `${parsed.name || "Store"}'s Store`,
+            businessType: parsed.businessType || "Retail",
+            plan: parsed.plan || "ENTERPRISE",
+            isSystemAdmin: !!parsed.isSystemAdmin,
+            isImpersonating: isImpersonate,
+            setupCompleted: true,
+          };
+          localStorage.setItem("bizora_user_session", JSON.stringify(userObj));
+          if (userObj.companyName && userObj.workspaceId) {
+            localStorage.setItem(`bizora_company_name_${userObj.workspaceId}`, userObj.companyName);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse impersonation token payload:", e);
+      }
+      toast.success(isImpersonate ? "Super Admin: Impersonating Store Owner" : "Owner authenticated successfully");
+      window.location.href = "/command-center";
+    }
+  }, [token, impersonate]);
 
   const parseGoogleJwt = (token: string) => {
     try {
@@ -331,6 +379,36 @@ function OwnerLoginPage() {
                   </svg>
                   Continue with Google
                 </Button>
+
+                <div className="pt-3 border-t border-border/40 flex flex-col gap-2">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Quick Fill Demo Accounts:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/10 font-medium"
+                      onClick={() => {
+                        setEmail("owner@gmail.com");
+                        setPass("123456789");
+                      }}
+                    >
+                      GrandSquare Mall
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/10 font-medium"
+                      onClick={() => {
+                        setEmail("priya@gmail.com");
+                        setPass("123456789");
+                      }}
+                    >
+                      Priyansh Store
+                    </Button>
+                  </div>
+                </div>
               </form>
 
               <div className="mt-6 text-center text-xs text-muted-foreground">

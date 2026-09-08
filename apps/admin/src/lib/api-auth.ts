@@ -185,16 +185,16 @@ export const logoutServer = async () => {
   return { success: true };
 };
 
-export const impersonateTenantServer = async (data: { data: { workspaceId: string } }) => {
+export const impersonateTenantServer = async (data: { data?: { workspaceId?: string; email?: string } } | any) => {
   try {
-    const payload = data.data ? data.data : data;
-    const result = await fetchApi('/api/auth/impersonate', {
+    const payload = data?.data ? data.data : data;
+    const result: any = await fetchApi('/api/auth/impersonate', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    return { success: !!result.success };
-  } catch (err) {
-    return { success: false };
+    return result?.data || result;
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Impersonation failed' };
   }
 };
 

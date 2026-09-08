@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { 
   ShieldAlert, CheckCircle2, XCircle, Search, Building, User, Mail, MapPin, 
   Briefcase, Key, Play, AlertTriangle, Download, Upload, ClipboardList, Database, 
-  Cpu, HardDrive, RefreshCw, LogIn, Ban, Check, ShieldCheck, CreditCard, Layers, Globe
+  Cpu, HardDrive, RefreshCw, LogIn, Ban, Check, ShieldCheck, CreditCard, Layers, Globe, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
@@ -203,14 +203,63 @@ export function SystemAdminPage() {
   };
 
   // Impersonation
-  const handleImpersonate = async (workspaceId: string) => {
-    if (!confirm("Are you sure you want to log in as this store owner?")) return;
+  const handleImpersonate = async (store: any) => {
+    const storeId = typeof store === "string" ? store : store.id;
+    const storeEmail = typeof store === "object" ? (store.ownerEmail || store.users?.[0]?.email) : "";
+    const storeName = typeof store === "object" ? (store.name || store.companyName || storeId) : storeId;
+
+    if (!confirm(`Log in to live Owner Portal as storekeeper for "${storeName}"?`)) return;
     try {
-      await impersonateTenantServer({ data: { workspaceId } });
-      toast.success("Impersonating workspace Owner user.");
-      window.location.href = "/system-admin";
+      const res: any = await impersonateTenantServer({ 
+        data: { 
+          workspaceId: storeId, 
+          email: storeEmail 
+        } 
+      });
+      const targetUrl = res?.ownerUrl || res?.data?.ownerUrl;
+      if (targetUrl) {
+        toast.success(`Opening Storekeeper portal for ${storeName}...`);
+        window.open(targetUrl, "_blank");
+      } else {
+        toast.success("Storekeeper session authenticated.");
+        window.open("https://bizora-owner.onrender.com/command-center", "_blank");
+      }
     } catch (err: any) {
       toast.error(err.message || "Impersonation failed");
+    }
+  };
+
+  // Delete Workspace
+  const handleDeleteStore = async (store: any) => {
+    const storeId = store.id;
+    const storeName = store.name || store.companyName || storeId;
+    const storeEmail = store.ownerEmail || store.users?.[0]?.email;
+    const registrationId = store.registrationId;
+
+    if (storeId === "grandsquare-mall") {
+      return toast.error("The default root workspace (grandsquare-mall) cannot be deleted.");
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete store workspace "${storeName}" (${storeId})?\n\nThis will remove all associated store data, users, and registrations.`)) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await deleteWorkspaceServer({ 
+        data: { 
+          id: storeId, 
+          email: storeEmail,
+          registrationId: registrationId,
+        } 
+      });
+      toast.success(`Store workspace "${storeName}" deleted successfully.`);
+      await fetchData();
+      await fetchAudits();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete workspace");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -232,27 +281,44 @@ export function SystemAdminPage() {
   const safeAudits = Array.isArray(audits) ? audits : [];
 
   const combinedWorkspacesMap = new Map();
-  combinedWorkspacesMap.set(defaultActiveWorkspace.id, defaultActiveWorkspace);
+  combinedWorkspacesMap.set("grandsquare-mall", defaultActiveWorkspace);
 
   safeApproved.forEach((app: any) => {
     if (app && app.companyName) {
-      combinedWorkspacesMap.set(app.id || app.ownerEmail || app.companyName, {
-        id: app.id || "ws-" + (app.companyName || "store").toLowerCase().replace(/[^a-z0-9]/g, "-"),
+      const canonicalKey = (app.ownerEmail || app.email || app.id).toLowerCase().trim();
+      const wsId = app.workspaceId || app.id || "ws-" + (app.companyName || "store").toLowerCase().replace(/[^a-z0-9]/g, "-");
+      combinedWorkspacesMap.set(canonicalKey, {
+        id: wsId,
         name: app.companyName || app.name || "Approved Store Workspace",
         ownerName: app.ownerName || "Store Owner",
         ownerEmail: app.ownerEmail || app.email || "owner@store.com",
         status: "ACTIVE",
         plan: app.plan || "Enterprise AI",
-        users: [{ name: app.ownerName || "Store Owner", email: app.ownerEmail }],
+        users: [{ name: app.ownerName || "Store Owner", email: app.ownerEmail || app.email }],
         location: app.city || "Mumbai",
         createdAt: app.createdAt || "2026-07-27T12:00:00.000Z",
+        registrationId: app.id,
       });
     }
   });
 
   if (Array.isArray(workspaces)) {
     workspaces.forEach((ws: any) => {
-      if (ws && ws.name) combinedWorkspacesMap.set(ws.id || ws.name, ws);
+      if (ws && ws.name && ws.id !== "grandsquare-mall") {
+        const ownerEmail = (ws.users?.[0]?.email || ws.ownerEmail || "").toLowerCase().trim();
+        const canonicalKey = ownerEmail || (ws.id || "").toLowerCase().trim();
+        const existing = combinedWorkspacesMap.get(canonicalKey) || {};
+        combinedWorkspacesMap.set(canonicalKey, {
+          ...existing,
+          ...ws,
+          id: ws.id || existing.id,
+          name: ws.name || existing.name,
+          ownerName: ws.users?.[0]?.name || existing.ownerName || "Store Owner",
+          ownerEmail: ownerEmail || existing.ownerEmail,
+          users: ws.users?.length ? ws.users : existing.users,
+          plan: ws.plan || existing.plan || "Enterprise AI",
+        });
+      }
     });
   }
 
@@ -457,9 +523,27 @@ export function SystemAdminPage() {
                           <StatusPill tone="success">{store.plan || "Enterprise"}</StatusPill>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Button size="sm" variant="outline" className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10 font-bold" onClick={() => handleImpersonate(store.id)}>
-                            <LogIn className="h-3.5 w-3.5 mr-1" /> Login As Storekeeper
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-rose-400 border-rose-500/40 hover:bg-rose-500/10 font-bold" 
+                              onClick={() => handleImpersonate(store)}
+                            >
+                              <LogIn className="h-3.5 w-3.5 mr-1" /> Login As Storekeeper
+                            </Button>
+                            {store.id !== "grandsquare-mall" && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-red-400 border-red-500/40 hover:bg-red-500/10 hover:text-red-300 font-bold" 
+                                onClick={() => handleDeleteStore(store)}
+                                disabled={isProcessing}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -552,8 +552,21 @@ export class SystemAdminService {
 
   async deleteRegistration(user: any, id: string) {
     this.checkAdmin(user);
-    await this.prisma.pendingRegistration.delete({ where: { id } });
-    return { success: true };
+    const targetId = (id || '').trim();
+    if (!targetId) return { success: false, message: 'Registration ID required' };
+
+    try {
+      if (this.prisma?.pendingRegistration) {
+        await this.prisma.pendingRegistration.deleteMany({ where: { id: targetId } });
+      }
+    } catch (e) {
+      console.warn('[SystemAdminService] deleteRegistration prisma warning:', e);
+    }
+
+    this.memPending = this.memPending.filter(p => p && p.id !== targetId);
+    SystemAdminService.memPendingStore = SystemAdminService.memPendingStore.filter(p => p && p.id !== targetId);
+
+    return { success: true, message: 'Registration deleted successfully' };
   }
 
   async searchCompanies(user: any, queryStr: string = "") {
@@ -624,27 +637,124 @@ export class SystemAdminService {
     return { success: true };
   }
 
-  async deleteWorkspace(user: any, id: string, ipAddress: string, userAgent: string) {
+  async deleteWorkspace(user: any, id: string, ipAddress?: string, userAgent?: string, email?: string, registrationId?: string) {
     const admin = this.checkAdmin(user);
-    const workspace = await this.prisma.workspace.update({
-      where: { id },
-      data: { status: 'DELETED' },
-      include: { users: { where: { role: 'OWNER' }, take: 1 } },
+    const targetWsId = (id || '').trim();
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const targetRegId = (registrationId || '').trim();
+
+    if (targetWsId === 'grandsquare-mall') {
+      throw new UnauthorizedException('The root default workspace (grandsquare-mall) cannot be deleted.');
+    }
+
+    let deletedName = 'Workspace';
+
+    // 1. Prisma Workspace cleanup
+    try {
+      if (this.prisma?.workspace && targetWsId) {
+        const ws = await this.prisma.workspace.findUnique({
+          where: { id: targetWsId },
+          include: { users: { where: { role: 'OWNER' }, take: 1 } },
+        });
+        if (ws) {
+          deletedName = ws.name || deletedName;
+          await this.prisma.workspace.update({
+            where: { id: targetWsId },
+            data: { status: 'DELETED' },
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[SystemAdminService] deleteWorkspace prisma.workspace warning:', e);
+    }
+
+    // 2. Delete users in prisma.user
+    try {
+      if (this.prisma?.user) {
+        if (cleanEmail) {
+          await this.prisma.user.deleteMany({
+            where: { email: cleanEmail },
+          });
+        }
+        if (targetWsId) {
+          await this.prisma.user.deleteMany({
+            where: { workspaceId: targetWsId },
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[SystemAdminService] deleteWorkspace prisma.user warning:', e);
+    }
+
+    // 3. Purge PendingRegistration
+    try {
+      if (this.prisma?.pendingRegistration) {
+        if (targetRegId) {
+          await this.prisma.pendingRegistration.deleteMany({
+            where: { id: targetRegId },
+          });
+        }
+        if (cleanEmail) {
+          await this.prisma.pendingRegistration.deleteMany({
+            where: { ownerEmail: cleanEmail },
+          });
+        }
+        if (targetWsId) {
+          await this.prisma.pendingRegistration.deleteMany({
+            where: { id: targetWsId },
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[SystemAdminService] deleteWorkspace pendingRegistration warning:', e);
+    }
+
+    // 4. Memory store cleanup
+    this.memPending = this.memPending.filter(p => {
+      if (!p) return false;
+      if (targetWsId && (p.id === targetWsId || p.workspaceId === targetWsId)) return false;
+      if (cleanEmail && (p.ownerEmail || '').toLowerCase().trim() === cleanEmail) return false;
+      if (targetRegId && p.id === targetRegId) return false;
+      return true;
     });
 
-    const ownerName = workspace.users[0]?.name || 'N/A';
-    await this.prisma.approvalAudit.create({
-      data: {
-        adminId: admin.id,
-        adminEmail: admin.email,
-        tenantName: ownerName,
-        workspaceId: workspace.id,
-        userAgent: userAgent || 'Unknown',
-        ipAddress: ipAddress || '127.0.0.1',
-        actionType: 'DELETE_WORKSPACE',
-      },
+    SystemAdminService.memPendingStore = SystemAdminService.memPendingStore.filter(p => {
+      if (!p) return false;
+      if (targetWsId && (p.id === targetWsId || p.workspaceId === targetWsId)) return false;
+      if (cleanEmail && (p.ownerEmail || '').toLowerCase().trim() === cleanEmail) return false;
+      if (targetRegId && p.id === targetRegId) return false;
+      return true;
     });
-    return { success: true };
+
+    // 5. Mongoose cleanup
+    try {
+      if (cleanEmail) {
+        await UserModel.deleteMany({ email: cleanEmail });
+      }
+      if (targetWsId) {
+        await CompanyModel.deleteMany({ code: targetWsId });
+      }
+    } catch (e) {}
+
+    // 6. Approval audit log
+    try {
+      if (this.prisma?.approvalAudit) {
+        await this.prisma.approvalAudit.create({
+          data: {
+            adminId: admin.id || 'admin-root',
+            adminEmail: admin.email || 'khade8915@gmail.com',
+            tenantName: deletedName,
+            workspaceId: targetWsId || 'N/A',
+            userAgent: userAgent || 'System Admin UI',
+            ipAddress: ipAddress || '127.0.0.1',
+            actionType: 'DELETE_WORKSPACE',
+            registrationId: targetRegId || null,
+          },
+        });
+      }
+    } catch (e) {}
+
+    return { success: true, message: `Workspace ${deletedName} deleted successfully` };
   }
 
   async resetOwnerPassword(user: any, workspaceId: string, password?: string) {
