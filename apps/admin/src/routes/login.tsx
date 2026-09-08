@@ -103,10 +103,12 @@ function AdminLoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@company.com"
+                    placeholder="admin@bizora.com"
+                    autoComplete="username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background"
+                    required
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -117,9 +119,12 @@ function AdminLoginPage() {
                     <Input
                       id="password"
                       type={show ? "text" : "password"}
+                      autoComplete="current-password"
+                      placeholder="••••••••"
                       value={pass}
                       onChange={(e) => setPass(e.target.value)}
                       className="bg-background pr-10"
+                      required
                     />
                     <button
                       type="button"
@@ -134,31 +139,16 @@ function AdminLoginPage() {
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-600/20"
+                  className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-600/20 cursor-pointer"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Sign In to Shopkeeper Approval Console
+                  Sign In to Platform Admin Console
                 </Button>
               </form>
 
-              {/* Quick autofill helper for investor & judges demo */}
-              <div className="mt-5 p-3 rounded-lg border border-rose-500/20 bg-rose-500/5 text-xs flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-rose-300">Root Super Admin Demo</div>
-                  <div className="font-mono text-[11px] text-muted-foreground">khade8915@gmail.com • 123456789</div>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="border-rose-500/30 text-rose-300 hover:bg-rose-500/20 text-xs h-7 px-2.5 cursor-pointer"
-                  onClick={() => {
-                    setEmail("khade8915@gmail.com");
-                    setPass("123456789");
-                  }}
-                >
-                  Quick Fill
-                </Button>
+              <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground border-t border-border/40 pt-4">
+                <ShieldAlert className="h-4 w-4 text-rose-400" />
+                <span>Enterprise 256-Bit Encrypted Access · Authorized Personnel Only</span>
               </div>
             </div>
           </div>

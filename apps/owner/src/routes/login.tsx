@@ -1,7 +1,7 @@
 import { BizoraLogo } from "@/components/bizora-logo";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Eye, EyeOff, Building, TrendingUp, Loader2, ArrowLeft, Crown, DollarSign, PieChart, Sparkles, ArrowRight, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Building, TrendingUp, Loader2, ArrowLeft, Crown, DollarSign, PieChart, Sparkles, ArrowRight, ShieldAlert, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -380,34 +380,9 @@ function OwnerLoginPage() {
                   Continue with Google
                 </Button>
 
-                <div className="pt-3 border-t border-border/40 flex flex-col gap-2">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Quick Fill Demo Accounts:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/10 font-medium"
-                      onClick={() => {
-                        setEmail("owner@gmail.com");
-                        setPass("123456789");
-                      }}
-                    >
-                      GrandSquare Mall
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/10 font-medium"
-                      onClick={() => {
-                        setEmail("priya@gmail.com");
-                        setPass("123456789");
-                      }}
-                    >
-                      Priyansh Store
-                    </Button>
-                  </div>
+                <div className="pt-4 border-t border-border/40 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="h-4 w-4 text-amber-500" />
+                  <span>Encrypted 256-Bit Storekeeper Session · Multi-Store Protected</span>
                 </div>
               </form>
 
