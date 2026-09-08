@@ -93,25 +93,6 @@ const NAV: NavSection[] = [
     section: "Overview",
     items: [
       { to: "/command-center", label: "Command Center", icon: LayoutDashboard },
-      { to: "/live-ops", label: "Live Operations", icon: Activity },
-      { to: "/time-machine", label: "Business Time Machine", icon: CalendarDays },
-    ],
-  },
-  {
-    section: "Portals",
-    items: [
-      { to: "/customer-portal", label: "Customer Portal", icon: ShoppingBagIcon },
-      { to: "/supplier-portal", label: "Supplier Portal", icon: Truck },
-    ],
-  },
-  {
-    section: "Intelligence",
-    items: [
-      { to: "/analytics", label: "Analytics", icon: BarChart3 },
-      { to: "/ai-decisions", label: "AI Decision Center", icon: Brain },
-      { to: "/market-intelligence", label: "Market Intelligence", icon: Globe },
-      { to: "/forecasting", label: "Forecasting", icon: LineChart },
-      { to: "/anomalies", label: "Anomaly & Risk", icon: ShieldAlert },
     ],
   },
   {
@@ -119,7 +100,6 @@ const NAV: NavSection[] = [
     items: [
       { to: "/billing", label: "Billing (POS)", icon: Calculator },
       { to: "/sales", label: "Sales", icon: ShoppingCart },
-      { to: "/transactions", label: "Transactions", icon: Receipt },
       { to: "/customers", label: "Customers", icon: Users },
     ],
   },
@@ -128,27 +108,15 @@ const NAV: NavSection[] = [
     items: [
       { to: "/products", label: "Products", icon: Package },
       { to: "/inventory", label: "Inventory", icon: Warehouse },
-      { to: "/expiry", label: "Expiry Intelligence", icon: Timer },
       { to: "/suppliers", label: "Suppliers", icon: Truck },
-      { to: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
-      { to: "/logistics", label: "Logistics & Dispatch", icon: Truck },
     ],
   },
   {
     section: "Finance",
     items: [
-      { to: "/accounts", label: "Accounts", icon: CreditCard },
       { to: "/income", label: "Income", icon: Wallet },
       { to: "/expenses", label: "Expenses", icon: TrendingDown },
-      { to: "/utilities", label: "Utilities", icon: Zap },
-      { to: "/tax", label: "Tax & Compliance", icon: FileBarChart },
-    ],
-  },
-  {
-    section: "Management",
-    items: [
-      { to: "/departments", label: "Departments", icon: Building2 },
-      { to: "/staff", label: "Staff & Managers", icon: UserCog },
+      { to: "/accounts", label: "Accounts", icon: CreditCard },
     ],
   },
   {
@@ -156,8 +124,34 @@ const NAV: NavSection[] = [
     items: [
       { to: "/reports", label: "Reports", icon: FileText },
       { to: "/subscriptions", label: "Plans & Pricing", icon: CreditCard },
-      { to: "/data-import", label: "Data Import", icon: Upload },
       { to: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
+];
+
+// Advanced tabs — shown in collapsible "Advanced" section
+const ADVANCED_NAV: NavSection[] = [
+  {
+    section: "Advanced",
+    items: [
+      { to: "/live-ops", label: "Live Operations", icon: Activity },
+      { to: "/time-machine", label: "Business Time Machine", icon: CalendarDays },
+      { to: "/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/ai-decisions", label: "AI Decision Center", icon: Brain },
+      { to: "/market-intelligence", label: "Market Intelligence", icon: Globe },
+      { to: "/forecasting", label: "Forecasting", icon: LineChart },
+      { to: "/anomalies", label: "Anomaly & Risk", icon: ShieldAlert },
+      { to: "/transactions", label: "Transactions", icon: Receipt },
+      { to: "/expiry", label: "Expiry Intelligence", icon: Timer },
+      { to: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
+      { to: "/logistics", label: "Logistics & Dispatch", icon: Truck },
+      { to: "/utilities", label: "Utilities", icon: Zap },
+      { to: "/tax", label: "Tax & Compliance", icon: FileBarChart },
+      { to: "/departments", label: "Departments", icon: Building2 },
+      { to: "/staff", label: "Staff & Managers", icon: UserCog },
+      { to: "/customer-portal", label: "Customer Portal", icon: ShoppingBagIcon },
+      { to: "/supplier-portal", label: "Supplier Portal", icon: Truck },
+      { to: "/data-import", label: "Data Import", icon: Upload },
     ],
   },
 ];
@@ -170,6 +164,7 @@ function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [readNotifs, setReadNotifs] = useState<Set<string>>(new Set());
   const notifRef = useRef<HTMLDivElement>(null);
   const pathname: string = (useRouterState({ select: (s: any) => s.location.pathname }) as unknown as string) || "";
@@ -393,7 +388,9 @@ function AppShell() {
   }
 
   const currentLabel =
-    filteredNAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label ?? "Overview";
+    filteredNAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label
+    ?? ADVANCED_NAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label
+    ?? "Overview";
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -526,6 +523,63 @@ function AppShell() {
               </ul>
             </div>
           ))}
+
+          {/* Advanced Section Toggle */}
+          {!user?.isSystemAdmin && (
+            <div className="mb-4">
+              <button
+                onClick={() => setAdvancedOpen((o) => !o)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-all",
+                  collapsed && "justify-center",
+                )}
+              >
+                {!collapsed && (
+                  <>
+                    <ChevronRight className={cn("h-3 w-3 transition-transform", advancedOpen && "rotate-90")} />
+                    <span>Advanced Tools</span>
+                  </>
+                )}
+                {collapsed && <ChevronRight className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-90")} />}
+              </button>
+              {advancedOpen && ADVANCED_NAV.map((section) => (
+                <div key={section.section} className="mt-1">
+                  <ul className="space-y-0.5">
+                    {section.items.map((item) => {
+                      const active = pathname === item.to;
+                      return (
+                        <li key={item.to}>
+                          <Link
+                            to={item.to as never}
+                            onClick={() => setMobileOpen(false)}
+                            className={cn(
+                              "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                              active
+                                ? "bg-primary/15 text-foreground shadow-sm"
+                                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
+                            )}
+                          >
+                            {active && (
+                              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r gradient-primary" />
+                            )}
+                            <item.icon
+                              className={cn(
+                                "h-[18px] w-[18px] shrink-0",
+                                active
+                                  ? "text-primary"
+                                  : "text-muted-foreground group-hover:text-foreground",
+                              )}
+                            />
+                            {!collapsed && <span className="truncate">{item.label}</span>}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </nav>
 
         <div className="relative hairline-t p-4">

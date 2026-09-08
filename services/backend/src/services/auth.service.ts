@@ -8,7 +8,10 @@ import { SystemAdminService } from './system-admin.service';
 
 @Injectable()
 export class AuthService {
+  private static readonly DEMO_MODE = (process.env.DEMO_MODE || '').toLowerCase() === 'true';
+
   constructor(private readonly db: DatabaseService) {}
+
   async register(data: { email: string; password: string; name: string; role?: string; companyName?: string }) {
     const existing = await UserModel.findOne({ email: data.email.toLowerCase() });
     if (existing) {
@@ -66,42 +69,45 @@ export class AuthService {
       throw new UnauthorizedException('Valid Google account email is required.');
     }
 
-    const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
-      'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
-      'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
-      'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
-      'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
-      'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
-    };
+    // Demo accounts — only active when DEMO_MODE=true
+    if (AuthService.DEMO_MODE) {
+      const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
+        'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
+        'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
+        'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
+        'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
+        'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
+      };
 
-    if (DEMO_ACCOUNTS[emailLower]) {
-      const demoConfig = DEMO_ACCOUNTS[emailLower];
-      const payload = {
-        userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
-        email: emailLower,
-        role: demoConfig.role,
-        workspaceId: 'grandsquare-mall',
-        companyId: 'grandsquare-mall',
-        isSystemAdmin: !!demoConfig.isSystemAdmin,
-      };
-      const token = JwtUtil.generateAccessToken(payload);
-      const refreshToken = JwtUtil.generateRefreshToken(payload);
-      return {
-        user: {
-          id: payload.userId,
+      if (DEMO_ACCOUNTS[emailLower]) {
+        const demoConfig = DEMO_ACCOUNTS[emailLower];
+        const payload = {
+          userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
           email: emailLower,
-          name: demoConfig.name,
           role: demoConfig.role,
-          departmentId: null,
           workspaceId: 'grandsquare-mall',
+          companyId: 'grandsquare-mall',
           isSystemAdmin: !!demoConfig.isSystemAdmin,
-          setupCompleted: true,
-          companyName: 'GrandSquare Mall',
-        },
-        token,
-        accessToken: token,
-        refreshToken,
-      };
+        };
+        const token = JwtUtil.generateAccessToken(payload);
+        const refreshToken = JwtUtil.generateRefreshToken(payload);
+        return {
+          user: {
+            id: payload.userId,
+            email: emailLower,
+            name: demoConfig.name,
+            role: demoConfig.role,
+            departmentId: null,
+            workspaceId: 'grandsquare-mall',
+            isSystemAdmin: !!demoConfig.isSystemAdmin,
+            setupCompleted: true,
+            companyName: 'GrandSquare Mall',
+          },
+          token,
+          accessToken: token,
+          refreshToken,
+        };
+      }
     }
 
     // Check store registration status
@@ -186,47 +192,49 @@ export class AuthService {
   async login(data: { email: string; password: string }) {
     const emailLower = data.email.toLowerCase().trim();
 
-    // Default accounts for demo & static portal logins with password "123456789"
-    const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
-      'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
-      'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
-      'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
-      'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
-      'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
-    };
-
-    if (DEMO_ACCOUNTS[emailLower]) {
-      if (data.password !== '123456789') {
-        throw new UnauthorizedException('Invalid email or password');
-      }
-      const demoConfig = DEMO_ACCOUNTS[emailLower];
-      const payload = {
-        userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
-        email: emailLower,
-        role: demoConfig.role,
-        workspaceId: 'grandsquare-mall',
-        companyId: 'grandsquare-mall',
-        isSystemAdmin: !!demoConfig.isSystemAdmin,
+    // Demo accounts — only active when DEMO_MODE=true
+    if (AuthService.DEMO_MODE) {
+      const DEMO_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
+        'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
+        'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
+        'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
+        'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
+        'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
       };
 
-      const token = JwtUtil.generateAccessToken(payload);
-      const refreshToken = JwtUtil.generateRefreshToken(payload);
-
-      return {
-        user: {
-          id: payload.userId,
+      if (DEMO_ACCOUNTS[emailLower]) {
+        if (data.password !== '123456789') {
+          throw new UnauthorizedException('Invalid email or password');
+        }
+        const demoConfig = DEMO_ACCOUNTS[emailLower];
+        const payload = {
+          userId: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
           email: emailLower,
-          name: demoConfig.name,
           role: demoConfig.role,
-          departmentId: null,
           workspaceId: 'grandsquare-mall',
+          companyId: 'grandsquare-mall',
           isSystemAdmin: !!demoConfig.isSystemAdmin,
-          setupCompleted: true,
-        },
-        token,
-        accessToken: token,
-        refreshToken,
-      };
+        };
+
+        const token = JwtUtil.generateAccessToken(payload);
+        const refreshToken = JwtUtil.generateRefreshToken(payload);
+
+        return {
+          user: {
+            id: payload.userId,
+            email: emailLower,
+            name: demoConfig.name,
+            role: demoConfig.role,
+            departmentId: null,
+            workspaceId: 'grandsquare-mall',
+            isSystemAdmin: !!demoConfig.isSystemAdmin,
+            setupCompleted: true,
+          },
+          token,
+          accessToken: token,
+          refreshToken,
+        };
+      }
     }
 
     // Check Prisma supplier table or SuppliersService memory store for owner-provisioned supplier login
@@ -246,8 +254,8 @@ export class AuthService {
     }
 
     if (dbSupplier) {
-      const storedPassword = dbSupplier.password || '123456789';
-      if (data.password !== storedPassword && data.password !== '123456789') {
+      const storedPassword = dbSupplier.password;
+      if (!storedPassword || data.password !== storedPassword) {
         throw new UnauthorizedException('Invalid password for supplier account.');
       }
 
@@ -356,11 +364,13 @@ export class AuthService {
         passwordValid = await PasswordUtil.comparePassword(data.password, storedHash);
       } catch (e) {}
 
-      if (!passwordValid && (data.password === storedHash || data.password === '123456789')) {
+      // Allow plaintext match only for owner-provisioned accounts (not bcrypt hashed)
+      if (!passwordValid && data.password === storedHash) {
         passwordValid = true;
       }
     } else {
-      passwordValid = true;
+      // No password stored — reject login (user must set a password)
+      passwordValid = false;
     }
 
     if (!passwordValid) {

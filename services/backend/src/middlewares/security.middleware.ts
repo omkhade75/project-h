@@ -7,10 +7,13 @@ export function setupSecurityMiddleware(app: INestApplication) {
   // Helmet HTTP Header security
   app.use(helmet());
 
-  // CORS configuration
+  // CORS configuration — locked to actual Bizora portals
+  const corsOrigin = process.env.CORS_ORIGIN 
+    || 'https://bizora-owner.onrender.com,https://bizora-admin.onrender.com,https://bizora-supplier.onrender.com,https://bizora-customer.onrender.com,https://bizora-web.onrender.com';
+  
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN || '*',
+      origin: corsOrigin.split(',').map(s => s.trim()),
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,

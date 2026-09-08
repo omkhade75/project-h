@@ -1,14 +1,14 @@
 import mongoose from 'mongoose';
 
-const DEFAULT_MONGODB_URI = "mongodb+srv://khade8915_db_user:dKgedk9DLleq17mZ@cluster0.am7xoun.mongodb.net/bizora?retryWrites=true&w=majority";
-
 export class DatabaseConfig {
   private static isConnected = false;
 
   public static getUri(): string {
     const uri = process.env.MONGODB_URI;
     if (!uri || uri.includes('placeholder') || uri.includes('YOUR-')) {
-      return DEFAULT_MONGODB_URI;
+      console.error('[MongoDB Atlas] MONGODB_URI environment variable is not set. Set it in your Render/hosting dashboard.');
+      // Graceful fallback: return empty string, connect() will handle the error
+      return '';
     }
     return uri;
   }
