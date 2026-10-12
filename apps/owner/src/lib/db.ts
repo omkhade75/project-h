@@ -59,6 +59,13 @@ export interface Customer {
   lastVisit: string;
   segment: "VIP" | "Loyal" | "New" | "Frequent" | "At Risk" | "Dormant";
   churn: number; // Churn risk %
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  customerCode?: string;
+  loyaltyTier?: string;
+  status?: string;
 }
 
 export interface TransactionItem {
@@ -1170,17 +1177,28 @@ class SeededDatabase {
 
   private loadFromStorage(): Schema {
     if (typeof window !== "undefined") {
-      const key = this.workspaceId ? `omnimind_db_${this.workspaceId}` : "omnimind_db";
-      const stored = window.localStorage.getItem(key);
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch (e) {
-          console.error("Failed to parse database from localStorage", e);
+      const keysToTry = [
+        this.workspaceId ? `omnimind_db_${this.workspaceId}` : "",
+        "omnimind_db_grandsquare-mall",
+        "omnimind_db_ws_owner_gmail_com",
+        "omnimind_db",
+      ].filter(Boolean);
+
+      for (const k of keysToTry) {
+        const stored = window.localStorage.getItem(k);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed && (parsed.products?.length > 0 || parsed.customers?.length > 0)) {
+              return parsed;
+            }
+          } catch (e) {
+            console.error("Failed to parse database from localStorage", e);
+          }
         }
       }
     }
-    const isDemoWorkspace = this.workspaceId === "grandsquare-mall" || this.workspaceId === "ws_owner_gmail_com";
+    const isDemoWorkspace = !this.workspaceId || this.workspaceId === "grandsquare-mall" || this.workspaceId === "ws_owner_gmail_com";
     const initialData = isDemoWorkspace ? seedDatabase() : emptyDatabase();
     this.save(initialData);
     return initialData;
@@ -1189,8 +1207,10 @@ class SeededDatabase {
   public save(schema: Schema) {
     this.schema = schema;
     if (typeof window !== "undefined") {
-      const key = this.workspaceId ? `omnimind_db_${this.workspaceId}` : "omnimind_db";
-      window.localStorage.setItem(key, JSON.stringify(schema));
+      if (this.workspaceId) {
+        window.localStorage.setItem(`omnimind_db_${this.workspaceId}`, JSON.stringify(schema));
+      }
+      window.localStorage.setItem("omnimind_db", JSON.stringify(schema));
     }
   }
 
@@ -1325,7 +1345,10 @@ class SeededDatabase {
   }
 
   public importProducts(newProds: Product[]) {
-    const updated = [...newProds, ...this.schema.products];
+    const existing = this.schema.products || [];
+    const newIds = new Set(newProds.map((p) => p.id));
+    const filteredExisting = existing.filter((p) => !newIds.has(p.id));
+    const updated = [...newProds, ...filteredExisting];
     this.save({ ...this.schema, products: updated });
   }
 
@@ -1335,7 +1358,10 @@ class SeededDatabase {
   }
 
   public importCustomers(newCusts: Customer[]) {
-    const updated = [...newCusts, ...this.schema.customers];
+    const existing = this.schema.customers || [];
+    const newIds = new Set(newCusts.map((c) => c.id));
+    const filteredExisting = existing.filter((c) => !newIds.has(c.id));
+    const updated = [...newCusts, ...filteredExisting];
     this.save({ ...this.schema, customers: updated });
   }
 

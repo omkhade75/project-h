@@ -126,6 +126,106 @@ function RouteComponent() {
     }
   };
 
+  const handleQuickRegisterCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const rawName = newCustFirst.trim();
+    if (!rawName) {
+      toast.error("Please enter customer name.");
+      return;
+    }
+    const rawPhone = newCustPhone.trim();
+    if (!rawPhone) {
+      toast.error("Please enter mobile / WhatsApp phone number.");
+      return;
+    }
+
+    setAddingCustomer(true);
+    try {
+      const parts = rawName.split(" ");
+      const firstName = parts[0] || rawName;
+      const lastName = parts.slice(1).join(" ") || "";
+      const customerCode = `CUST-${Date.now().toString().slice(-5)}`;
+      const tier = newCustDept || "Regular";
+      const newCustId = `cust-${Date.now()}`;
+
+      const newCustomerObj: CustomerListItem = {
+        id: newCustId,
+        customerCode,
+        name: rawName,
+        firstName,
+        lastName,
+        email: newCustEmail.trim() || `${rawPhone.replace(/\D/g, "")}@retail.local`,
+        phone: rawPhone,
+        joined: new Date().toISOString().split("T")[0],
+        customerType: "B2C",
+        visits: 1,
+        spend: 0,
+        aov: 0,
+        favDept: formDepartmentId || "General",
+        segment: tier === "VIP" ? "VIP" : tier === "Loyal" ? "Loyal" : "New",
+        churn: 0,
+        status: "Active",
+        lastVisit: new Date().toISOString().split("T")[0],
+        loyaltyTier: tier,
+      };
+
+      // Call backend API (with fallback)
+      await addCustomerServer({
+        data: {
+          firstName,
+          lastName,
+          email: newCustomerObj.email,
+          phone: rawPhone,
+          customerCode,
+          loyaltyTier: tier,
+          role: user?.role || "owner",
+          emailUser: user?.email || "",
+        },
+      }).catch((err) => {
+        console.warn("Backend add customer fallback:", err);
+      });
+
+      // Save to local database immediately
+      try {
+        db.importCustomers([{
+          id: newCustId,
+          name: rawName,
+          firstName,
+          lastName,
+          email: newCustomerObj.email,
+          phone: rawPhone,
+          customerCode,
+          loyaltyTier: tier,
+          joined: new Date().toISOString().split("T")[0],
+          visits: 1,
+          spend: 0,
+          aov: 0,
+          favDept: formDepartmentId || "General",
+          segment: tier === "VIP" ? "VIP" : tier === "Loyal" ? "Loyal" : "New",
+          churn: 0,
+          status: "Active",
+          lastVisit: new Date().toISOString().split("T")[0],
+        }]);
+        forceRefresh();
+      } catch (_) {}
+
+      // Update state and select new customer for checkout
+      setCustomers((prev) => [newCustomerObj, ...prev.filter((c) => c.id !== newCustId)]);
+      setFormCustomerId(newCustId);
+      setShowAddCustomerModal(false);
+      setNewCustFirst("");
+      setNewCustLast("");
+      setNewCustEmail("");
+      setNewCustPhone("");
+      setNewCustDept("");
+      toast.success(`🎉 ${rawName} registered & selected for checkout!`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to register customer.");
+    } finally {
+      setAddingCustomer(false);
+    }
+  };
+
   const loadData = async () => {
     if (products.length === 0) {
       setLoading(true);
@@ -187,8 +287,35 @@ function RouteComponent() {
       }
       const mergedProds = [...apiProds, ...localProds];
 
+      if (user?.workspaceId) {
+        db.setWorkspace(user.workspaceId);
+      }
+
       // Merge API customers with local DB customers
-      const apiCusts: CustomerListItem[] = Array.isArray(custsRes) ? custsRes : [];
+      const rawApiCusts: any[] = Array.isArray(custsRes) ? custsRes : [];
+      const apiCusts: CustomerListItem[] = rawApiCusts.map((c) => {
+        const fullName = (c.name && c.name.trim()) || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer";
+        return {
+          id: c.id,
+          customerCode: c.customerCode || c.id,
+          name: fullName,
+          firstName: c.firstName || fullName.split(" ")[0] || "Customer",
+          lastName: c.lastName || fullName.split(" ").slice(1).join(" ") || "",
+          email: c.email || "",
+          phone: c.phone || c.mobile || "",
+          joined: c.joined || c.joinDate || new Date().toISOString().split("T")[0],
+          customerType: c.customerType || "B2C",
+          visits: c.visits || c.ordersCount || 1,
+          spend: c.spend || c.totalSpend || 0,
+          aov: c.aov || 0,
+          favDept: c.favDept || "General",
+          segment: (c.segment as any) || "New",
+          churn: c.churn || 0,
+          status: c.status || "Active",
+          lastVisit: c.lastVisit || new Date().toISOString().split("T")[0],
+          loyaltyTier: c.loyaltyTier || "Regular",
+        };
+      });
       const apiCustIds = new Set(apiCusts.map((c) => c.id));
       const localDbCusts = [...(db.getCustomers() || []), ...(ctxCustomers || [])];
       const seenCustIds = new Set<string>();
@@ -197,13 +324,13 @@ function RouteComponent() {
       for (const c of localDbCusts) {
         if (!c || !c.id || apiCustIds.has(c.id) || seenCustIds.has(c.id)) continue;
         seenCustIds.add(c.id);
-        const fullName = c.name || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
+        const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
         localCusts.push({
           id: c.id,
-          customerCode: c.id,
+          customerCode: (c as any).customerCode || c.id,
           name: fullName,
-          firstName: fullName.split(" ")[0] || "Customer",
-          lastName: fullName.split(" ").slice(1).join(" ") || "",
+          firstName: (c as any).firstName || fullName.split(" ")[0] || "Customer",
+          lastName: (c as any).lastName || fullName.split(" ").slice(1).join(" ") || "",
           email: (c as any).email || "",
           phone: (c as any).phone || (c as any).mobile || "",
           joined: c.joined || new Date().toISOString().split("T")[0],
@@ -216,6 +343,7 @@ function RouteComponent() {
           churn: c.churn || 0,
           status: "Active",
           lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
+          loyaltyTier: (c as any).loyaltyTier || "Regular",
         });
       }
       const mergedCusts = [...apiCusts, ...localCusts];
@@ -386,6 +514,27 @@ function RouteComponent() {
           revenue: 0,
         };
 
+        try {
+          db.importProducts([{
+            id: sku,
+            name: customProdName,
+            dept: newProd.dept || "Grocery",
+            category: newProd.category || "General",
+            brand: customProdBrand || "Generic",
+            price: Number(customProdPrice),
+            cost: Number(customProdCost),
+            stock: Number(customProdStock) || 10,
+            reorder: 5,
+            expiry: null,
+            supplier: "Wholesalers",
+            sold: 0,
+            revenue: 0,
+            margin: newProd.margin || 25,
+            status: "ok",
+          }]);
+          forceRefresh();
+        } catch (_) {}
+
         setProducts((prev) => [...prev, newProd]);
         productSkuToCart = sku;
 
@@ -530,29 +679,44 @@ function RouteComponent() {
       const txnData = (res && res.transaction) || (res && res.id ? res : (res && res.data) || null);
       const isSuccess = !!txnData || (res && res.success);
 
+      const custObj = customers.find((c) => c.id === formCustomerId);
+      const resolvedCustomerName = formCustomerId === "walkin" ? (walkinPhone ? `Walk-in (${walkinPhone})` : "Walk-in Customer") : (custObj?.name || "Customer");
+      const resolvedItems = calculatedItems.map((ci) => ({
+        productId: ci.productId,
+        productName: ci.productName,
+        name: ci.productName,
+        quantity: ci.quantity,
+        price: ci.unitPrice,
+        total: ci.unitPrice * ci.quantity,
+      }));
+
       if (isSuccess) {
-        const finalTxn = txnData || {
-          id: `TXN-${Date.now().toString().slice(-6)}`,
-          transactionNumber: `TXN-${Date.now().toString().slice(-6)}`,
-          date: activeDate,
-          time: new Date().toTimeString().slice(0, 5),
+        const finalTxn = {
+          ...(txnData || {}),
+          id: txnData?.id || txnData?.transactionNumber || `TXN-${Date.now().toString().slice(-6)}`,
+          transactionNumber: txnData?.transactionNumber || txnData?.id || `TXN-${Date.now().toString().slice(-6)}`,
+          date: txnData?.date || activeDate,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          total: grandTotal,
           totalAmount: grandTotal,
-          subtotal,
-          taxAmount: tax,
-          paymentStatus: "Paid",
-          status: "Completed",
+          subtotal: txnData?.subtotal || subtotal,
+          tax: txnData?.taxAmount || tax,
+          taxAmount: txnData?.taxAmount || tax,
+          paymentMethod: formPaymentMethod,
+          customerName: resolvedCustomerName,
+          customerPhone: formCustomerId === "walkin" ? walkinPhone : (custObj?.phone || ""),
+          items: resolvedItems,
         };
         toast.success("Transaction completed successfully!");
         setCompletedTxn(finalTxn);
         // Write transaction to local DB so Live Ops, Command Center, Analytics update immediately
         try {
-          const custObj = customers.find((c) => c.id === formCustomerId);
           db.importTransactions([{
-            id: finalTxn.id || `txn-${Date.now()}`,
+            id: finalTxn.id,
             date: activeDate,
             time: new Date().toTimeString().slice(0, 5),
             customerId: formCustomerId === "walkin" ? "" : formCustomerId,
-            customerName: formCustomerId === "walkin" ? (walkinPhone || "Walk-in") : (custObj?.name || "Customer"),
+            customerName: resolvedCustomerName,
             dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
             items: calculatedItems.map((ci) => ({
               productId: ci.productId, name: ci.productName,
@@ -583,24 +747,29 @@ function RouteComponent() {
           id: localTxnId,
           transactionNumber: localTxnId,
           date: activeDate,
-          time: new Date().toTimeString().slice(0, 5),
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          total: grandTotal,
           totalAmount: grandTotal,
           subtotal,
+          tax,
           taxAmount: tax,
+          paymentMethod: formPaymentMethod,
+          customerName: resolvedCustomerName,
+          customerPhone: formCustomerId === "walkin" ? walkinPhone : (custObj?.phone || ""),
           paymentStatus: "Paid",
           status: "Completed",
+          items: resolvedItems,
         };
         toast.success("Sale completed successfully! (POS Self-Healing Shield Active)");
         setCompletedTxn(localTxn);
 
         try {
-          const custObj = customers.find((c) => c.id === formCustomerId);
           db.importTransactions([{
             id: localTxnId,
             date: activeDate,
             time: new Date().toTimeString().slice(0, 5),
             customerId: formCustomerId === "walkin" ? "" : formCustomerId,
-            customerName: formCustomerId === "walkin" ? (walkinPhone || "Walk-in") : (custObj?.name || "Customer"),
+            customerName: resolvedCustomerName,
             dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
             items: calculatedItems.map((ci) => ({
               productId: ci.productId, name: ci.productName,
@@ -627,29 +796,43 @@ function RouteComponent() {
     } catch (err: any) {
       console.warn("Backend transaction exception absorbed by Self-Healing POS Shield:", err);
       // Autonomous Self-Healing Fallback
+      const custObj = customers.find((c) => c.id === formCustomerId);
+      const resolvedCustomerName = formCustomerId === "walkin" ? (walkinPhone ? `Walk-in (${walkinPhone})` : "Walk-in Customer") : (custObj?.name || "Customer");
       const localTxnId = `TXN-POS-${Date.now().toString().slice(-6)}`;
       const localTxn = {
         id: localTxnId,
         transactionNumber: localTxnId,
         date: activeDate,
-        time: new Date().toTimeString().slice(0, 5),
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        total: grandTotal,
         totalAmount: grandTotal,
         subtotal,
+        tax,
         taxAmount: tax,
+        paymentMethod: formPaymentMethod,
+        customerName: resolvedCustomerName,
+        customerPhone: formCustomerId === "walkin" ? walkinPhone : (custObj?.phone || ""),
         paymentStatus: "Paid",
         status: "Completed",
+        items: calculatedItems.map((ci) => ({
+          productId: ci.productId,
+          productName: ci.productName,
+          name: ci.productName,
+          quantity: ci.quantity,
+          price: ci.unitPrice,
+          total: ci.unitPrice * ci.quantity,
+        })),
       };
       toast.success("Bill generated successfully! (Self-Healed Offline Transaction)");
       setCompletedTxn(localTxn);
 
       try {
-        const custObj = customers.find((c) => c.id === formCustomerId);
         db.importTransactions([{
           id: localTxnId,
           date: activeDate,
           time: new Date().toTimeString().slice(0, 5),
           customerId: formCustomerId === "walkin" ? "" : formCustomerId,
-          customerName: formCustomerId === "walkin" ? (walkinPhone || "Walk-in") : (custObj?.name || "Customer"),
+          customerName: resolvedCustomerName,
           dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
           items: calculatedItems.map((ci) => ({
             productId: ci.productId, name: ci.productName,
@@ -1022,6 +1205,79 @@ function RouteComponent() {
         </div>
       </div>
 
+      {/* Quick Customer Registration Dialog */}
+      <Dialog open={showAddCustomerModal} onOpenChange={setShowAddCustomerModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-indigo-600">
+              <UserPlus className="h-5 w-5" /> Quick Register Customer
+            </DialogTitle>
+            <DialogDescription>
+              Register a walk-in shopper to automatically attach to this bill and credit loyalty points.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleQuickRegisterCustomer} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Full Name *</Label>
+              <Input
+                placeholder="e.g. Ramesh Kumar"
+                value={newCustFirst}
+                onChange={(e) => setNewCustFirst(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone / WhatsApp Number *</Label>
+              <Input
+                type="tel"
+                placeholder="e.g. +91 98765 43210"
+                value={newCustPhone}
+                onChange={(e) => setNewCustPhone(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email (Optional)</Label>
+              <Input
+                type="email"
+                placeholder="e.g. ramesh@example.com"
+                value={newCustEmail}
+                onChange={(e) => setNewCustEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Loyalty Tier</Label>
+              <Select value={newCustDept || "Regular"} onValueChange={setNewCustDept}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Regular">Regular Member</SelectItem>
+                  <SelectItem value="Loyal">Loyal Shopper (5% Points)</SelectItem>
+                  <SelectItem value="VIP">VIP Platinum (10% Points)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowAddCustomerModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={addingCustomer} className="bg-indigo-600 hover:bg-indigo-700">
+                {addingCustomer ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" /> Registering...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" /> Register & Select Customer
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Completed Invoice Dialog */}
       <Dialog open={!!completedTxn} onOpenChange={() => setCompletedTxn(null)}>
         <DialogContent className="max-w-md">
@@ -1039,24 +1295,38 @@ function RouteComponent() {
               <span>Receipt: {completedTxn?.id}</span>
               <span>{completedTxn?.date}</span>
             </div>
-            <div className="space-y-1">
+            {completedTxn?.customerName && (
+              <div className="flex justify-between text-xs text-zinc-600 font-sans border-b pb-1">
+                <span>Customer:</span>
+                <span className="font-semibold">{completedTxn.customerName}</span>
+              </div>
+            )}
+            <div className="space-y-1 max-h-48 overflow-y-auto">
               {completedTxn?.items?.map((item: any, idx: number) => (
                 <div key={idx} className="flex justify-between text-xs">
                   <span>
-                    {item.productName || item.productId} x{item.quantity}
+                    {item.productName || item.name || item.productId} x{item.quantity}
                   </span>
-                  <span>{fmtINR(item.total)}</span>
+                  <span>{fmtINR(item.total || ((item.price || 0) * (item.quantity || 1)))}</span>
                 </div>
               ))}
             </div>
             <div className="border-t pt-2 space-y-1 text-xs font-sans">
               <div className="flex justify-between text-zinc-600">
                 <span>Payment Method</span>
-                <span className="font-semibold">{completedTxn?.paymentMethod}</span>
+                <span className="font-semibold">{completedTxn?.paymentMethod || formPaymentMethod}</span>
               </div>
-              <div className="flex justify-between text-zinc-900 font-bold text-sm">
+              <div className="flex justify-between text-zinc-600">
+                <span>Subtotal (Excl. GST)</span>
+                <span>{fmtINR(completedTxn?.subtotal || subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-zinc-600">
+                <span>GST Tax</span>
+                <span>{fmtINR(completedTxn?.tax || completedTxn?.taxAmount || tax)}</span>
+              </div>
+              <div className="flex justify-between text-zinc-900 font-bold text-sm border-t pt-1">
                 <span>Total Paid</span>
-                <span className="text-emerald-600">{fmtINR(completedTxn?.total || 0)}</span>
+                <span className="text-emerald-600">{fmtINR(completedTxn?.total || completedTxn?.totalAmount || grandTotal)}</span>
               </div>
             </div>
           </div>
@@ -1080,6 +1350,119 @@ function RouteComponent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dedicated Printable GST Tax Invoice (Hidden on screen, styled specifically for window.print()) */}
+      <div id="bizora-print-receipt" className="hidden text-black bg-white p-6 font-mono max-w-[380px] mx-auto text-xs leading-relaxed">
+        <div className="text-center pb-3 border-b-2 border-dashed border-black">
+          <h1 className="text-base font-bold tracking-tight">GRAND SQUARE RETAIL MALL</h1>
+          <p className="text-[10px] text-zinc-600">Omni-Channel Retail Hypermarket POS</p>
+          <p className="text-[10px] text-zinc-600">GSTIN: 27AABCB1234D1ZP | Tel: +91 98765 43210</p>
+          <div className="mt-1 font-bold text-[11px] uppercase tracking-wider py-0.5 bg-zinc-100 border border-zinc-400">
+            TAX INVOICE / CASH MEMO
+          </div>
+        </div>
+
+        <div className="py-2 border-b border-dashed border-black text-[10px] space-y-0.5">
+          <div className="flex justify-between">
+            <span>Invoice No: <strong>{completedTxn?.id || `INV-${Date.now()}`}</strong></span>
+            <span>Date: <strong>{completedTxn?.date || new Date().toISOString().split("T")[0]}</strong></span>
+          </div>
+          <div className="flex justify-between">
+            <span>Customer: <strong>{completedTxn?.customerName || (formCustomerId === "walkin" ? "Walk-in Customer" : (customers.find((c) => c.id === formCustomerId)?.name || "Shopper"))}</strong></span>
+            <span>Time: <strong>{completedTxn?.time || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong></span>
+          </div>
+          <div className="flex justify-between">
+            <span>Payment: <strong>{completedTxn?.paymentMethod || formPaymentMethod}</strong></span>
+            <span>Counter: <strong>POS-01 (Main)</strong></span>
+          </div>
+          {completedTxn?.customerPhone && (
+            <div className="flex justify-between">
+              <span>Mobile: <strong>{completedTxn.customerPhone}</strong></span>
+              <span>Status: <strong>PAID</strong></span>
+            </div>
+          )}
+        </div>
+
+        <div className="py-2 border-b-2 border-dashed border-black">
+          <table className="w-full text-left text-[10px]">
+            <thead>
+              <tr className="border-b border-black font-bold">
+                <th className="py-1">ITEM</th>
+                <th className="py-1 text-center">QTY</th>
+                <th className="py-1 text-right">RATE</th>
+                <th className="py-1 text-right">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-dotted divide-zinc-300">
+              {(completedTxn?.items || cartItems).map((it: any, idx: number) => {
+                const itemTotal = it.total || ((it.price || 0) * (it.quantity || 1));
+                return (
+                  <tr key={idx} className="py-1">
+                    <td className="py-1 pr-1 font-medium">{it.productName || it.name || it.productId}</td>
+                    <td className="py-1 text-center">{it.quantity || 1}</td>
+                    <td className="py-1 text-right">{fmtINR(it.price || 0)}</td>
+                    <td className="py-1 text-right font-semibold">{fmtINR(itemTotal)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="py-2 border-b border-dashed border-black text-[10px] space-y-1">
+          <div className="flex justify-between">
+            <span>Subtotal (Excl. Tax)</span>
+            <span>{fmtINR(completedTxn?.subtotal || subtotal)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>CGST (9.0%)</span>
+            <span>{fmtINR(Math.round(((completedTxn?.tax || completedTxn?.taxAmount || tax) / 2)))}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>SGST (9.0%)</span>
+            <span>{fmtINR(Math.round(((completedTxn?.tax || completedTxn?.taxAmount || tax) / 2)))}</span>
+          </div>
+          <div className="flex justify-between text-xs font-bold border-t border-black pt-1 text-black">
+            <span>GRAND TOTAL (INCL. GST)</span>
+            <span className="text-sm">{fmtINR(completedTxn?.total || completedTxn?.totalAmount || grandTotal)}</span>
+          </div>
+        </div>
+
+        <div className="pt-3 text-center text-[9px] text-zinc-600 space-y-0.5">
+          <p className="font-semibold text-black">*** THANK YOU FOR SHOPPING WITH US ***</p>
+          <p>Goods once sold can be exchanged within 7 days against this receipt.</p>
+          <p className="text-[8px] text-zinc-400 pt-1">Automated GST POS generated via Bizora AI Retail OS</p>
+        </div>
+      </div>
+
+      {/* Global Print Media Style Rules */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #bizora-print-receipt, #bizora-print-receipt * {
+            visibility: visible !important;
+          }
+          #bizora-print-receipt {
+            display: block !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 380px !important;
+            margin: 0 auto !important;
+            padding: 16px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 6mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }

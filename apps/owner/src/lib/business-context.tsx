@@ -243,18 +243,28 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           items: t.items || [],
         }));
 
-        const mappedCustomers: Customer[] = safeCusts.map((c) => ({
-          id: c.id,
-          name: c.name,
-          joined: (c as any).joined || c.lastPurchaseDate || "2026-01-01",
-          visits: (c as any).visits || c.ordersCount || 1,
-          spend: (c as any).spend || c.totalSpend || 0,
-          aov: (c as any).aov || Math.round((c.totalSpend || 0) / (c.ordersCount || 1)),
-          favDept: c.favDept || "General",
-          lastVisit: c.lastPurchaseDate || "2026-01-01",
-          segment: ((c.tier === "Platinum" || c.tier === "Gold") ? "VIP" : "Loyal") as any,
-          churn: c.churnRiskScore || 5,
-        }));
+        const mappedCustomers: Customer[] = safeCusts.map((c) => {
+          const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
+          return {
+            id: c.id,
+            name: fullName,
+            firstName: (c as any).firstName || fullName.split(" ")[0] || "Customer",
+            lastName: (c as any).lastName || fullName.split(" ").slice(1).join(" ") || "",
+            phone: (c as any).phone || (c as any).mobile || "",
+            email: (c as any).email || "",
+            customerCode: (c as any).customerCode || c.id,
+            loyaltyTier: (c as any).loyaltyTier || (c as any).tier || "Regular",
+            status: (c as any).status || "Active",
+            joined: (c as any).joined || (c as any).lastPurchaseDate || "2026-01-01",
+            visits: (c as any).visits || (c as any).ordersCount || 1,
+            spend: (c as any).spend || (c as any).totalSpend || 0,
+            aov: (c as any).aov || Math.round(((c as any).totalSpend || 0) / ((c as any).ordersCount || 1)),
+            favDept: c.favDept || "General",
+            lastVisit: (c as any).lastPurchaseDate || "2026-01-01",
+            segment: (((c as any).tier === "Platinum" || (c as any).tier === "Gold") ? "VIP" : "Loyal") as any,
+            churn: (c as any).churnRiskScore || 5,
+          };
+        });
 
         const mappedSuppliers: Supplier[] = safeSupps.map((s) => ({
           id: s.id,

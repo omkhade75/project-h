@@ -64,7 +64,7 @@ export const Route = createFileRoute("/_app/products")({
 });
 
 function Products() {
-  const { openProduct360 } = useBusinessData();
+  const { openProduct360, products: ctxProducts, dataVersion, forceRefresh } = useBusinessData();
   const { user } = useAuth();
 
   // Search & Loading state
@@ -234,23 +234,86 @@ function Products() {
   }, [formName, formBrand]);
 
   const loadProducts = async () => {
-    setLoading(true);
+    if (products.length === 0) setLoading(true);
     try {
+      if (user?.workspaceId) {
+        db.setWorkspace(user.workspaceId);
+      }
       const list = await getProductsServer({
         data: {
           role: user?.role || "owner",
           email: user?.email || "",
         },
-      });
-      const safeList = Array.isArray(list) ? list : Array.isArray((list as any)?.data) ? (list as any).data : [];
-      setProducts(safeList);
-      if (safeList.length > 0) {
-        setSelected(safeList[0]);
+      }).catch(() => []);
+      const apiProds: ProductListItem[] = Array.isArray(list) ? list : Array.isArray((list as any)?.data) ? (list as any).data : [];
+      const apiProdIds = new Set(apiProds.map((p) => p.id || p.sku));
+
+      const rawLocalProds = [...(db.getProducts() || []), ...(ctxProducts || [])];
+      const seenProdIds = new Set<string>();
+      const localProds: ProductListItem[] = [];
+
+      for (const p of rawLocalProds) {
+        if (!p || !p.id || apiProdIds.has(p.id) || seenProdIds.has(p.id)) continue;
+        seenProdIds.add(p.id);
+        localProds.push({
+          id: p.id,
+          sku: p.id,
+          barcode: (p as any).barcode || p.id,
+          name: p.name,
+          description: null,
+          brand: (p as any).brand || "Generic",
+          category: p.category || "General",
+          categoryId: (p as any).categoryId || "cat-general",
+          dept: p.dept || "General",
+          departmentId: (p as any).departmentId || "dept-general",
+          price: p.price,
+          cost: p.cost || 0,
+          margin: (p as any).margin || 0,
+          stock: p.stock || 0,
+          reorder: p.reorder || 5,
+          status: "Active",
+          unit: "units",
+          expiry: p.expiry || null,
+          supplier: (p as any).supplier || "Wholesalers",
+          sold: (p as any).sold || 0,
+          revenue: (p as any).revenue || 0,
+        });
+      }
+
+      const merged = [...apiProds, ...localProds];
+      setProducts(merged);
+      if (merged.length > 0) {
+        setSelected((prev) => prev && merged.find((m) => m.id === prev.id) ? prev : merged[0]);
       } else {
         setSelected(null);
       }
     } catch (e) {
-      toast.error("Failed to load products list from database.");
+      console.warn("Products load fallback triggered:", e);
+      const local = (db.getProducts() || []).map((p) => ({
+        id: p.id,
+        sku: p.id,
+        barcode: (p as any).barcode || p.id,
+        name: p.name,
+        description: null,
+        brand: (p as any).brand || "Generic",
+        category: p.category || "General",
+        categoryId: "cat-general",
+        dept: p.dept || "General",
+        departmentId: "dept-general",
+        price: p.price,
+        cost: p.cost || 0,
+        margin: (p as any).margin || 0,
+        stock: p.stock || 0,
+        reorder: p.reorder || 5,
+        status: "Active" as const,
+        unit: "units",
+        expiry: p.expiry || null,
+        supplier: (p as any).supplier || "Wholesalers",
+        sold: (p as any).sold || 0,
+        revenue: (p as any).revenue || 0,
+      }));
+      setProducts(local);
+      if (local.length > 0) setSelected(local[0]);
     } finally {
       setLoading(false);
     }
@@ -287,7 +350,7 @@ function Products() {
   useEffect(() => {
     loadProducts();
     loadOptions();
-  }, [user]);
+  }, [user, dataVersion]);
 
   const safeProducts = Array.isArray(products) ? products : [];
   const safeCategories = Array.isArray(categories) ? categories : [];
@@ -383,6 +446,7 @@ function Products() {
           margin: 25,
           status: "ok",
         }]);
+        forceRefresh();
       } catch (_) {}
 
       toast.success(`Successfully registered SKU ${finalSku}`);
