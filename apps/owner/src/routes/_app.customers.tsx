@@ -167,7 +167,9 @@ export function CustomersPage() {
 
   // Load Customers
   const loadCustomers = async () => {
-    setLoading(true);
+    if (customers.length <= 1) {
+      setLoading(true);
+    }
     try {
       const res = await getCustomersServer({
         data: {
@@ -182,22 +184,80 @@ export function CustomersPage() {
         },
       });
 
-      // Merge API customers with local DB customers (imported CSVs)
-      const apiCusts: CustomerListItem[] = Array.isArray(res) ? res : [];
+      // Merge API customers with local DB customers (imported CSVs, OCR images)
+      const apiCusts: CustomerListItem[] = Array.isArray(res) ? res.map((c: any) => {
+        const fullName = (c.name && c.name.trim()) || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer";
+        const parts = fullName.split(" ");
+        return {
+          id: c.id,
+          customerCode: c.customerCode || c.id,
+          name: fullName,
+          firstName: c.firstName || parts[0] || "Customer",
+          lastName: c.lastName || parts.slice(1).join(" ") || "",
+          email: c.email || "",
+          phone: c.phone || "",
+          joined: c.joined || c.joinDate || new Date().toISOString().split("T")[0],
+          customerType: c.customerType || "B2C",
+          visits: c.visits || c.ordersCount || 0,
+          spend: c.spend || c.totalSpend || 0,
+          aov: c.aov || 0,
+          favDept: c.favDept || "General",
+          segment: c.segment || "New",
+          churn: c.churn || 0,
+          status: c.status || "Active",
+          lastVisit: c.lastVisit || new Date().toISOString().split("T")[0],
+          loyaltyTier: c.loyaltyTier || "Regular",
+        };
+      }) : [];
       const apiIds = new Set(apiCusts.map((c) => c.id));
 
       // Get local DB customers from business context
       const localDbCustomers = db.getCustomers();
       const localCusts: CustomerListItem[] = (localDbCustomers || [])
         .filter((c) => !apiIds.has(c.id))
-        .map((c) => ({
+        .map((c) => {
+          const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
+          const parts = fullName.split(" ");
+          return {
+            id: c.id,
+            customerCode: c.id,
+            name: fullName,
+            firstName: (c as any).firstName || parts[0] || "Customer",
+            lastName: (c as any).lastName || parts.slice(1).join(" ") || "",
+            email: (c as any).email || "",
+            phone: (c as any).phone || (c as any).mobile || "",
+            joined: c.joined || new Date().toISOString().split("T")[0],
+            customerType: "B2C",
+            visits: c.visits || 0,
+            spend: c.spend || 0,
+            aov: c.aov || 0,
+            favDept: c.favDept || "General",
+            segment: c.segment || "New",
+            churn: c.churn || 0,
+            status: "Active",
+            lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
+            loyaltyTier: (c as any).loyaltyTier || (c.segment === "VIP" ? "Platinum" : "Regular"),
+          };
+        });
+
+      const merged = [...apiCusts, ...localCusts];
+      const safeList = merged.length > 0 ? merged : [defaultRegisteredCustomer];
+      setCustomers(safeList);
+      setSelectedCust(safeList[0]);
+    } catch (e: any) {
+      // Fallback: use local DB customers
+      const localDbCustomers = db.getCustomers();
+      const localCusts: CustomerListItem[] = (localDbCustomers || []).map((c) => {
+        const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
+        const parts = fullName.split(" ");
+        return {
           id: c.id,
           customerCode: c.id,
-          name: c.name || "Customer",
-          firstName: (c.name || "Customer").split(" ")[0],
-          lastName: (c.name || "").split(" ").slice(1).join(" ") || "",
+          name: fullName,
+          firstName: (c as any).firstName || parts[0] || "Customer",
+          lastName: (c as any).lastName || parts.slice(1).join(" ") || "",
           email: (c as any).email || "",
-          phone: (c as any).phone || "",
+          phone: (c as any).phone || (c as any).mobile || "",
           joined: c.joined || new Date().toISOString().split("T")[0],
           customerType: "B2C",
           visits: c.visits || 0,
@@ -208,34 +268,9 @@ export function CustomersPage() {
           churn: c.churn || 0,
           status: "Active",
           lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
-        }));
-
-      const merged = [...apiCusts, ...localCusts];
-      const safeList = merged.length > 0 ? merged : [defaultRegisteredCustomer];
-      setCustomers(safeList);
-      setSelectedCust(safeList[0]);
-    } catch (e: any) {
-      // Fallback: use local DB customers
-      const localDbCustomers = db.getCustomers();
-      const localCusts: CustomerListItem[] = (localDbCustomers || []).map((c) => ({
-        id: c.id,
-        customerCode: c.id,
-        name: c.name || "Customer",
-        firstName: (c.name || "Customer").split(" ")[0],
-        lastName: (c.name || "").split(" ").slice(1).join(" ") || "",
-        email: (c as any).email || "",
-        phone: (c as any).phone || "",
-        joined: c.joined || new Date().toISOString().split("T")[0],
-        customerType: "B2C",
-        visits: c.visits || 0,
-        spend: c.spend || 0,
-        aov: c.aov || 0,
-        favDept: c.favDept || "General",
-        segment: c.segment || "New",
-        churn: c.churn || 0,
-        status: "Active",
-        lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
-      }));
+          loyaltyTier: (c as any).loyaltyTier || (c.segment === "VIP" ? "Platinum" : "Regular"),
+        };
+      });
       const safeList = localCusts.length > 0 ? localCusts : [defaultRegisteredCustomer];
       setCustomers(safeList);
       setSelectedCust(safeList[0]);
@@ -774,8 +809,12 @@ export function CustomersPage() {
                       )}
                     >
                       <td className="px-3 py-3">
-                        <p className="font-bold text-foreground">{c.firstName} {c.lastName}</p>
-                        <p className="text-[11px] text-muted-foreground">{c.phone} · {c.email}</p>
+                        <p className="font-bold text-foreground">
+                          {c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {c.phone || c.email ? `${c.phone || ""}${c.phone && c.email ? " · " : ""}${c.email || ""}` : (c.customerCode || "Registered Customer")}
+                        </p>
                       </td>
                       <td className="px-3 py-3">
                         <StatusPill
@@ -821,7 +860,7 @@ export function CustomersPage() {
               <div className="flex items-center justify-between border-b border-hairline pb-3">
                 <div>
                   <h4 className="text-base font-bold text-foreground">
-                    {activeSelectedCust.firstName} {activeSelectedCust.lastName}
+                    {activeSelectedCust.name || `${activeSelectedCust.firstName || ""} ${activeSelectedCust.lastName || ""}`.trim() || "Customer"}
                   </h4>
                   <p className="text-[11px] text-muted-foreground">{activeSelectedCust.email}</p>
                 </div>

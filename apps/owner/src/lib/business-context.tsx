@@ -375,8 +375,6 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setInvestments(Array.isArray(invs) ? invs : []);
         setLogistics(Array.isArray(logs) ? logs : []);
         setStaff(Array.isArray(stf) ? stf : []);
-
-        setSyncRev((prev) => prev + 1);
       } catch (err) {
         console.warn("Failed to sync with database.", err);
         setIsOffline(true);
@@ -385,7 +383,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     if (user && !isOffline) {
       syncData();
-      intervalId = setInterval(syncData, 8000);
+      intervalId = setInterval(syncData, 60000);
     }
 
     return () => {
@@ -644,7 +642,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         logistics,
         staff,
         forceRefresh,
-        dataVersion: dbRev + syncRev,
+        dataVersion: dbRev,
         scopedProducts,
         scopedTransactions,
         scopedCustomers,
