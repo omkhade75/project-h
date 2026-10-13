@@ -1,8 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { MongoClient } from 'mongodb';
 
-const DEFAULT_MONGODB_URI = "mongodb+srv://khade8915_db_user:dKgedk9DLleq17mZ@cluster0.am7xoun.mongodb.net/bizora?retryWrites=true&w=majority";
-
 @Injectable()
 export class MongodbService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MongodbService.name);
@@ -10,11 +8,7 @@ export class MongodbService implements OnModuleInit, OnModuleDestroy {
   public isConnected = false;
 
   public getUri(): string {
-    const uri = process.env.MONGODB_URI;
-    if (!uri || uri.includes("placeholder") || uri.includes("YOUR-")) {
-      return DEFAULT_MONGODB_URI;
-    }
-    return uri;
+    return process.env.MONGODB_URI || "";
   }
 
   async onModuleInit() {

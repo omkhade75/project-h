@@ -1,8 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from 'bizora-database';
 
-const DEFAULT_DATABASE_URL = "postgresql://postgres.eisqbwanrguvoxguqpjz:iq0L2FsHuqg7fd5e@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true";
-
 @Injectable()
 export class DatabaseService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatabaseService.name);
@@ -15,7 +13,7 @@ export class DatabaseService extends PrismaClient implements OnModuleInit, OnMod
     super({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL || DEFAULT_DATABASE_URL,
+          url: process.env.DATABASE_URL,
         },
       },
     });
