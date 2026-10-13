@@ -137,13 +137,16 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const openRecommendation = (id: string | null) => setActiveRecId(id);
 
   // Active Date defaults to local today's date
-  const [activeDate, setActiveDate] = useState("2026-07-27");
-  useEffect(() => {
+  const [activeDate, setActiveDate] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("omnimind_active_date");
+      if (saved) return saved;
+    }
     const now = new Date();
     const offset = now.getTimezoneOffset();
     const localNow = new Date(now.getTime() - offset * 60 * 1000);
-    setActiveDate(localNow.toISOString().split("T")[0]);
-  }, []);
+    return localNow.toISOString().split("T")[0];
+  });
 
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   useEffect(() => {
@@ -369,18 +372,35 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         );
         const mergedCustomers = [...mappedCustomers, ...customLocalCustomers];
 
+        const existingExpenses = currentSchema.expenses || [];
+        const customLocalExpenses = existingExpenses.filter(
+          (e) => !mappedExpenses.some((me) => me.id === e.id)
+        );
+        const mergedExpenses = mappedExpenses.length > 0
+          ? [...mappedExpenses, ...customLocalExpenses]
+          : (existingExpenses.length > 0 ? existingExpenses : db.getExpenses());
+
+        const existingSuppliers = currentSchema.suppliers || [];
+        const customLocalSuppliers = existingSuppliers.filter(
+          (s) => !mappedSuppliers.some((ms) => ms.id === s.id)
+        );
+        const mergedSuppliers = mappedSuppliers.length > 0
+          ? [...mappedSuppliers, ...customLocalSuppliers]
+          : (existingSuppliers.length > 0 ? existingSuppliers : db.getSuppliers());
+
         db.save({
           ...currentSchema,
           products: mergedProducts,
           transactions: mergedTransactions,
           customers: mergedCustomers,
-          suppliers: mappedSuppliers,
-          expenses: mappedExpenses,
-          purchaseOrders: mappedPurchaseOrders,
-          recommendations: mappedRecommendations,
-          anomalies: mappedAnomalies,
-          utilities: mappedUtilities,
+          suppliers: mergedSuppliers,
+          expenses: mergedExpenses,
+          purchaseOrders: mappedPurchaseOrders.length > 0 ? mappedPurchaseOrders : (currentSchema.purchaseOrders || []),
+          recommendations: mappedRecommendations.length > 0 ? mappedRecommendations : (currentSchema.recommendations || []),
+          anomalies: mappedAnomalies.length > 0 ? mappedAnomalies : (currentSchema.anomalies || []),
+          utilities: mappedUtilities.length > 0 ? mappedUtilities : (currentSchema.utilities || []),
         });
+        forceRefresh();
 
         setInvestments(Array.isArray(invs) ? invs : []);
         setLogistics(Array.isArray(logs) ? logs : []);
@@ -493,27 +513,31 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } else if (timeRange === "7d") {
       const limit = new Date(activeDateObjClean);
       limit.setDate(limit.getDate() - 7);
+      const limitStr = limit.toISOString().split("T")[0];
       filtered = items.filter((item) => {
         const d = (item.date || "").split("T")[0].split(" ")[0];
         if (!d) return true;
-        const itemDate = new Date(d);
-        return itemDate >= limit && itemDate <= activeDateObjClean;
+        return d >= limitStr && d <= activeDateClean;
       });
     } else if (timeRange === "30d") {
       const limit = new Date(activeDateObjClean);
       limit.setDate(limit.getDate() - 30);
+      const limitStr = limit.toISOString().split("T")[0];
       filtered = items.filter((item) => {
         const d = (item.date || "").split("T")[0].split(" ")[0];
         if (!d) return true;
-        const itemDate = new Date(d);
-        return itemDate >= limit && itemDate <= activeDateObjClean;
+        return d >= limitStr && d <= activeDateClean;
       });
     } else {
       filtered = items.filter((item) => {
         const d = (item.date || "").split("T")[0].split(" ")[0];
         if (!d) return true;
-        return new Date(d) <= activeDateObjClean;
+        return d <= activeDateClean;
       });
+    }
+
+    if (filtered.length === 0 && items.length > 0) {
+      return items;
     }
 
     return filtered;

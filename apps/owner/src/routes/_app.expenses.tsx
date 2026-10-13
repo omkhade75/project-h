@@ -55,7 +55,7 @@ export const Route = createFileRoute("/_app/expenses")({
 
 function Expenses() {
   const { user } = useAuth();
-  const { scopedExpenses, scopedTransactions, forceRefresh, activeDate } = useBusinessData();
+  const { scopedExpenses, scopedTransactions, forceRefresh, activeDate, dataVersion } = useBusinessData();
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -67,13 +67,20 @@ function Expenses() {
   const [date, setDate] = useState(activeDate);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
 
+  const effectiveExpenses = useMemo(() => {
+    if (scopedExpenses && scopedExpenses.length > 0) return scopedExpenses;
+    const all = db.getExpenses();
+    return all && all.length > 0 ? all : [];
+  }, [scopedExpenses, dataVersion]);
+
   const total = useMemo(() => {
-    return scopedExpenses.reduce((sum, e) => sum + e.amount, 0);
-  }, [scopedExpenses]);
+    return effectiveExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [effectiveExpenses]);
 
   const totalRevenue = useMemo(() => {
-    return (scopedTransactions || []).reduce((sum, t) => sum + (t.total || 0), 0);
-  }, [scopedTransactions]);
+    const list = scopedTransactions && scopedTransactions.length > 0 ? scopedTransactions : db.getTransactions();
+    return (list || []).reduce((sum, t) => sum + (t.total || 0), 0);
+  }, [scopedTransactions, dataVersion]);
 
   const expenseRevenueRatio = useMemo(() => {
     if (total === 0 || totalRevenue === 0) return "0.0%";
@@ -83,18 +90,18 @@ function Expenses() {
 
   const categoriesData = useMemo(() => {
     const map: Record<string, number> = {};
-    scopedExpenses.forEach((e) => {
+    effectiveExpenses.forEach((e) => {
       map[e.category] = (map[e.category] || 0) + e.amount;
     });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [scopedExpenses]);
+  }, [effectiveExpenses]);
 
   const momChange = useMemo(() => {
-    if (scopedExpenses.length === 0 || total === 0) return "0.0%";
+    if (effectiveExpenses.length === 0 || total === 0) return "0.0%";
     
     // Group expenses by YYYY-MM
     const monthTotals: Record<string, number> = {};
-    scopedExpenses.forEach((e) => {
+    effectiveExpenses.forEach((e) => {
       if (e.date) {
         const monthKey = e.date.substring(0, 7);
         monthTotals[monthKey] = (monthTotals[monthKey] || 0) + e.amount;
@@ -110,7 +117,7 @@ function Expenses() {
     if (prevMonthExp === 0) return currentMonthExp > 0 ? "+100.0%" : "0.0%";
     const diff = ((currentMonthExp - prevMonthExp) / prevMonthExp) * 100;
     return `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`;
-  }, [scopedExpenses, total]);
+  }, [effectiveExpenses, total]);
 
   // Construct a trend based strictly on actual database entries across the trailing 12 months
   const trend = useMemo(() => {
@@ -123,7 +130,7 @@ function Expenses() {
       const monthKey = `${yyyy}-${mm}`;
       const monthName = d.toLocaleString("default", { month: "short" });
 
-      const monthExps = (scopedExpenses || []).filter((e) => {
+      const monthExps = (effectiveExpenses || []).filter((e) => {
         const dStr = (e.date || "").split("T")[0];
         return dStr.startsWith(monthKey);
       });
@@ -131,7 +138,7 @@ function Expenses() {
       result.push({ m: monthName, v: monthTotal });
     }
     return result;
-  }, [scopedExpenses, activeDate]);
+  }, [effectiveExpenses, activeDate]);
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,7 +307,7 @@ function Expenses() {
 
       <SectionCard
         title="Expense Log"
-        subtitle={`${scopedExpenses.length} entries for current scope`}
+        subtitle={`${effectiveExpenses.length} entries for current scope`}
       >
         <div className="overflow-x-auto min-h-[150px] relative">
           <table className="w-full min-w-[820px] text-xs">
@@ -318,14 +325,14 @@ function Expenses() {
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
-              {scopedExpenses.length === 0 ? (
+              {effectiveExpenses.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-8 text-center text-muted-foreground">
                     No expense records found.
                   </td>
                 </tr>
               ) : (
-                [...scopedExpenses].reverse().map((e) => (
+                [...effectiveExpenses].reverse().map((e) => (
                   <tr key={e.id} className="hover:bg-surface/50 transition-colors">
                     <td className="py-3 font-mono text-[11px] text-muted-foreground">{e.id}</td>
                     <td className="py-3">{e.date}</td>

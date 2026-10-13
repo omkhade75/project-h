@@ -20,6 +20,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useBusinessData } from "@/lib/business-context";
+import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth-context";
 import {
   Area,
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/_app/sales")({
 });
 
 function RouteComponent() {
-  const { openCustomer360 } = useBusinessData();
+  const { openCustomer360, transactions: ctxTransactions, products: ctxProducts, customers: ctxCustomers, dataVersion, forceRefresh } = useBusinessData();
   const { user } = useAuth();
 
   // Data states
@@ -96,43 +97,127 @@ function RouteComponent() {
   const [selectedItemDiscount, setSelectedItemDiscount] = useState("0");
 
   const loadSalesData = async () => {
-    setLoading(true);
+    if (transactions.length === 0) setLoading(true);
     try {
+      if (user?.workspaceId) {
+        db.setWorkspace(user.workspaceId);
+      }
       const payload = {
         data: {
           role: user?.role || "owner",
           email: user?.email || "",
         },
       };
-      const txs = await getTransactionsServer(payload);
-      const prods = await getProductsServer(payload);
-      const custs = await getCustomersServer({
-        data: {
-          role: user?.role || "owner",
-          email: user?.email || "",
-          status: "Active",
-        },
-      });
-      const opts = await getProductOptionsServer(payload);
+      const [txs, prods, custs, opts] = await Promise.all([
+        getTransactionsServer(payload).catch(() => []),
+        getProductsServer(payload).catch(() => []),
+        getCustomersServer({
+          data: {
+            role: user?.role || "owner",
+            email: user?.email || "",
+            status: "Active",
+          },
+        }).catch(() => []),
+        getProductOptionsServer(payload).catch(() => ({ departments: [], categories: [] })),
+      ]);
 
-      const safeTxs = Array.isArray(txs) ? txs : Array.isArray((txs as any)?.data) ? (txs as any).data : [];
-      const safeProds = Array.isArray(prods) ? prods : Array.isArray((prods as any)?.data) ? (prods as any).data : [];
+      const apiTxs: any[] = Array.isArray(txs) ? txs : Array.isArray((txs as any)?.data) ? (txs as any).data : [];
+      const apiTxIds = new Set(apiTxs.map((t) => t.id || t.transactionNumber));
+
+      // Merge transactions from API + db.getTransactions() + ctxTransactions
+      const rawLocalTxs = [...(db.getTransactions() || []), ...(ctxTransactions || [])];
+      const seenTxIds = new Set<string>();
+      const localTxs: TransactionListItem[] = [];
+
+      for (const t of rawLocalTxs) {
+        if (!t || !t.id || apiTxIds.has(t.id) || seenTxIds.has(t.id)) continue;
+        seenTxIds.add(t.id);
+        localTxs.push({
+          id: t.id,
+          transactionNumber: (t as any).transactionNumber || t.id,
+          date: t.date || new Date().toISOString().split("T")[0],
+          time: t.time || "12:00",
+          total: t.total || (t as any).totalAmount || 0,
+          totalAmount: t.total || (t as any).totalAmount || 0,
+          subtotal: t.subtotal || 0,
+          tax: t.tax || (t as any).taxAmount || 0,
+          taxAmount: t.tax || (t as any).taxAmount || 0,
+          discount: t.discount || 0,
+          payment: (t.payment as any) || (t as any).paymentMethod || "UPI",
+          paymentMethod: (t.payment as any) || (t as any).paymentMethod || "UPI",
+          status: (t.status as any) || "Completed",
+          dept: t.dept || "General",
+          customerId: t.customerId || "walkin",
+          customerName: t.customerName || "Walk-in Customer",
+          items: Array.isArray(t.items) ? t.items.map((it: any) => ({
+            productId: it.productId || it.id,
+            name: it.name || it.productName || "Product",
+            productName: it.name || it.productName || "Product",
+            quantity: it.quantity || 1,
+            price: it.price || 0,
+            cost: it.cost || 0,
+            total: it.total || (it.price * (it.quantity || 1)),
+          })) : [],
+        });
+      }
+
+      const mergedTxs = [...apiTxs, ...localTxs];
+
+      // Merge products
+      const apiProds: ProductListItem[] = Array.isArray(prods) ? prods : Array.isArray((prods as any)?.data) ? (prods as any).data : [];
+      const apiProdIds = new Set(apiProds.map((p) => p.id || p.sku));
+      const rawLocalProds = [...(db.getProducts() || []), ...(ctxProducts || [])];
+      const seenProdIds = new Set<string>();
+      const localProds: ProductListItem[] = [];
+
+      for (const p of rawLocalProds) {
+        if (!p || !p.id || apiProdIds.has(p.id) || seenProdIds.has(p.id)) continue;
+        seenProdIds.add(p.id);
+        localProds.push({
+          id: p.id,
+          sku: p.id,
+          barcode: (p as any).barcode || p.id,
+          name: p.name,
+          description: null,
+          brand: (p as any).brand || "Generic",
+          category: p.category || "General",
+          categoryId: (p as any).categoryId || "cat-general",
+          dept: p.dept || "General",
+          departmentId: (p as any).departmentId || "dept-general",
+          price: p.price,
+          cost: p.cost || 0,
+          margin: (p as any).margin || 0,
+          stock: p.stock || 0,
+          reorder: p.reorder || 5,
+          status: "Active",
+          unit: "units",
+          expiry: p.expiry || null,
+          supplier: (p as any).supplier || "Wholesalers",
+          sold: (p as any).sold || 0,
+          revenue: (p as any).revenue || 0,
+        });
+      }
+      const mergedProds = [...apiProds, ...localProds];
+
       const safeCusts = Array.isArray(custs) ? custs : Array.isArray((custs as any)?.data) ? (custs as any).data : [];
       const safeDepts = Array.isArray(opts?.departments) ? opts.departments : [];
 
-      setTransactions(safeTxs);
-      setProducts(safeProds);
+      setTransactions(mergedTxs);
+      setProducts(mergedProds);
       setCustomers(safeCusts);
       setDepartments(safeDepts);
 
-      if (safeDepts.length > 0) {
+      if (safeDepts.length > 0 && !formDepartmentId) {
         setFormDepartmentId(safeDepts[0].id);
       }
-      if (safeProds.length > 0) {
-        setSelectedItemSku(safeProds[0].id);
+      if (mergedProds.length > 0 && !selectedItemSku) {
+        setSelectedItemSku(mergedProds[0].id);
       }
     } catch (e) {
-      toast.error("Failed to load sales database records.");
+      console.warn("Failed to load sales database records fallback:", e);
+      const localTxs = db.getTransactions() || [];
+      setTransactions(localTxs as any);
+      setProducts((db.getProducts() || []) as any);
     } finally {
       setLoading(false);
     }
@@ -140,7 +225,7 @@ function RouteComponent() {
 
   useEffect(() => {
     loadSalesData();
-  }, [user]);
+  }, [user, dataVersion]);
 
   const addToCart = () => {
     if (!selectedItemSku || Number(selectedItemQty) <= 0) return;
@@ -187,6 +272,32 @@ function RouteComponent() {
           emailUser: user?.email || "",
         },
       });
+      try {
+        const localTxnId = `TXN-${Date.now().toString().slice(-6)}`;
+        db.importTransactions([{
+          id: localTxnId,
+          date: new Date().toISOString().split("T")[0],
+          time: new Date().toTimeString().slice(0, 5),
+          customerId: formCustomerId === "walkin" ? "" : formCustomerId,
+          customerName: "Customer",
+          dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
+          items: cartItems.map((ci) => ({
+            productId: ci.productId,
+            name: products.find((p) => p.id === ci.productId)?.name || "Product",
+            quantity: ci.quantity,
+            price: products.find((p) => p.id === ci.productId)?.price || 0,
+            cost: 0,
+          })),
+          subtotal: 0,
+          discount: 0,
+          tax: 0,
+          total: cartItems.reduce((sum, ci) => sum + (products.find((p) => p.id === ci.productId)?.price || 0) * ci.quantity, 0),
+          payment: formPaymentMethod as any,
+          status: "Completed" as const,
+        }]);
+        forceRefresh();
+      } catch (_) {}
+
       toast.success("Transaction billed and stock updated successfully.");
       setCheckoutOpen(false);
       setCartItems([]);

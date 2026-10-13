@@ -777,8 +777,10 @@ export function getDatesRange(start: string, end: string): string[] {
 
 // SEED GENERATION FUNCTION
 export function seedDatabase(): Schema {
-  const start = "2026-03-01";
-  const end = "2026-05-31";
+  const today = new Date();
+  const end = today.toISOString().split("T")[0];
+  const startDateObj = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
+  const start = startDateObj.toISOString().split("T")[0];
   const dates = getDatesRange(start, end);
 
   const products: Product[] = BASE_PRODUCTS_TEMPLATE.map((p) => ({
@@ -849,7 +851,7 @@ export function seedDatabase(): Schema {
         quantity: p.stock + 100,
         remainingQty: p.stock,
         receivedDate: "2026-02-12",
-        status: new Date(p.expiry) < new Date("2026-05-05") ? "expired" : "safe",
+        status: new Date(p.expiry) < new Date(end) ? "expired" : "safe",
       });
     }
   });
@@ -862,8 +864,7 @@ export function seedDatabase(): Schema {
 
     // 1. Transactions
     // Baseline: weekday 5-15 txns, weekend 15-35 txns
-    // May 5 2026 is Tuesday but let's make it a rich day (30 transactions!)
-    const txnCount = date === "2026-05-05" ? 30 : Math.floor(5 + rng() * (isWeekend ? 20 : 10));
+    const txnCount = date === end ? 30 : Math.floor(5 + rng() * (isWeekend ? 20 : 10));
 
     for (let i = 0; i < txnCount; i++) {
       const tRng = lcg(seedVal + i * 100);
@@ -903,8 +904,8 @@ export function seedDatabase(): Schema {
         subtotal += prod.price * qty;
         costTotal += prod.cost * qty;
 
-        // update product stats (if historical is before our current active date of May 5, update counts)
-        if (new Date(date) <= new Date("2026-05-05")) {
+        // update product stats
+        if (new Date(date) <= new Date(end)) {
           prod.sold += qty;
           prod.revenue += prod.price * qty;
           prod.stock = Math.max(0, prod.stock - qty);
@@ -939,7 +940,7 @@ export function seedDatabase(): Schema {
       });
 
       // Update customer stats
-      if (new Date(date) <= new Date("2026-05-05")) {
+      if (new Date(date) <= new Date(end)) {
         customer.visits += 1;
         customer.spend += total;
         customer.aov = Math.round(customer.spend / customer.visits);
@@ -1190,6 +1191,11 @@ class SeededDatabase {
           try {
             const parsed = JSON.parse(stored);
             if (parsed && (parsed.products?.length > 0 || parsed.customers?.length > 0)) {
+              if (!parsed.transactions || parsed.transactions.length === 0) {
+                const seed = seedDatabase();
+                parsed.transactions = seed.transactions;
+                parsed.expenses = (parsed.expenses && parsed.expenses.length > 0) ? parsed.expenses : seed.expenses;
+              }
               return parsed;
             }
           } catch (e) {
