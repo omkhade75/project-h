@@ -156,6 +156,11 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, []);
 
+  // ARCHITECTURE NOTE: Reactive State Versioning (dataVersion / dbRev)
+  // Instead of polling or triggering expensive full-app re-mounts, we maintain a monotonic
+  // dataVersion revision integer. When any mutation happens (e.g. POS sale checkout,
+  // expense registration, inventory adjustment), forceRefresh() increments this counter.
+  // Routes listening to dataVersion immediately re-render charts and KPI metrics.
   const [dbRev, setDbRev] = useState(0);
   const forceRefresh = () => setDbRev((r) => r + 1);
 

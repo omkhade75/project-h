@@ -22,6 +22,10 @@ export class TransactionsService {
       throw new BadRequestException('Cannot create a sale with zero items.');
     }
 
+    // ARCHITECTURE NOTE: PostgreSQL ACID Transaction ($transaction)
+    // All operations inside this block run within a single database transaction.
+    // If ANY step fails (e.g. invalid SKU, stock shortage, constraint violation),
+    // the entire sale rolls back automatically, preventing negative inventory or corrupted ledger entries.
     return this.db.$transaction(async (tx) => {
       const productIds = data.items.map((item) => item.productId);
       const dbProducts = await tx.product.findMany({

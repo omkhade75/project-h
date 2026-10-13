@@ -124,7 +124,11 @@ function RouteComponent() {
       const apiTxs: any[] = Array.isArray(txs) ? txs : Array.isArray((txs as any)?.data) ? (txs as any).data : [];
       const apiTxIds = new Set(apiTxs.map((t) => t.id || t.transactionNumber));
 
-      // Merge transactions from API + db.getTransactions() + ctxTransactions
+      // ARCHITECTURE NOTE: Resilient 3-Source Telemetry Merging
+      // 1. Backend Ledger (apiTxs): Cloud database records for historical reporting.
+      // 2. Local Storage (db.getTransactions()): Offline-first buffer stored in browser.
+      // 3. React Context (ctxTransactions): Realtime state from active cashier checkout.
+      // Merging with deduplication guarantees zero blank/₹0 dashboards even before cloud sync completes.
       const rawLocalTxs = [...(db.getTransactions() || []), ...(ctxTransactions || [])];
       const seenTxIds = new Set<string>();
       const localTxs: TransactionListItem[] = [];

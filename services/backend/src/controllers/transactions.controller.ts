@@ -3,6 +3,14 @@ import { TransactionsService } from '../services/transactions.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ResponseUtil } from '../utils/response.util';
 
+/**
+ * TRANSACTIONS CONTROLLER
+ * -------------------------------------------------------------
+ * Role: HTTP Entrypoint for POS Billing & Financial Transactions.
+ * Design Pattern: Controller-Service-Repository
+ * Security: Protected by JwtAuthGuard (requires valid Bearer token).
+ * Multi-Tenancy: Automatically extracts workspaceId, user role, and email from req.user.
+ */
 @Controller('api/transactions')
 @UseGuards(JwtAuthGuard)
 export class TransactionsController {
