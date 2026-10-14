@@ -84,7 +84,7 @@ export class HealthService implements OnModuleInit {
   }
 
   private getResendApiKey(): string | null {
-    return process.env.RESEND_API_KEY || "re_aKZeAQDH_915aDwRpwS1JdaWsMrikuRah";
+    return process.env.RESEND_API_KEY || null;
   }
 
   async runFullHealthCheck() {

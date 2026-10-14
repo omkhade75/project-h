@@ -36,7 +36,11 @@ export class SystemAdminService {
   }
 
   private async sendResendEmail(toEmail: string, subject: string, htmlContent: string) {
-    const apiKey = process.env.RESEND_API_KEY || "re_aKZeAQDH_915aDwRpwS1JdaWsMrikuRah";
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.warn("[Resend Email] RESEND_API_KEY is not configured in environment variables. Email skipped.");
+      return { success: false, reason: "RESEND_API_KEY not configured" };
+    }
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
