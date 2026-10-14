@@ -124,6 +124,88 @@ export class SystemAdminService {
     this.memPending.unshift(pendingRecord);
     SystemAdminService.memPendingStore.unshift(pendingRecord);
 
+    // ARCHITECTURE NOTE: Immediate User & Workspace Provisioning
+    // As soon as a shop is registered, immediately provision the Workspace and User record
+    // with role 'OWNER' in PostgreSQL (Prisma) so they appear in database tables instantly.
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.workspace.upsert({
+          where: { id: assignedWorkspaceId },
+          create: {
+            id: assignedWorkspaceId,
+            name: companyName,
+            industry: payload.industry || "Retail",
+            businessType: businessType,
+            timezone: payload.timezone || "Asia/Kolkata",
+            currency: payload.currency || "INR",
+            status: 'ACTIVE',
+            setupCompleted: true,
+            plan: 'TRIAL',
+            subscriptionStatus: 'TRIAL',
+            trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          },
+          update: {
+            name: companyName,
+            industry: payload.industry || "Retail",
+            businessType: businessType,
+            status: 'ACTIVE',
+          },
+        });
+
+        const existingUser = await tx.user.findFirst({ where: { email: cleanEmail } });
+        if (existingUser) {
+          await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              name: ownerName,
+              role: 'OWNER',
+              workspaceId: assignedWorkspaceId,
+              status: 'Active',
+              passwordHash,
+            },
+          });
+        } else {
+          await tx.user.create({
+            data: {
+              name: ownerName,
+              email: cleanEmail,
+              passwordHash,
+              role: 'OWNER',
+              workspaceId: assignedWorkspaceId,
+              isSystemAdmin: false,
+              status: 'Active',
+            },
+          });
+        }
+      });
+    } catch (dbErr) {
+      console.warn('[SystemAdminService] DB user provisioning in registerCompany:', dbErr);
+    }
+
+    // Sync Mongoose MongoDB models immediately
+    try {
+      let mongoComp = await CompanyModel.findOne({ code: assignedWorkspaceId });
+      if (!mongoComp) {
+        mongoComp = await CompanyModel.create({
+          name: companyName,
+          code: assignedWorkspaceId,
+          status: 'ACTIVE',
+        });
+      }
+      let mongoUser = await UserModel.findOne({ email: cleanEmail });
+      if (!mongoUser) {
+        await UserModel.create({
+          email: cleanEmail,
+          name: ownerName,
+          passwordHash,
+          role: 'OWNER',
+          companyId: mongoComp._id,
+        });
+      }
+    } catch (mErr) {
+      console.warn('[SystemAdminService] MongoDB user provisioning in registerCompany:', mErr);
+    }
+
     // 1. Dispatch Instant WhatsApp Alert to Super Admin
     const adminAlertMsg = `🔔 [NEW COMPANY REGISTRATION ALERT]\n\n🏢 Company: ${companyName}\n👤 Owner: ${ownerName}\n📱 Mobile: ${mobileNumber}\n✉️ Email: ${ownerEmail}\n📍 Location: ${city}\n\n👉 Review & Approve in Super Admin Dashboard: bizora-admin.onrender.com/system-admin`;
 

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { registerCompanyServer } from "@/lib/server-registration";
+import { supabase } from "@/lib/supabase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { GoogleMapsPicker } from "@/components/google-maps-picker";
 
@@ -105,6 +106,25 @@ function RegisterPage() {
 
     setSubmitting(true);
     try {
+      const cleanEmail = (formData.ownerEmail || "").toLowerCase().trim();
+
+      // Sync user to Supabase Auth so they appear in Supabase Authentication -> Users dashboard
+      try {
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password: formData.password,
+          options: {
+            data: {
+              name: formData.ownerName,
+              companyName: formData.companyName,
+              role: 'OWNER',
+            },
+          },
+        });
+      } catch (authErr) {
+        console.warn("[Supabase Auth Sync Warning]:", authErr);
+      }
+
       await registerCompanyServer({ data: formData });
       setSuccess(true);
     } catch (err: any) {
