@@ -58,7 +58,7 @@ import { useAuth } from "@/lib/auth-context";
 import { stopImpersonatingServer } from "@/lib/server-auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MALL, ANOMALIES, LIVE_FEED } from "@/lib/mock-data";
+import { MALL } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { useBusinessData } from "@/lib/business-context";
 import {
@@ -107,6 +107,48 @@ const NAV: NavSection[] = [
   },
 ];
 
+export const SUPPLIER_NOTIFS = [
+  {
+    id: "supp-notif-1",
+    title: "Inbound Purchase Order PO-40019",
+    tag: "Action Required",
+    tagColor: "bg-amber-500/15 text-amber-500",
+    desc: 'Samsung 55" QLED TV (Qty: 6) — ₹3,49,200 pending acceptance.',
+    time: "Just now • GrandSquare Supermart",
+    icon: FileText,
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-500/10",
+    to: "/purchase-orders",
+    isUnread: true,
+  },
+  {
+    id: "supp-notif-2",
+    title: "Logistics Dispatch DISP-8910",
+    tag: "In Transit",
+    tagColor: "bg-blue-500/15 text-blue-500",
+    desc: "Route #4 Active — Driver Assigned (Rajesh Kumar).",
+    time: "12 mins ago • ETA: 16:45 PM",
+    icon: Truck,
+    iconColor: "text-blue-500",
+    iconBg: "bg-blue-500/10",
+    to: "/logistics",
+    isUnread: true,
+  },
+  {
+    id: "supp-notif-3",
+    title: "Settlement Payout Approved",
+    tag: "Completed",
+    tagColor: "bg-emerald-500/15 text-emerald-500",
+    desc: "₹78,000 processed for PO-40020 (Nike Air Zoom).",
+    time: "Yesterday • NEFT Ref #894210",
+    icon: CreditCard,
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-500/10",
+    to: "/income",
+    isUnread: false,
+  },
+];
+
 function AppShell() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
@@ -138,18 +180,9 @@ function AppShell() {
     logistics,
   } = useBusinessData();
 
-  const isEndOfMonth = useMemo(() => {
-    if (!activeDate) return false;
-    const d = new Date(activeDate);
-    const nextDay = new Date(d);
-    nextDay.setDate(d.getDate() + 3);
-    return nextDay.getMonth() !== d.getMonth();
-  }, [activeDate]);
-
-  const endOfMonthNotifId = `eom-bills-${activeDate?.slice(0, 7)}`;
-  const hasEomNotif = isEndOfMonth && !readNotifs.has(endOfMonthNotifId);
-  const totalUnreadNotifs =
-    ANOMALIES.length + LIVE_FEED.length - readNotifs.size + (hasEomNotif ? 1 : 0);
+  const totalUnreadNotifs = useMemo(() => {
+    return SUPPLIER_NOTIFS.filter((n) => n.isUnread && !readNotifs.has(n.id)).length;
+  }, [readNotifs]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -845,107 +878,63 @@ function AppShell() {
                       <div>
                         <p className="text-sm font-bold">Supplier Portal Notifications</p>
                         <p className="text-[11px] text-muted-foreground">
-                          {totalUnreadNotifs > 0 ? totalUnreadNotifs : 2} unread updates
+                          {totalUnreadNotifs > 0 ? `${totalUnreadNotifs} unread updates` : "All caught up"}
                         </p>
                       </div>
-                      <button
-                        onClick={() => {
-                          setReadNotifs(new Set(["supp-notif-1", "supp-notif-2", "supp-notif-3"]));
-                          toast.success("All supplier notifications marked as read.");
-                        }}
-                        className="text-[11px] font-medium text-primary hover:underline"
-                      >
-                        Mark all read
-                      </button>
+                      {totalUnreadNotifs > 0 && (
+                        <button
+                          onClick={() => {
+                            setReadNotifs(new Set(SUPPLIER_NOTIFS.map((n) => n.id)));
+                            toast.success("All supplier notifications marked as read.");
+                          }}
+                          className="text-[11px] font-medium text-primary hover:underline"
+                        >
+                          Mark all read
+                        </button>
+                      )}
                     </div>
 
                     {/* Scrollable list */}
                     <div className="flex-1 overflow-y-auto divide-y divide-hairline">
-                      <button
-                        onClick={() => {
-                          setNotifOpen(false);
-                          navigate({ to: "/supplier-portal" });
-                        }}
-                        className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3 bg-primary/5"
-                      >
-                        <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-500/10">
-                          <FileText className="h-4 w-4 text-emerald-500" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold truncate text-foreground">
-                              Inbound Purchase Order PO-40019
-                            </span>
-                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/15 text-amber-500">
-                              Action Required
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            Samsung 55" QLED TV (Qty: 6) — ₹3,49,200 pending acceptance.
-                          </p>
-                          <p className="mt-0.5 text-[10px] text-muted-foreground font-mono">
-                            Just now • GrandSquare Supermart
-                          </p>
-                        </div>
-                        <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setNotifOpen(false);
-                          navigate({ to: "/logistics" });
-                        }}
-                        className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3 bg-primary/5"
-                      >
-                        <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-500/10">
-                          <Truck className="h-4 w-4 text-blue-500" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold truncate text-foreground">
-                              Logistics Dispatch DISP-8910
-                            </span>
-                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-blue-500/15 text-blue-500">
-                              In Transit
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            Route #4 Active — Driver Assigned (Rajesh Kumar).
-                          </p>
-                          <p className="mt-0.5 text-[10px] text-muted-foreground font-mono">
-                            12 mins ago • ETA: 16:45 PM
-                          </p>
-                        </div>
-                        <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setNotifOpen(false);
-                          navigate({ to: "/supplier-portal" });
-                        }}
-                        className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3"
-                      >
-                        <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-500/10">
-                          <CreditCard className="h-4 w-4 text-emerald-500" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold truncate text-foreground">
-                              Settlement Payout Approved
-                            </span>
-                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500/15 text-emerald-500">
-                              Completed
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            ₹78,000 processed for PO-40020 (Nike Air Zoom).
-                          </p>
-                          <p className="mt-0.5 text-[10px] text-muted-foreground font-mono">
-                            Yesterday • NEFT Ref #894210
-                          </p>
-                        </div>
-                      </button>
+                      {SUPPLIER_NOTIFS.map((notif) => {
+                        const isUnread = notif.isUnread && !readNotifs.has(notif.id);
+                        const Icon = notif.icon;
+                        return (
+                          <button
+                            key={notif.id}
+                            onClick={() => {
+                              setReadNotifs((prev) => new Set([...prev, notif.id]));
+                              setNotifOpen(false);
+                              navigate({ to: notif.to });
+                            }}
+                            className={cn(
+                              "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
+                              isUnread && "bg-primary/5"
+                            )}
+                          >
+                            <div className={cn("mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg", notif.iconBg)}>
+                              <Icon className={cn("h-4 w-4", notif.iconColor)} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold truncate text-foreground">
+                                  {notif.title}
+                                </span>
+                                <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold", notif.tagColor)}>
+                                  {notif.tag}
+                                </span>
+                              </div>
+                              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                {notif.desc}
+                              </p>
+                              <p className="mt-0.5 text-[10px] text-muted-foreground font-mono">
+                                {notif.time}
+                              </p>
+                            </div>
+                            {isUnread && <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
