@@ -349,4 +349,105 @@ TRAINED SPEECH & VOICE CLARITY GUIDELINES:
       return { success: true, data: [] };
     }
   }
+
+  async handleVapiWebhook(payload: any) {
+    try {
+      console.log('📥 [Vapi Webhook] Event received:', payload?.message?.type || 'unknown');
+      const messageType = payload?.message?.type;
+      const callData = payload?.message?.call;
+
+      // 1. Dynamic Inbound Assistant Request (When customer dials store number)
+      if (messageType === 'assistant-request') {
+        return {
+          assistant: {
+            name: "Bizora Inbound Customer Voice Assistant",
+            transcriber: {
+              provider: "deepgram",
+              model: "nova-2",
+              language: "hi",
+              smartFormat: true,
+              backgroundDenoisingEnabled: true,
+            },
+            model: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              temperature: 0.3,
+              messages: [
+                {
+                  role: "system",
+                  content: `You are the polite, helpful, and respectful AI Receptionist and Customer Support voice assistant for GrandSquare Supermart powered by Bizora AI.
+A customer has called the store.
+
+YOUR CAPABILITIES & RULES:
+1. GREETING: Warmly greet in respectful Hindi / Hinglish ("Namaste! GrandSquare Supermart mein aapka swagat hai. Main aapki kya madad kar sakti hoon?").
+2. STORE TIMINGS: The store is open all 7 days from 9:00 AM to 10:00 PM.
+3. LOCATION: We are located at GrandSquare Mall, Ground Floor, Main High Street.
+4. DELIVERY: We offer 10-minute hyperlocal delivery through the Bizora Customer App.
+5. STOCK INQUIRIES: Dairy (Amul milk, paneer, butter), fresh fruits/vegetables, FMCG, snacks, and beverages are always in fresh stock.
+6. ORDER STATUS: Politely tell them their recent order is being packed and dispatched via our delivery fleet.
+7. SPEECH CLARITY: Speak naturally, calmly, at a 0.9x human conversational speed. Keep answers concise (1-2 sentences). Never talk over the customer.`,
+                },
+              ],
+            },
+            voice: {
+              provider: "azure",
+              voiceId: "hi-IN-SwaraNeural",
+              speed: 0.92,
+              style: "customerservice",
+            },
+            firstMessage: "Namaste! GrandSquare Supermart customer desk mein aapka swagat hai. Main aapki kya sahayata kar sakti hoon?",
+            endCallMessage: "GrandSquare Supermart ko call karne ke liye dhanyavaad. Aapka din shubh ho!",
+          },
+        };
+      }
+
+      // 2. End-of-call report (Save transcript, summary, audio duration to database)
+      if (messageType === 'end-of-call-report' && callData) {
+        const callId = callData.id;
+        const customerNumber = callData.customer?.number || 'Unknown Caller';
+        const transcript = callData.transcript || '';
+        const summary = payload.message?.analysis?.summary || '';
+        const duration = callData.duration || 0;
+        const endedReason = callData.endedReason || 'normal';
+
+        console.log(`📞 Vapi Call Ended. ID: ${callId}, Duration: ${duration}s, Reason: ${endedReason}`);
+
+        const existingLog = await this.prisma.messageLog.findFirst({
+          where: { providerId: callId },
+        });
+
+        if (existingLog) {
+          await this.prisma.messageLog.update({
+            where: { id: existingLog.id },
+            data: {
+              status: endedReason === 'normal' || endedReason === 'customer-hung-up' ? 'DELIVERED' : 'FAILED',
+              body: `${existingLog.body}\n\n--- AI CALL TRANSCRIPT (${duration}s) ---\nSummary: ${summary}\n\nTranscript: ${transcript}`,
+              error: endedReason !== 'normal' && endedReason !== 'customer-hung-up' ? `Ended: ${endedReason}` : null,
+            },
+          });
+          console.log(`✅ MessageLog updated with call transcript for ID: ${callId}`);
+        } else {
+          // Inbound call log created automatically
+          await this.prisma.messageLog.create({
+            data: {
+              workspaceId: 'grandsquare-mall',
+              channel: 'VOICE',
+              recipientName: callData.customer?.name || 'Inbound Customer',
+              recipientPhone: customerNumber,
+              messageType: 'INBOUND_SUPPORT',
+              body: `Inbound Call (${duration}s)\nSummary: ${summary}\n\nTranscript: ${transcript}`,
+              status: 'DELIVERED',
+              providerId: callId,
+            },
+          });
+          console.log(`✅ Inbound Call recorded in MessageLog for ID: ${callId}`);
+        }
+      }
+
+      return { success: true, received: true };
+    } catch (err: any) {
+      console.error('[Vapi Webhook Error]:', err);
+      return { success: false, error: err.message };
+    }
+  }
 }

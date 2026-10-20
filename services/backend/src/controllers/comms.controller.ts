@@ -40,6 +40,16 @@ export class CommsController {
     return await this.commsService.initiateVapiCall(user?.workspaceId || 'grandsquare-mall', body);
   }
 
+  @Get('vapi/webhook')
+  async getVapiWebhook() {
+    return { status: 'active', channel: 'Vapi Webhook Adapter', service: 'Bizora AI Voice' };
+  }
+
+  @Post('vapi/webhook')
+  async handleVapiWebhook(@Body() body: any) {
+    return await this.commsService.handleVapiWebhook(body);
+  }
+
   @Get('logs')
   async getMessageLogs(@Req() req) {
     const user = req.user;
