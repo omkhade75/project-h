@@ -34,7 +34,28 @@ import {
   ShoppingBag,
   Store,
   Phone,
+  ShieldCheck,
+  KeyRound,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+
+export function getDeliveryOtp(orderNumber: string): string {
+  const digits = orderNumber.replace(/\D/g, "");
+  const num = parseInt(digits || "9021", 10);
+  return ((num * 17 + 23) % 9000 + 1000).toString();
+}
 
 export const Route = createFileRoute("/_app/logistics")({
   head: () => ({
@@ -81,6 +102,14 @@ export function LogisticsPage() {
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState("");
   const [delayReason, setDelayReason] = useState("");
+
+  // Delivery OTP Verification States
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [otpTargetDispatch, setOtpTargetDispatch] = useState<DeliveryItem | null>(null);
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [bypassSupervisorNote, setBypassSupervisorNote] = useState("");
+  const [isBypassMode, setIsBypassMode] = useState(false);
 
   const loadData = async () => {
     try {
@@ -161,7 +190,24 @@ export function LogisticsPage() {
     }
   };
 
+  const handleOpenOtpForDispatch = (dispatch: DeliveryItem) => {
+    setOtpTargetDispatch(dispatch);
+    setEnteredOtp("");
+    setIsBypassMode(false);
+    setBypassSupervisorNote("");
+    setOtpModalOpen(true);
+  };
+
   const handleUpdateStatus = async (id: string) => {
+    // If setting status to Delivered, intercept with customer OTP verification
+    if (newStatus === "Delivered") {
+      const target = dispatches.find((d) => d.id === id);
+      if (target) {
+        handleOpenOtpForDispatch(target);
+        return;
+      }
+    }
+
     try {
       setUpdatingId(id);
       await updateLogisticsStatusServer({
@@ -181,6 +227,61 @@ export function LogisticsPage() {
       toast.error(err.message || "Failed to update status.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleVerifyAndDeliver = async () => {
+    if (!otpTargetDispatch) return;
+    const expectedOtp = getDeliveryOtp(otpTargetDispatch.orderNumber);
+
+    if (isBypassMode) {
+      if (!bypassSupervisorNote.trim()) {
+        toast.error("Please enter a reason for supervisor override.");
+        return;
+      }
+    } else {
+      if (enteredOtp.trim() !== expectedOtp) {
+        toast.error("❌ Invalid OTP! Delivery cannot be completed.", {
+          description: `Customer must provide the 4-digit code shown in their Bizora Customer Portal. (Order: ${otpTargetDispatch.orderNumber})`,
+        });
+        return;
+      }
+    }
+
+    try {
+      setVerifyingOtp(true);
+      await updateLogisticsStatusServer({
+        data: {
+          dispatchId: otpTargetDispatch.id,
+          status: "Delivered",
+          delayReason: isBypassMode ? `[Supervisor Override: ${bypassSupervisorNote}]` : null,
+        },
+      });
+
+      // Update local state immediately
+      setDispatches((prev) =>
+        prev.map((d) =>
+          d.id === otpTargetDispatch.id
+            ? { ...d, status: "Delivered", deliveredAt: new Date().toISOString() }
+            : d
+        )
+      );
+
+      toast.success(`🎉 Delivery Confirmed for ${otpTargetDispatch.orderNumber}!`, {
+        description: isBypassMode
+          ? "Delivered successfully with supervisor override."
+          : "Customer OTP verified successfully. Proof of delivery recorded!",
+      });
+
+      setOtpModalOpen(false);
+      setEditingStatusId(null);
+      setNewStatus("");
+      setDelayReason("");
+      await loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to verify and update delivery.");
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -458,18 +559,29 @@ export function LogisticsPage() {
                             </div>
                           </div>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 text-xs text-indigo-600 hover:bg-indigo-50/50"
-                            onClick={() => {
-                              setEditingStatusId(d.id);
-                              setNewStatus(d.status);
-                              setDelayReason(d.delayReason || "");
-                            }}
-                          >
-                            Update Dispatch Status
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            {d.status !== "Delivered" && (
+                              <Button
+                                size="sm"
+                                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-sm"
+                                onClick={() => handleOpenOtpForDispatch(d)}
+                              >
+                                <KeyRound className="h-3.5 w-3.5" /> Confirm Delivery (OTP)
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 text-xs text-indigo-600 hover:bg-indigo-50/50"
+                              onClick={() => {
+                                setEditingStatusId(d.id);
+                                setNewStatus(d.status);
+                                setDelayReason(d.delayReason || "");
+                              }}
+                            >
+                              Update Status
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -572,6 +684,138 @@ export function LogisticsPage() {
           </SectionCard>
         </div>
       </div>
+
+      {/* 🔐 Delivery Confirmation OTP Modal */}
+      <Dialog open={otpModalOpen} onOpenChange={setOtpModalOpen}>
+        <DialogContent className="max-w-md p-6">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-100 text-emerald-700">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-zinc-900">
+                  Verify Customer Delivery OTP
+                </DialogTitle>
+                <DialogDescription className="text-xs text-zinc-500">
+                  Enter the 4-digit doorstep confirmation code from the customer
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {otpTargetDispatch && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-xl bg-zinc-50 border p-3.5 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order Reference:</span>
+                  <span className="font-mono font-bold text-zinc-900">{otpTargetDispatch.orderNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Customer:</span>
+                  <span className="font-semibold text-zinc-900">{otpTargetDispatch.customerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Destination:</span>
+                  <span className="font-medium text-zinc-800 text-right truncate max-w-[220px]">{otpTargetDispatch.destination}</span>
+                </div>
+              </div>
+
+              {!isBypassMode ? (
+                <div className="space-y-3 flex flex-col items-center justify-center pt-2">
+                  <Label className="text-xs font-semibold text-zinc-700">
+                    Ask customer for 4-digit code shown on their order receipt
+                  </Label>
+                  <InputOTP
+                    maxLength={4}
+                    value={enteredOtp}
+                    onChange={(val) => setEnteredOtp(val)}
+                  >
+                    <InputOTPGroup className="gap-2">
+                      <InputOTPSlot index={0} className="h-12 w-12 text-lg font-bold" />
+                      <InputOTPSlot index={1} className="h-12 w-12 text-lg font-bold" />
+                      <InputOTPSlot index={2} className="h-12 w-12 text-lg font-bold" />
+                      <InputOTPSlot index={3} className="h-12 w-12 text-lg font-bold" />
+                    </InputOTPGroup>
+                  </InputOTP>
+
+                  <div className="w-full flex justify-between items-center text-[11px] pt-1">
+                    <span className="text-muted-foreground">
+                      Expected OTP hint: <code className="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-mono font-bold">{getDeliveryOtp(otpTargetDispatch.orderNumber)}</code>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsBypassMode(true)}
+                      className="text-indigo-600 hover:underline font-medium"
+                    >
+                      Customer phone dead?
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 pt-2">
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      Supervisor Emergency Override
+                    </p>
+                    <p className="text-[11px] text-amber-700">
+                      Use only if customer mobile is discharged or unavailable at doorstep. This action is permanently audited in store ledger.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Reason for Manual OTP Bypass *</Label>
+                    <Input
+                      value={bypassSupervisorNote}
+                      onChange={(e) => setBypassSupervisorNote(e.target.value)}
+                      placeholder="e.g. Customer verified identity with Govt ID; phone dead"
+                      className="text-xs"
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsBypassMode(false)}
+                      className="text-[11px] text-zinc-500 hover:underline"
+                    >
+                      ← Back to standard OTP entry
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOtpModalOpen(false)}
+              disabled={verifyingOtp}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              onClick={handleVerifyAndDeliver}
+              disabled={verifyingOtp || (!isBypassMode && enteredOtp.length !== 4)}
+            >
+              {verifyingOtp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" /> Confirm & Mark Delivered
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

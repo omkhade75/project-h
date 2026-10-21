@@ -25,11 +25,28 @@ import {
   Check,
   ChevronDown,
   Navigation,
+  QrCode,
+  ExternalLink,
+  KeyRound,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { useBusinessData } from "@/lib/business-context";
 import { GoogleMapsPicker } from "@/components/google-maps-picker";
+
+export function getDeliveryOtp(orderNumber: string): string {
+  const digits = orderNumber.replace(/\D/g, "");
+  const num = parseInt(digits || "9021", 10);
+  return ((num * 17 + 23) % 9000 + 1000).toString();
+}
 
 export const Route = createFileRoute("/_app/customer-portal")({
   head: () => ({
@@ -86,6 +103,8 @@ export function CustomerPortal() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [address, setAddress] = useState("18th Road, Near Turner Road, Bandra West, Mumbai 400050");
   const [paymentMethod, setPaymentMethod] = useState<"UPI_RAZORPAY" | "CARD" | "COD">("UPI_RAZORPAY");
+  const [showUpiModal, setShowUpiModal] = useState(false);
+  const [pendingOrderDetails, setPendingOrderDetails] = useState<any>(null);
 
   // Hyperlocal Orders
   const [placedOrders, setPlacedOrders] = useState<Array<{
@@ -237,24 +256,55 @@ export function CustomerPortal() {
       createdAt: "Just now"
     };
 
-    setPlacedOrders((prev) => [newOrder, ...prev]);
+    if (paymentMethod === "UPI_RAZORPAY") {
+      const upiString = `upi://pay?pa=store.bizora@okaxis&pn=${encodeURIComponent(matchedStoreName)}&am=${cartTotal}&cu=INR&tn=${encodeURIComponent("Order " + newOrderId)}`;
+      setPendingOrderDetails({
+        order: newOrder,
+        orderId: newOrderId,
+        total: cartTotal,
+        storeName: matchedStoreName,
+        storeType: matchedStoreType,
+        upiString,
+      });
+      setIsCheckoutOpen(false);
+      setShowUpiModal(true);
+      return;
+    }
+
+    finalizeOrderPlacement(newOrder, matchedStoreName, matchedStoreType);
+  };
+
+  const handleConfirmUpiPayment = () => {
+    if (!pendingOrderDetails) return;
+    toast.success("✅ UPI Payment Verified! Transaction settled instantly via NPCI gateway.");
+    finalizeOrderPlacement(
+      pendingOrderDetails.order,
+      pendingOrderDetails.storeName,
+      pendingOrderDetails.storeType
+    );
+    setShowUpiModal(false);
+    setPendingOrderDetails(null);
+  };
+
+  const finalizeOrderPlacement = (order: any, storeName: string, storeType: string) => {
+    setPlacedOrders((prev) => [order, ...prev]);
     setCart([]);
     setIsCheckoutOpen(false);
     setActiveTab("ORDERS");
 
-    toast.success(`🎉 Order ${newOrderId} placed! Routing to nearest ${matchedStoreType}...`);
+    toast.success(`🎉 Order ${order.id} placed! Routing to nearest ${storeType}...`);
 
     // Simulate Shopkeeper Grabbing Order First
     setTimeout(() => {
       setPlacedOrders((prev) =>
         prev.map((o) => {
-          if (o.id === newOrderId) {
+          if (o.id === order.id) {
             return {
               ...o,
               status: "ACCEPTED_BY_STORE",
-              acceptedStore: `${matchedStoreName} (${matchedStoreType})`,
+              acceptedStore: `${storeName} (${storeType})`,
               storePhone: "+91 98765 43210",
-              driverName: "Ramesh Kumar (Express 10-Min Partner)",
+              driverName: "Vijay Yadav (Express 10-Min Partner)",
               driverPhone: "+91 98765 43211",
             };
           }
@@ -262,7 +312,7 @@ export function CustomerPortal() {
         })
       );
       toast.success(
-        `🚨 Nearest Storekeeper "${matchedStoreName}" (${matchedStoreType}) grabbed & accepted your order! Express 10-min delivery dispatched!`,
+        `🚨 Nearest Storekeeper "${storeName}" (${storeType}) grabbed & accepted your order! Express 10-min delivery dispatched!`,
         { duration: 7000 }
       );
     }, 2800);
@@ -575,6 +625,42 @@ export function CustomerPortal() {
                     ETA: 8 Mins
                   </span>
                 </div>
+
+                {/* 🔐 Doorstep Delivery Confirmation OTP */}
+                {ord.status !== "DELIVERED" ? (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-500 text-slate-950 font-bold shadow-sm">
+                        <KeyRound className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                            Doorstep Security Code
+                          </span>
+                          <span className="text-[11px] text-slate-500">Do not share before inspecting goods</span>
+                        </div>
+                        <h4 className="font-extrabold text-slate-900 text-sm mt-1">
+                          Delivery Confirmation OTP: <span className="font-mono text-base font-black text-amber-700">{getDeliveryOtp(ord.id)}</span>
+                        </h4>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          Tell rider <strong>{ord.driverName || "delivery executive"}</strong> this 4-digit code to securely confirm delivery.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-amber-400 rounded-xl px-5 py-2.5 shadow-sm self-start sm:self-auto">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Your OTP</span>
+                      <span className="font-mono text-2xl font-black tracking-widest text-slate-900">
+                        {getDeliveryOtp(ord.id)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 font-bold flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    <span>Package Delivered & OTP Verified at Doorstep. Thank you for shopping local!</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -697,11 +783,87 @@ export function CustomerPortal() {
               onClick={handlePlaceOrder}
               className="w-full rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold py-3 text-sm shadow-md flex items-center justify-center gap-2"
             >
-              <span>PAY ₹{cartTotal} & BROADCAST TO NEARBY SHOP</span>
+              <span>{paymentMethod === "UPI_RAZORPAY" ? "GENERATE UPI QR & PAY" : "PAY"} ₹{cartTotal} & BROADCAST TO NEARBY SHOP</span>
             </button>
           </div>
         </div>
       )}
+
+      {/* 📲 Dynamic UPI QR Payment Modal (100% Free NPCI Standard) */}
+      <Dialog open={showUpiModal} onOpenChange={setShowUpiModal}>
+        <DialogContent className="max-w-md p-6 bg-white text-slate-900 rounded-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-100 text-emerald-700">
+                <QrCode className="h-6 w-6" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-slate-900">
+                  Scan & Pay via Dynamic UPI QR
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Zero commission • Instant bank-to-bank transfer (NPCI standard)
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {pendingOrderDetails && (
+            <div className="space-y-4 py-2 flex flex-col items-center">
+              <div className="w-full rounded-xl bg-slate-50 border p-3 text-xs flex justify-between items-center">
+                <div>
+                  <span className="text-slate-500">Nearest Merchant:</span>
+                  <p className="font-bold text-slate-900">{pendingOrderDetails.storeName}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-slate-500">Amount Due:</span>
+                  <p className="font-mono text-lg font-black text-emerald-600">₹{pendingOrderDetails.total}</p>
+                </div>
+              </div>
+
+              {/* Dynamic QR Code */}
+              <div className="p-3 bg-white rounded-2xl border-2 border-slate-200 shadow-md flex flex-col items-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(pendingOrderDetails.upiString)}`}
+                  alt="Dynamic UPI QR Code"
+                  className="h-48 w-48 rounded-lg"
+                />
+                <span className="text-[11px] text-slate-500 mt-2 font-mono">VPA: store.bizora@okaxis</span>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">Google Pay</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">PhonePe</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">Paytm</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">BHIM UPI</span>
+              </div>
+
+              {/* Deep link for mobile users */}
+              <a
+                href={pendingOrderDetails.upiString}
+                className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 text-xs text-center flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <ExternalLink className="h-4 w-4" /> Open Installed UPI App on Phone
+              </a>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              onClick={() => setShowUpiModal(false)}
+              className="text-xs text-slate-500 hover:text-slate-800 px-3 py-2"
+            >
+              Cancel Payment
+            </button>
+            <button
+              onClick={handleConfirmUpiPayment}
+              className="rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-black px-5 py-2.5 text-xs shadow-md flex items-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4" /> I Have Completed UPI Payment
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

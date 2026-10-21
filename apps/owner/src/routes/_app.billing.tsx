@@ -36,6 +36,9 @@ import {
   Calculator,
   UserPlus,
   Sparkles,
+  QrCode,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import { fmtINR } from "@/lib/mock-data";
 import { useBusinessData } from "@/lib/business-context";
@@ -98,6 +101,7 @@ function RouteComponent() {
 
   // Quick Customer Registration States
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [showUpiQrModal, setShowUpiQrModal] = useState(false);
   const [newCustFirst, setNewCustFirst] = useState("");
   const [newCustLast, setNewCustLast] = useState("");
   const [newCustEmail, setNewCustEmail] = useState("");
@@ -1198,6 +1202,18 @@ function RouteComponent() {
                 </div>
               </div>
 
+              {formPaymentMethod === "UPI" && cartItems.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowUpiQrModal(true)}
+                  className="w-full border-emerald-500/50 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center gap-2 h-10"
+                >
+                  <QrCode className="h-4 w-4 text-emerald-600" />
+                  Show Customer Dynamic UPI QR ({fmtINR(grandTotal)})
+                </Button>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-emerald-600 hover:bg-emerald-700 h-11 text-base font-semibold"
@@ -1288,6 +1304,81 @@ function RouteComponent() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 📲 POS Dynamic UPI QR Payment Modal (100% Free NPCI Standard) */}
+      <Dialog open={showUpiQrModal} onOpenChange={setShowUpiQrModal}>
+        <DialogContent className="max-w-md p-6 bg-white text-zinc-900 rounded-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-100 text-emerald-700">
+                <QrCode className="h-6 w-6" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-zinc-900">
+                  Dynamic UPI Payment QR
+                </DialogTitle>
+                <DialogDescription className="text-xs text-zinc-500">
+                  NPCI 0% MDR Standard • Direct merchant settlement to bank account
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2 flex flex-col items-center">
+            <div className="w-full rounded-xl bg-zinc-50 border p-3 text-xs flex justify-between items-center">
+              <div>
+                <span className="text-muted-foreground">Store Merchant VPA:</span>
+                <p className="font-bold text-zinc-900">grandsquare.store@okaxis</p>
+              </div>
+              <div className="text-right">
+                <span className="text-muted-foreground">Amount to Collect:</span>
+                <p className="font-mono text-xl font-black text-emerald-600">{fmtINR(grandTotal)}</p>
+              </div>
+            </div>
+
+            {/* Dynamic QR Code */}
+            <div className="p-3 bg-white rounded-2xl border-2 border-zinc-200 shadow-md flex flex-col items-center">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(
+                  `upi://pay?pa=grandsquare.store@okaxis&pn=GrandSquare+Supermart&am=${grandTotal}&cu=INR&tn=POS-Bill`
+                )}`}
+                alt="Dynamic UPI QR Code"
+                className="h-48 w-48 rounded-lg"
+              />
+              <span className="text-[11px] text-zinc-500 mt-2 font-mono">Present to customer screen or mobile</span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">Google Pay</span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">PhonePe</span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">Paytm</span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">BHIM UPI</span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">Cred</span>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowUpiQrModal(false)}
+            >
+              Close QR
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              onClick={(e) => {
+                setShowUpiQrModal(false);
+                handleCheckout(e);
+              }}
+              disabled={saving}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" /> Received & Complete Checkout
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
