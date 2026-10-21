@@ -929,15 +929,15 @@ function AppShell() {
               )}
             </div>
 
-            <div className="ml-auto flex items-center gap-1 sm:gap-1.5">
-              <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-[11px] font-medium xl:flex shrink-0">
+            <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+              <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-[11px] font-medium 2xl:flex shrink-0">
                 <Circle className="h-2 w-2 fill-success text-success" />
-                Mall Open · 09:00–22:00
+                Store Active · 09:00–22:00
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground hidden sm:inline-flex"
                 onClick={() => navigate({ to: "/time-machine" as never })}
                 title="Time Machine Calendar"
               >
@@ -983,7 +983,7 @@ function AppShell() {
                 </Button>
 
                 {notifOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-[calc(100vw-32px)] max-w-[360px] sm:max-w-[400px] max-h-[80vh] sm:max-h-[480px] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
+                  <div className="fixed left-3 right-3 top-14 w-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px] max-h-[80vh] sm:max-h-[480px] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 hairline-b">
                       <div>
