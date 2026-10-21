@@ -118,6 +118,8 @@ export function CustomersPage() {
     "Namaste Om Khade! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!"
   );
   const [waSending, setWaSending] = useState(false);
+  const [isBroadcastMode, setIsBroadcastMode] = useState(false);
+  const [broadcastAudience, setBroadcastAudience] = useState<"all" | "vip" | "loyal">("all");
 
   // Vapi Voice Call Modal State
   const [vapiModalOpen, setVapiModalOpen] = useState(false);
@@ -476,37 +478,68 @@ export function CustomersPage() {
     setWaSending(true);
     try {
       const waConfigApi = await import("@/lib/api-whatsapp-config");
-      const result = await waConfigApi.sendWhatsAppMessageServer({
-        recipientPhone: waPhone,
-        recipientName: waName,
-        message: waMessage,
-      });
-      console.log("[WhatsApp Frontend] API result:", result);
       
-      // Check various error states
-      if (result && result.status === "NO_CREDENTIALS") {
-        toast.error(`⚠️ Twilio/Meta API keys not configured!`, {
-          description: `Use the green "Open WhatsApp Chat" button above instead.`,
-          duration: 10000,
+      if (isBroadcastMode) {
+        const targetAudience = broadcastAudience === "vip" 
+          ? displayCustomers.filter(c => c.segment === "VIP Champions")
+          : broadcastAudience === "loyal"
+          ? displayCustomers.filter(c => c.segment === "Loyal Regulars")
+          : displayCustomers;
+
+        const recipients = targetAudience.map(c => ({
+          phone: c.phone || "+917588021256",
+          name: `${c.firstName} ${c.lastName}`.trim() || c.name || "Customer",
+        }));
+
+        const result = await (waConfigApi as any).sendWhatsAppBroadcastServer({
+          recipients,
+          message: waMessage,
         });
-      } else if (result && result.status === "FAILED") {
-        toast.error(`❌ Twilio API Error`, {
-          description: result.error || result.message || `WhatsApp message failed to send. Check Twilio dashboard for details.`,
-          duration: 12000,
-        });
-      } else if (result && (result.sid || result.status === "queued" || result.status === "sent")) {
-        toast.success(`✅ WHATSAPP MESSAGE SENT!`, {
-          description: `Message delivered to ${waName} (${waPhone}) via Twilio. SID: ${result.sid || "N/A"}`,
-          duration: 8000,
-        });
-        setWaModalOpen(false);
+
+        if (result && result.status === "NO_CREDENTIALS") {
+          toast.error(`⚠️ Twilio/Meta API credentials not configured!`, {
+            description: `Set TWILIO_ACCOUNT_SID & TWILIO_AUTH_TOKEN in Render, or use direct WhatsApp Chat.`,
+            duration: 10000,
+          });
+        } else {
+          toast.success(`📢 WHATSAPP BROADCAST DISPATCHED!`, {
+            description: `Successfully queued broadcast to ${result?.totalRecipients || recipients.length} customers via Twilio Cloud API.`,
+            duration: 8000,
+          });
+          setWaModalOpen(false);
+        }
       } else {
-        // Fallback — try to determine if it was successful
-        toast.info(`📱 WhatsApp dispatch attempted`, {
-          description: `Status: ${JSON.stringify(result).substring(0, 150)}`,
-          duration: 10000,
+        const result = await waConfigApi.sendWhatsAppMessageServer({
+          recipientPhone: waPhone,
+          recipientName: waName,
+          message: waMessage,
         });
-        setWaModalOpen(false);
+        console.log("[WhatsApp Frontend] API result:", result);
+        
+        // Check various error states
+        if (result && result.status === "NO_CREDENTIALS") {
+          toast.error(`⚠️ Twilio/Meta API keys not configured!`, {
+            description: `Use the green "Open WhatsApp Chat" button above instead.`,
+            duration: 10000,
+          });
+        } else if (result && result.status === "FAILED") {
+          toast.error(`❌ Twilio API Error`, {
+            description: result.error || result.message || `WhatsApp message failed to send. Check Twilio dashboard for details.`,
+            duration: 12000,
+          });
+        } else if (result && (result.sid || result.status === "queued" || result.status === "sent")) {
+          toast.success(`✅ WHATSAPP MESSAGE SENT!`, {
+            description: `Message delivered to ${waName} (${waPhone}) via Twilio. SID: ${result.sid || "N/A"}`,
+            duration: 8000,
+          });
+          setWaModalOpen(false);
+        } else {
+          toast.info(`📱 WhatsApp dispatch attempted`, {
+            description: `Status: ${JSON.stringify(result).substring(0, 150)}`,
+            duration: 10000,
+          });
+          setWaModalOpen(false);
+        }
       }
     } catch (e: any) {
       toast.error(`⚠️ API dispatch failed.`, {
@@ -519,11 +552,18 @@ export function CustomersPage() {
   };
 
   const handleNotifySingleWhatsApp = (c?: CustomerListItem) => {
+    setIsBroadcastMode(false);
     handleOpenWaModal(c);
   };
 
   const handleNotifyWhatsApp = () => {
-    handleOpenWaModal();
+    setIsBroadcastMode(true);
+    setWaName("All Registered Customers");
+    setWaPhone("+91 75880 21256 (Broadcast Queue)");
+    setWaMessage(
+      `Namaste {name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`
+    );
+    setWaModalOpen(true);
   };
 
   const handleOpenVapiModal = () => {
@@ -970,36 +1010,85 @@ export function CustomersPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               <WhatsappIcon className="h-5 w-5 text-[#25D366]" />
-              WhatsApp Message Dispatcher
+              {isBroadcastMode ? "📢 WhatsApp Multi-Customer Campaign Broadcast" : "WhatsApp Message Dispatcher"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2 text-xs">
-            <div className="space-y-1.5">
-              <Label htmlFor="wa-name">Recipient Name</Label>
-              <Input
-                id="wa-name"
-                className="bg-surface border-hairline"
-                value={waName}
-                onChange={(e) => setWaName(e.target.value)}
-                placeholder="e.g. Om Khade"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="wa-phone">Target WhatsApp Phone Number</Label>
-              <Input
-                id="wa-phone"
-                className="bg-surface border-hairline font-mono font-bold text-sm text-[#25D366]"
-                value={waPhone}
-                onChange={(e) => setWaPhone(e.target.value)}
-                placeholder="+91 75880 21256"
-                required
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Ensure phone includes country code (e.g. +91 75880 21256).
-              </p>
-            </div>
+            {isBroadcastMode ? (
+              <div className="space-y-2 p-3 rounded-lg bg-surface border border-hairline">
+                <Label className="text-xs font-bold text-foreground">Select Broadcast Audience</Label>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={broadcastAudience === "all" ? "default" : "outline"}
+                    className="text-xs h-7"
+                    onClick={() => setBroadcastAudience("all")}
+                  >
+                    All Customers ({displayCustomers.length})
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={broadcastAudience === "vip" ? "default" : "outline"}
+                    className="text-xs h-7"
+                    onClick={() => setBroadcastAudience("vip")}
+                  >
+                    VIP Champions ({displayCustomers.filter((c) => c.segment === "VIP Champions").length})
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={broadcastAudience === "loyal" ? "default" : "outline"}
+                    className="text-xs h-7"
+                    onClick={() => setBroadcastAudience("loyal")}
+                  >
+                    Loyal Regulars ({displayCustomers.filter((c) => c.segment === "Loyal Regulars").length})
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground pt-1">
+                  Targeting{" "}
+                  <strong>
+                    {broadcastAudience === "vip"
+                      ? displayCustomers.filter((c) => c.segment === "VIP Champions").length
+                      : broadcastAudience === "loyal"
+                      ? displayCustomers.filter((c) => c.segment === "Loyal Regulars").length
+                      : displayCustomers.length}{" "}
+                    recipients
+                  </strong>
+                  . Use <code>{"{name}"}</code> in the message for dynamic personalized names.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="wa-name">Recipient Name</Label>
+                  <Input
+                    id="wa-name"
+                    className="bg-surface border-hairline"
+                    value={waName}
+                    onChange={(e) => setWaName(e.target.value)}
+                    placeholder="e.g. Om Khade"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="wa-phone">Target WhatsApp Phone Number</Label>
+                  <Input
+                    id="wa-phone"
+                    className="bg-surface border-hairline font-mono font-bold text-sm text-[#25D366]"
+                    value={waPhone}
+                    onChange={(e) => setWaPhone(e.target.value)}
+                    placeholder="+91 75880 21256"
+                    required
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Ensure phone includes country code (e.g. +91 75880 21256).
+                  </p>
+                </div>
+              </>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="wa-msg">WhatsApp Promotional Message</Label>
               <Textarea

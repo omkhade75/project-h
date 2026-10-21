@@ -24,6 +24,12 @@ export class CommsController {
     });
   }
 
+  @Post('whatsapp/broadcast')
+  async sendWhatsAppBroadcast(@Req() req, @Body() body: any) {
+    const user = req.user;
+    return await this.commsService.sendWhatsAppBroadcast(user?.workspaceId || 'grandsquare-mall', body);
+  }
+
   @Get('vapi/config')
   async getVapiConfig() {
     return await this.commsService.getVapiConfig();

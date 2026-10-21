@@ -190,6 +190,36 @@ export class CommsService {
     };
   }
 
+  async sendWhatsAppBroadcast(workspaceId: string, data: { recipients?: Array<{ phone: string; name?: string }>; message: string }) {
+    const recipients = Array.isArray(data.recipients) && data.recipients.length > 0 
+      ? data.recipients 
+      : [{ phone: this.memoryWaConfigCache.ownerWhatsAppNumber || "+917588021256", name: "VIP Customer" }];
+    
+    const results = [];
+    for (const r of recipients) {
+      const personalizedMsg = (data.message || "")
+        .replace(/\{name\}/gi, r.name || "Customer")
+        .replace(/\{phone\}/gi, r.phone || "");
+
+      const res = await this.sendWhatsAppMessage({
+        workspaceId,
+        recipientPhone: r.phone,
+        recipientName: r.name || "Customer",
+        message: personalizedMsg,
+      });
+      results.push({ phone: r.phone, name: r.name, ...res });
+    }
+
+    const dispatchedCount = results.filter((r) => r.success).length;
+    return {
+      success: true,
+      totalRecipients: recipients.length,
+      dispatchedCount,
+      results,
+      status: dispatchedCount > 0 ? "SENT" : (results[0]?.status || "NO_CREDENTIALS"),
+    };
+  }
+
   async getVapiConfig() {
     try {
       const configPath = this.getVapiConfigPath();

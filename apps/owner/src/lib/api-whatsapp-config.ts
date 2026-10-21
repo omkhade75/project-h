@@ -14,3 +14,9 @@ export const sendWhatsAppMessageServer = async (data?: any) => {
   // Return error details so the UI can display them
   return { status: result?.data?.status || "FAILED", error: result?.error || result?.message || "Unknown error", ...result?.data };
 };
+
+export const sendWhatsAppBroadcastServer = async (data?: any) => {
+  const result = await fetchApi('/api/comms/whatsapp/broadcast', { method: 'POST', body: JSON.stringify(data?.data || data) });
+  if (result && result.success) return result.data ?? result;
+  return { status: result?.data?.status || "FAILED", error: result?.error || result?.message || "Unknown error", ...result?.data };
+};
