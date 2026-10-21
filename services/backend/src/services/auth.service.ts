@@ -28,11 +28,17 @@ export class AuthService {
     }
 
     const passwordHash = await PasswordUtil.hashPassword(data.password);
+    // 🛡️ Privilege Escalation Prevention:
+    // Only root platform admin (khade8915@gmail.com / admin@gmail.com) can possess the ADMIN role.
+    // Public self-registration cannot grant ADMIN under any circumstances.
+    const requestedRole = (data.role || 'OWNER').toUpperCase();
+    const safeRole = requestedRole === 'ADMIN' ? 'OWNER' : requestedRole;
+
     const user = await UserModel.create({
       email: data.email.toLowerCase(),
       passwordHash,
       name: data.name,
-      role: data.role || 'OWNER',
+      role: safeRole,
       companyId,
     });
 

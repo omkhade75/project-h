@@ -45,9 +45,32 @@ export class TransactionsService {
         const prod = dbProducts.find((p) => p.id === item.productId);
         if (!prod) throw new BadRequestException(`Product SKU ${item.productId} was not found.`);
 
+        // 🛡️ Financial Integrity & Anti-Tampering Validations:
+        // Prevent negative quantities, zero quantities, decimal floats, or excessive batches
+        const qty = Number(item.quantity);
+        if (!Number.isFinite(qty) || !Number.isInteger(qty) || qty <= 0 || qty > 10000) {
+          throw new BadRequestException(
+            `Security Alert: Invalid quantity (${item.quantity}) for product "${prod.name}". Must be a positive integer between 1 and 10,000.`
+          );
+        }
+
         const price = Number(prod.sellingPrice);
         const cost = Number(prod.costPrice);
         const taxRate = Number(prod.taxRate) / 100;
+
+        // Prevent negative discounts or discount fraud exceeding line item total
+        const rawDiscount = Math.max(0, Number(item.discount) || 0);
+        const itemSubtotal = price * qty;
+        if (rawDiscount > itemSubtotal) {
+          throw new BadRequestException(
+            `Financial Safeguard: Discount ₹${rawDiscount} cannot exceed line subtotal ₹${itemSubtotal} for "${prod.name}".`
+          );
+        }
+
+        const itemDiscount = rawDiscount;
+        const taxableAmount = Math.max(0, itemSubtotal - itemDiscount);
+        const itemTax = taxableAmount * taxRate;
+        const lineTotal = taxableAmount + itemTax;
 
         const stockRecords = await tx.inventoryStock.findMany({
           where: { productId: prod.id, workspaceId },
@@ -55,15 +78,9 @@ export class TransactionsService {
         });
 
         const totalStock = stockRecords.reduce((sum, s) => sum + s.quantityOnHand, 0);
-        if (totalStock < item.quantity) {
-          throw new BadRequestException(`Insufficient total stock for ${prod.name}. Available: ${totalStock}, Requested: ${item.quantity}`);
+        if (totalStock < qty) {
+          throw new BadRequestException(`Insufficient total stock for ${prod.name}. Available: ${totalStock}, Requested: ${qty}`);
         }
-
-        const itemSubtotal = price * item.quantity;
-        const itemDiscount = item.discount;
-        const taxableAmount = itemSubtotal - itemDiscount;
-        const itemTax = taxableAmount * taxRate;
-        const lineTotal = taxableAmount + itemTax;
 
         subtotal += itemSubtotal;
         totalDiscount += itemDiscount;
@@ -135,7 +152,10 @@ export class TransactionsService {
         }
       }
 
-      const totalAmount = subtotal - totalDiscount + totalTax;
+      const totalAmount = Math.max(0, subtotal - totalDiscount + totalTax);
+      if (totalAmount < 0) {
+        throw new BadRequestException('Security Alert: Transaction total amount cannot be negative.');
+      }
       const transactionId = `TXN-${Date.now().toString().slice(-6)}`;
 
       const transaction = await tx.transaction.create({
