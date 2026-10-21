@@ -319,22 +319,58 @@ export function CustomerPortal() {
   };
 
   return (
-    <div className="-mx-4 -mt-4 min-h-screen bg-[#eaeded] text-slate-900 pb-20">
+    <div className="-mx-4 -mt-4 min-h-screen bg-[#eaeded] text-slate-900 pb-32 sm:pb-24">
       {/* 1. Amazon Top Dark Navy Navigation Bar */}
-      <header className="bg-[#131921] text-white">
-        <div className="mx-auto flex items-center justify-between px-4 py-2.5 gap-4">
-          {/* Amazon Brand Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab("STORE")}>
-            <div className="flex items-center gap-1 font-bold text-xl tracking-tight text-white">
-              <span className="text-amber-400 font-extrabold">amazon</span>
-              <span className="text-cyan-400 text-sm font-semibold">fresh</span>
+      <header className="bg-[#131921] text-white sticky top-0 z-40 shadow-md">
+        {/* Mobile & Desktop Header Top Bar */}
+        <div className="mx-auto flex flex-col sm:flex-row sm:items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 gap-2 sm:gap-4">
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            {/* Amazon Brand Logo */}
+            <div
+              className="flex items-center gap-1.5 cursor-pointer select-none"
+              onClick={() => setActiveTab("STORE")}
+            >
+              <div className="flex items-center gap-0.5 font-bold text-xl tracking-tight text-white">
+                <span className="text-amber-400 font-black">amazon</span>
+                <span className="text-cyan-400 text-sm font-semibold">fresh</span>
+              </div>
+              <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-1.5 py-0.5 rounded">
+                .in
+              </span>
             </div>
-            <span className="text-[10px] bg-amber-400 text-slate-950 font-extrabold px-1.5 py-0.5 rounded">
-              .in
-            </span>
+
+            {/* Mobile Delivery Location Pill */}
+            <div
+              onClick={() => setIsCheckoutOpen(true)}
+              className="flex sm:hidden items-center gap-1 text-[11px] text-slate-300 bg-slate-800/80 px-2 py-1 rounded-full border border-slate-700 max-w-[170px] cursor-pointer"
+            >
+              <MapPin className="h-3 w-3 text-amber-400 shrink-0" />
+              <span className="truncate text-white font-medium">{address}</span>
+            </div>
+
+            {/* Mobile Actions: Orders & Cart */}
+            <div className="flex sm:hidden items-center gap-3">
+              <button
+                onClick={() => setActiveTab("ORDERS")}
+                className="text-[11px] font-bold text-slate-200 hover:text-white"
+              >
+                Orders ({placedOrders.length})
+              </button>
+              <div
+                onClick={() => setIsCheckoutOpen(true)}
+                className="relative cursor-pointer p-1"
+              >
+                <ShoppingCart className="h-6 w-6 text-amber-400" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-[10px] font-black text-slate-950 animate-pulse">
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Delivery Location Pill */}
+          {/* Desktop Delivery Location Pill */}
           <div
             onClick={() => setIsCheckoutOpen(true)}
             className="hidden lg:flex items-center gap-1.5 rounded border border-transparent p-1.5 text-xs hover:border-white cursor-pointer"
@@ -346,12 +382,12 @@ export function CustomerPortal() {
             </div>
           </div>
 
-          {/* Amazon Search Bar */}
-          <div className="flex flex-1 max-w-3xl items-center rounded-md bg-white text-slate-900 shadow-sm overflow-hidden border-2 border-amber-400">
+          {/* Amazon Search Bar (Adapts full-width on mobile without crowding) */}
+          <div className="flex flex-1 max-w-3xl items-center rounded-md bg-white text-slate-900 shadow-sm overflow-hidden border-2 border-amber-400 w-full">
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-slate-100 text-xs font-semibold px-2 py-2.5 border-r border-slate-300 focus:outline-none cursor-pointer"
+              className="hidden sm:block bg-slate-100 text-xs font-semibold px-2 py-2.5 border-r border-slate-300 focus:outline-none cursor-pointer shrink-0"
             >
               <option value="All">All Categories</option>
               <option value="Grocery">Amazon Fresh & Dairy</option>
@@ -365,16 +401,16 @@ export function CustomerPortal() {
               placeholder="Search Amazon Fresh & products in your nearest store..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 text-sm text-slate-900 focus:outline-none"
+              className="w-full px-3 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none"
             />
 
-            <button className="bg-amber-400 hover:bg-amber-500 text-slate-950 px-4 py-2.5 font-bold transition-colors">
+            <button className="bg-amber-400 hover:bg-amber-500 text-slate-950 px-3.5 sm:px-4 py-2 sm:py-2.5 font-bold transition-colors shrink-0">
               <Search className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Account & Orders */}
-          <div className="flex items-center gap-4 text-xs">
+          {/* Desktop Account & Orders */}
+          <div className="hidden sm:flex items-center gap-4 text-xs">
             <div
               onClick={() => setActiveTab("ORDERS")}
               className="rounded border border-transparent p-1.5 hover:border-white cursor-pointer"
@@ -399,33 +435,58 @@ export function CustomerPortal() {
           </div>
         </div>
 
-        {/* 2. Amazon Secondary Navigation Strip */}
-        <div className="bg-[#232f3e] text-white text-xs px-4 py-1.5 flex items-center justify-between overflow-x-auto border-t border-slate-700">
-          <div className="flex items-center gap-5 whitespace-nowrap font-medium">
-            <span className="flex items-center gap-1 font-bold text-amber-400">
-              <Store className="h-3.5 w-3.5" /> Nearest Shop: GrandSquare Supermart (800m)
+        {/* 2. Amazon Secondary Navigation Strip (Smooth Horizontal Scroll for Mobile) */}
+        <div className="bg-[#232f3e] text-white text-xs px-3 sm:px-4 py-1.5 flex items-center justify-between overflow-x-auto scrollbar-none border-t border-slate-700 gap-3">
+          <div className="flex items-center gap-2 sm:gap-4 whitespace-nowrap font-medium text-[11px] sm:text-xs shrink-0">
+            <span className="flex items-center gap-1 font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30">
+              <Store className="h-3 w-3" /> GrandSquare Supermart (800m)
             </span>
-            <button onClick={() => setSelectedCategory("All")} className="hover:text-amber-400">
-              All Products
+            <button
+              onClick={() => setSelectedCategory("All")}
+              className={`px-2.5 py-1 rounded-full transition-colors ${
+                selectedCategory === "All" ? "bg-amber-400 text-slate-950 font-bold" : "hover:text-amber-400"
+              }`}
+            >
+              All
             </button>
-            <button onClick={() => setSelectedCategory("Grocery")} className="hover:text-amber-400">
-              Fresh Dairy & Grocery
+            <button
+              onClick={() => setSelectedCategory("Grocery")}
+              className={`px-2.5 py-1 rounded-full transition-colors ${
+                selectedCategory === "Grocery" ? "bg-amber-400 text-slate-950 font-bold" : "hover:text-amber-400"
+              }`}
+            >
+              Dairy & Grocery
             </button>
-            <button onClick={() => setSelectedCategory("Electronics")} className="hover:text-amber-400">
-              Electronics Deals
+            <button
+              onClick={() => setSelectedCategory("Electronics")}
+              className={`px-2.5 py-1 rounded-full transition-colors ${
+                selectedCategory === "Electronics" ? "bg-amber-400 text-slate-950 font-bold" : "hover:text-amber-400"
+              }`}
+            >
+              Electronics
             </button>
-            <button onClick={() => setSelectedCategory("Beauty")} className="hover:text-amber-400">
-              Beauty & Health
+            <button
+              onClick={() => setSelectedCategory("Beauty")}
+              className={`px-2.5 py-1 rounded-full transition-colors ${
+                selectedCategory === "Beauty" ? "bg-amber-400 text-slate-950 font-bold" : "hover:text-amber-400"
+              }`}
+            >
+              Beauty
             </button>
-            <button onClick={() => setSelectedCategory("Fashion")} className="hover:text-amber-400">
-              Fashion Store
+            <button
+              onClick={() => setSelectedCategory("Fashion")}
+              className={`px-2.5 py-1 rounded-full transition-colors ${
+                selectedCategory === "Fashion" ? "bg-amber-400 text-slate-950 font-bold" : "hover:text-amber-400"
+              }`}
+            >
+              Fashion
             </button>
           </div>
 
           {/* Real Inventory Filter Toggle */}
-          <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">
-            <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
-              <Check className="h-3 w-3" /> Available at Nearest Shop Only
+          <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-600 shrink-0 text-[10px] sm:text-[11px]">
+            <span className="font-bold text-emerald-400 flex items-center gap-1">
+              <Check className="h-3 w-3" /> In-Stock Only
             </span>
             <input
               type="checkbox"
@@ -505,86 +566,86 @@ export function CustomerPortal() {
           </div>
         </div>
 
-        {/* Product Cards Grid (Amazon Style) */}
+        {/* Product Cards Grid (Amazon Style: 2 cols on mobile, 3-4 cols on desktop) */}
         {activeTab === "STORE" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
             {filteredProducts.map((p) => {
               const inCart = cart.find((item) => item.id === p.id);
               return (
                 <div
                   key={p.id}
-                  className="bg-white rounded-lg border border-slate-200 p-4 transition-all hover:shadow-lg flex flex-col justify-between"
+                  className="bg-white rounded-xl border border-slate-200 p-2.5 sm:p-4 transition-all hover:shadow-lg flex flex-col justify-between"
                 >
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {/* Real Product Image */}
-                    <div className="relative h-48 w-full overflow-hidden rounded-md bg-slate-50 flex items-center justify-center">
+                    <div className="relative h-32 sm:h-48 w-full overflow-hidden rounded-lg bg-slate-50 flex items-center justify-center">
                       <img
                         src={p.imageUrl}
                         alt={p.name}
                         className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                       />
                       {/* Prime Badge */}
-                      <span className="absolute top-2 left-2 rounded bg-cyan-600 px-2 py-0.5 text-[10px] font-extrabold text-white uppercase shadow-sm">
-                        prime ⚡ 10-MIN
+                      <span className="absolute top-1.5 left-1.5 rounded bg-cyan-600 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-extrabold text-white uppercase shadow-sm">
+                        ⚡ 10-MIN
                       </span>
                     </div>
 
                     {/* Meta & Title */}
                     <div>
-                      <h3 className="font-medium text-sm text-slate-900 line-clamp-2 hover:text-amber-600 cursor-pointer leading-snug">
+                      <h3 className="font-semibold text-xs sm:text-sm text-slate-900 line-clamp-2 hover:text-amber-600 cursor-pointer leading-tight sm:leading-snug">
                         {p.name}
                       </h3>
 
                       {/* Ratings */}
-                      <div className="flex items-center gap-1 mt-1 text-xs">
+                      <div className="flex items-center gap-1 mt-1 text-[10px] sm:text-xs">
                         <div className="flex text-amber-400">
                           {"★".repeat(4)}
                           <span className="text-slate-300">★</span>
                         </div>
-                        <span className="text-slate-600 font-bold text-[11px]">{p.rating}</span>
-                        <span className="text-slate-400 text-[11px]">({p.reviews})</span>
+                        <span className="text-slate-600 font-bold">{p.rating}</span>
+                        <span className="text-slate-400">({p.reviews})</span>
                       </div>
 
                       {/* Live Store Stock Status Badge */}
-                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="font-bold text-emerald-700">
-                          In Stock at GrandSquare Store ({p.stock} units)
+                      <div className="mt-1 flex items-center gap-1 text-[10px] sm:text-[11px]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <span className="font-medium text-emerald-700 truncate">
+                          In Stock ({p.stock} units)
                         </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Price & Add to Cart */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xs text-red-600 font-bold">-15%</span>
-                      <span className="text-xl font-extrabold text-slate-900">
+                  <div className="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-100 space-y-1.5 sm:space-y-2">
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <span className="text-[10px] sm:text-xs text-red-600 font-bold">-15%</span>
+                      <span className="text-sm sm:text-xl font-extrabold text-slate-900">
                         ₹{p.price.toLocaleString("en-IN")}
                       </span>
-                      <span className="text-xs text-slate-400 line-through">
-                        M.R.P.: ₹{p.mrp.toLocaleString("en-IN")}
+                      <span className="text-[10px] sm:text-xs text-slate-400 line-through">
+                        ₹{p.mrp.toLocaleString("en-IN")}
                       </span>
                     </div>
 
-                    <p className="text-[10px] text-slate-500">
-                      FREE Delivery by <strong className="text-slate-800">Nearby Local Shopkeeper</strong>
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 line-clamp-1">
+                      FREE 10-Min Delivery by <strong className="text-slate-800">Local Shop</strong>
                     </p>
 
                     {inCart ? (
-                      <div className="flex items-center justify-between rounded-lg bg-amber-400 px-3 py-1.5 text-slate-950 font-bold shadow-sm">
+                      <div className="flex items-center justify-between rounded-lg bg-amber-400 px-2 sm:px-3 py-1 sm:py-1.5 text-slate-950 font-bold shadow-sm">
                         <button onClick={() => handleUpdateQuantity(p.id, -1)} className="p-1 hover:bg-amber-500 rounded">
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-3.5 w-3.5" />
                         </button>
-                        <span className="text-sm">{inCart.quantity} in cart</span>
+                        <span className="text-xs sm:text-sm">{inCart.quantity} in cart</span>
                         <button onClick={() => handleUpdateQuantity(p.id, 1)} className="p-1 hover:bg-amber-500 rounded">
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleAddToCart(p)}
-                        className="w-full rounded-full bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold py-2 text-xs transition-colors shadow-sm"
+                        className="w-full rounded-full bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold py-1.5 sm:py-2 text-[11px] sm:text-xs transition-colors shadow-sm active:scale-95"
                       >
                         Add to Cart
                       </button>
@@ -667,32 +728,38 @@ export function CustomerPortal() {
         )}
       </div>
 
-      {/* Floating Bottom Cart Bar */}
+      {/* Floating Bottom Cart Bar (Safe Area Aligned for Mobile & Play Store) */}
       {cart.length > 0 && !isCheckoutOpen && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-xl rounded-xl bg-[#131921] p-4 text-white shadow-2xl border border-slate-700 flex items-center justify-between">
+        <div
+          style={{ bottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
+          className="fixed left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-xl rounded-2xl bg-[#131921] p-3.5 sm:p-4 text-white shadow-2xl border border-slate-700 flex items-center justify-between"
+        >
           <div>
-            <p className="text-xs text-slate-300">
+            <p className="text-[10px] sm:text-xs text-slate-300">
               Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items):
             </p>
-            <p className="text-lg font-extrabold text-amber-400">₹{cartTotal.toLocaleString("en-IN")}</p>
+            <p className="text-base sm:text-lg font-black text-amber-400">₹{cartTotal.toLocaleString("en-IN")}</p>
           </div>
 
           <button
             onClick={() => setIsCheckoutOpen(true)}
-            className="rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold px-6 py-2.5 text-xs shadow-md"
+            className="rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black px-5 sm:px-6 py-2.5 sm:py-3 text-xs shadow-md tracking-wider active:scale-95 transition-transform"
           >
             PROCEED TO CHECKOUT
           </button>
         </div>
       )}
 
-      {/* Amazon Checkout Drawer with Google Maps Live Geolocation */}
+      {/* Amazon Checkout Drawer (Native Bottom-Sheet on Mobile, Center Modal on Desktop) */}
       {isCheckoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl space-y-4 text-slate-900 my-8">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-t-3xl sm:rounded-2xl bg-white p-5 sm:p-6 shadow-2xl space-y-4 text-slate-900 my-0 sm:my-8 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-[#131921]">Amazon Fresh Checkout</h3>
-              <button onClick={() => setIsCheckoutOpen(false)} className="text-slate-400 hover:text-slate-700">
+              <button
+                onClick={() => setIsCheckoutOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>

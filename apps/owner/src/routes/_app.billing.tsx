@@ -897,8 +897,8 @@ function RouteComponent() {
         <div className="lg:col-span-2 space-y-6">
           <SectionCard title="Add Products">
             <div className="space-y-4">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[200px]">
+              <div className="grid grid-cols-1 sm:flex sm:flex-wrap sm:items-end gap-3">
+                <div className="w-full sm:flex-1 sm:min-w-[200px]">
                   <div className="flex items-center justify-between mb-1">
                     <Label className="block text-xs font-bold">Select Product SKU / Name</Label>
                     <Button
@@ -936,40 +936,42 @@ function RouteComponent() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="w-24">
-                  <Label className="mb-1 block">Qty</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={selectedItemQty}
-                    onChange={(e) => setSelectedItemQty(e.target.value)}
-                  />
+                <div className="flex items-end gap-2.5 w-full sm:w-auto">
+                  <div className="flex-1 sm:w-24">
+                    <Label className="mb-1 block text-xs">Qty</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={selectedItemQty}
+                      onChange={(e) => setSelectedItemQty(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1 sm:w-28">
+                    <Label className="mb-1 block text-xs">Discount (₹)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={selectedItemDiscount}
+                      onChange={(e) => setSelectedItemDiscount(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={addToCart}
+                    className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
+                    disabled={addingCustomProd}
+                  >
+                    {addingCustomProd ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" /> ...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-1" /> Add
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <div className="w-32">
-                  <Label className="mb-1 block">Discount (₹)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={selectedItemDiscount}
-                    onChange={(e) => setSelectedItemDiscount(e.target.value)}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  onClick={addToCart}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                  disabled={addingCustomProd}
-                >
-                  {addingCustomProd ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" /> Registering...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" /> Add Item
-                    </>
-                  )}
-                </Button>
               </div>
 
               {/* Custom Item Form */}
