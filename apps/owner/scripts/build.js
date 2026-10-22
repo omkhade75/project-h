@@ -112,7 +112,7 @@ const main = () => {
       })();
     </script>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Bizora OS — Portal</title>
     <script>
       window.$_TSR = window.$_TSR || {
@@ -142,7 +142,8 @@ const main = () => {
 
     writeFileSync(join(publicDir, "index.html"), htmlContent);
     writeFileSync(join(publicDir, "200.html"), htmlContent);
-    console.log("Successfully generated clean static index.html and 200.html with main entry script only");
+    writeFileSync(join(publicDir, "_redirects"), "/* /index.html 200\n/* /200.html 200\n");
+    console.log("Successfully generated clean static index.html, 200.html, and _redirects with main entry script only");
   }
 };
 

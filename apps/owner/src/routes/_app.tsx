@@ -634,12 +634,13 @@ function AppShell() {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 hairline-b glass">
-          <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+        <header className="sticky top-0 z-20 hairline-b glass w-full max-w-full overflow-hidden">
+          <div className="flex h-14 items-center gap-1.5 sm:gap-3 px-2.5 sm:px-6 w-full max-w-full">
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(true)}
-              className="rounded-md p-1.5 text-muted-foreground hover:text-foreground lg:hidden"
+              className="rounded-md p-1.5 text-muted-foreground hover:text-foreground lg:hidden shrink-0"
+              aria-label="Open navigation menu"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -647,23 +648,24 @@ function AppShell() {
             {/* Back button */}
             <button
               onClick={() => window.history.back()}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-surface/30 hover:text-foreground transition-colors mr-1"
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-surface/30 hover:text-foreground transition-colors shrink-0"
               title="Go Back"
+              aria-label="Go Back"
             >
               <ArrowLeft className="h-4.5 w-4.5" />
             </button>
 
-            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground shrink-0">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground overflow-hidden">
               <BizoraLogoIcon className="h-5 w-5 shrink-0" />
-              <span className="hidden sm:inline font-bold text-foreground">Bizora AI</span>
-              <ChevronRight className="hidden sm:inline h-3 w-3 text-muted-foreground/60" />
-              <span className="truncate font-semibold text-foreground">{currentLabel}</span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0" title="Real-time Live Sync Active">
+              <span className="hidden md:inline font-bold text-foreground">Bizora AI</span>
+              <ChevronRight className="hidden md:inline h-3 w-3 text-muted-foreground/60" />
+              <span className="truncate font-semibold text-foreground text-xs sm:text-sm">{currentLabel}</span>
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0" title="Real-time Live Sync Active">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                 </span>
-                <span className="hidden md:inline">Live</span>
+                <span>Live</span>
               </span>
             </div>
 
@@ -937,18 +939,18 @@ function AppShell() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hidden sm:inline-flex"
+                className="h-8 w-8 text-muted-foreground hidden sm:inline-flex shrink-0"
                 onClick={() => navigate({ to: "/time-machine" as never })}
                 title="Time Machine Calendar"
               >
                 <CalendarDays className="h-4 w-4" />
               </Button>
-              <LanguageSelector />
+              <LanguageSelector className="shrink-0" />
               {/* Theme toggle */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground shrink-0"
                 onClick={() => {
                   const html = document.documentElement;
                   const nowDark = html.classList.contains('dark');
@@ -967,23 +969,24 @@ function AppShell() {
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
               {/* Notification bell with dropdown */}
-              <div className="relative" ref={notifRef}>
+              <div className="relative shrink-0" ref={notifRef}>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-8 w-8 text-muted-foreground"
+                  className="relative h-8 w-8 text-muted-foreground shrink-0"
                   onClick={() => setNotifOpen((o) => !o)}
+                  title="Notifications"
                 >
                   <Bell className="h-4 w-4" />
                   {totalUnreadNotifs > 0 && (
-                    <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                    <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
                       {Math.min(totalUnreadNotifs, 99)}
                     </span>
                   )}
                 </Button>
 
                 {notifOpen && (
-                  <div className="fixed left-3 right-3 top-14 w-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px] max-h-[80vh] sm:max-h-[480px] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
+                  <div className="fixed inset-x-2 top-14 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px] max-h-[80vh] sm:max-h-[480px] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 hairline-b">
                       <div>
@@ -1123,18 +1126,19 @@ function AppShell() {
               </div>
               <Button
                 size="sm"
-                className="h-8 gap-1.5 gradient-primary text-primary-foreground text-xs font-semibold px-2.5 sm:px-3 shrink-0"
+                className="h-8 gap-1 gradient-primary text-primary-foreground text-xs font-semibold px-2 sm:px-3 shrink-0"
                 onClick={() => navigate({ to: "/ai-decisions" })}
+                title="Ask Bizora AI"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Ask Bizora AI</span>
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden md:inline">Ask AI</span>
               </Button>
             </div>
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 pb-24 md:pb-8">
-          <div className="w-full p-3 sm:p-6 lg:p-8">
+        <main className="min-w-0 flex-1 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
+          <div className="w-full p-2.5 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
             <Outlet />
           </div>
         </main>

@@ -438,12 +438,12 @@ export function CommandCenter() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Switch Store Vertical:</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+            <span className="text-xs text-muted-foreground font-medium">Switch Store Vertical:</span>
             <select
               value={activeIndustry}
               onChange={(e) => handleIndustryChange(e.target.value as BusinessCategory)}
-              className="rounded-lg border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm"
+              className="w-full sm:w-auto rounded-lg border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-sm"
             >
               {Object.keys(INDUSTRY_CONFIGS).map((cat) => (
                 <option key={cat} value={cat}>
@@ -1122,8 +1122,8 @@ function Heatmap({ heatmapData }: { heatmapData: any[] }) {
   const max = Math.max(...safeData.map((d) => d?.v || 0), 1) || 1;
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[600px]">
+    <div className="w-full overflow-x-auto touch-pan-x pb-2 -mx-1 px-1">
+      <div className="min-w-[560px]">
         <div className="mb-1 grid grid-cols-[40px_repeat(14,minmax(0,1fr))] gap-1">
           <span />
           {hours.map((h) => (

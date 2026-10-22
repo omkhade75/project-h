@@ -70,13 +70,26 @@ export function setupSecurityMiddleware(app: INestApplication) {
   // 1. Helmet HTTP Header security (HSTS, CSP, X-Frame-Options, X-Content-Type-Options)
   app.use(helmet());
 
-  // 2. CORS configuration — locked to Bizora portals, Render subdomains, and development localhost
-  const explicitOrigins = (
-    process.env.CORS_ORIGIN ||
-    'https://bizora-owner.onrender.com,https://bizora-admin.onrender.com,https://bizora-supplier.onrender.com,https://bizora-customer.onrender.com,https://bizora-web.onrender.com'
-  )
-    .split(',')
-    .map((s) => s.trim());
+  // 2. CORS configuration — locked to Bizora portals, Render subdomains, is-a.dev custom domains, and development localhost
+  const defaultAllowedOrigins = [
+    'https://bizora-owner.onrender.com',
+    'https://bizora-admin.onrender.com',
+    'https://bizora-supplier.onrender.com',
+    'https://bizora-customer.onrender.com',
+    'https://bizora-web.onrender.com',
+    'https://bizora.is-a.dev',
+    'https://bizora-owner.is-a.dev',
+    'https://bizora-admin.is-a.dev',
+    'https://bizora-customer.is-a.dev',
+    'https://bizora-supplier.is-a.dev',
+    'https://bizora-api.is-a.dev',
+  ];
+
+  const envOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+    : [];
+
+  const allowedOriginsSet = new Set([...defaultAllowedOrigins, ...envOrigins]);
 
   app.use(
     cors({
@@ -86,8 +99,9 @@ export function setupSecurityMiddleware(app: INestApplication) {
       ) => {
         if (!origin) return callback(null, true);
         if (
-          explicitOrigins.includes(origin) ||
+          allowedOriginsSet.has(origin) ||
           origin.endsWith('.onrender.com') ||
+          origin.endsWith('.is-a.dev') ||
           origin.includes('localhost') ||
           origin.includes('127.0.0.1')
         ) {
@@ -101,14 +115,16 @@ export function setupSecurityMiddleware(app: INestApplication) {
     })
   );
 
-  // 3. Global General Rate Limiter: 5000 requests per 15 mins (Whitelists /api/health watchdog)
+  // 3. Global General Rate Limiter: 5000 requests per 15 mins (Whitelists /api/health watchdog and /health)
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req: any) =>
-      req.path === '/api/health' || req.path === '/api/health/report-error',
+      req.path === '/api/health' ||
+      req.path === '/health' ||
+      req.path === '/api/health/report-error',
     message: {
       success: false,
       message: 'Too many requests from this IP. Please try again after 15 minutes.',

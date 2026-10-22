@@ -245,29 +245,31 @@ function AppShell() {
       </aside>
 
       {/* Main Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Top bar */}
-        <header className="flex h-12 items-center justify-between border-b border-hairline bg-sidebar px-4 md:px-6">
-          <div className="flex items-center gap-3">
+        <header className="flex h-12 items-center justify-between border-b border-hairline bg-sidebar px-2.5 sm:px-4 md:px-6 w-full max-w-full overflow-hidden">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
             <button
               onClick={() => setMobileOpen(true)}
-              className="md:hidden grid h-8 w-8 place-items-center rounded-md border border-hairline text-muted-foreground"
+              className="md:hidden grid h-8 w-8 place-items-center rounded-md border border-hairline text-muted-foreground shrink-0"
+              aria-label="Open menu"
             >
               <Menu className="h-4 w-4" />
             </button>
 
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 overflow-hidden">
               <BizoraLogoIcon className="h-5 w-5 shrink-0" />
-              <span>Bizora AI — Hyperlocal Customer Portal</span>
+              <span className="truncate">Customer Portal</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <LanguageSelector className="shrink-0" />
             <Button
               onClick={handleLogout}
               variant="ghost"
               size="sm"
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground h-8 px-2 shrink-0"
             >
               Sign Out
             </Button>
@@ -275,7 +277,7 @@ function AppShell() {
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+        <main className="flex-1 overflow-y-auto p-2.5 sm:p-4 md:p-6 bg-background max-w-full overflow-x-hidden">
           <Outlet />
         </main>
       </div>

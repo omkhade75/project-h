@@ -10,6 +10,15 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('health')
+  getHealth(): { status: string; timestamp: string; service: string } {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      service: 'bizora-backend',
+    };
+  }
+
   @Get('favicon.ico')
   getFavicon(): string {
     return '';

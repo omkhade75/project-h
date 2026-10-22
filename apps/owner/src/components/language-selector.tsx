@@ -33,12 +33,12 @@ export function LanguageSelector({ className }: { className?: string }) {
         variant="ghost"
         size="sm"
         onClick={() => setOpen(!open)}
-        className="h-8 gap-1 px-2 text-xs font-medium text-muted-foreground hover:text-foreground border border-hairline bg-surface hover:bg-surface-2 transition-colors"
+        className="h-8 gap-1 px-1.5 sm:px-2 text-xs font-medium text-muted-foreground hover:text-foreground border border-hairline bg-surface hover:bg-surface-2 transition-colors shrink-0"
         title="Select Regional Language"
       >
-        <Globe className="h-3.5 w-3.5 text-primary" />
+        <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
         <span className="font-semibold text-foreground hidden sm:inline">{selectedLanguage.nativeName}</span>
-        <ChevronDown className="h-3 w-3 opacity-60" />
+        <ChevronDown className="h-3 w-3 opacity-60 hidden sm:inline" />
       </Button>
 
       {open && (

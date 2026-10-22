@@ -233,12 +233,12 @@ function AppShell() {
         {/* Main Workspace View */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Top Header Bar */}
-          <header className="sticky top-0 z-20 hairline-b glass">
-            <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+          <header className="sticky top-0 z-20 hairline-b glass w-full max-w-full overflow-hidden">
+            <div className="flex h-14 items-center gap-1.5 sm:gap-3 px-2.5 sm:px-6 w-full max-w-full">
               {/* Mobile hamburger */}
               <button
                 onClick={() => setMobileOpen(true)}
-                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground lg:hidden"
+                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground lg:hidden shrink-0"
                 aria-label="Open navigation menu"
               >
                 <Menu className="h-5 w-5" />
@@ -247,28 +247,29 @@ function AppShell() {
               {/* Back button */}
               <button
                 onClick={() => window.history.back()}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-surface/30 hover:text-foreground transition-colors mr-1"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-surface/30 hover:text-foreground transition-colors shrink-0"
                 title="Go Back"
+                aria-label="Go Back"
               >
                 <ArrowLeft className="h-4.5 w-4.5" />
               </button>
 
-              <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground shrink-0">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-muted-foreground overflow-hidden">
                 <BizoraLogoIcon className="h-5 w-5 shrink-0" />
-                <span className="font-bold text-rose-500">Bizora Admin</span>
-                <ChevronRight className="h-3 w-3" />
-                <span className="truncate font-semibold text-foreground">
+                <span className="hidden sm:inline font-bold text-rose-500">Bizora Admin</span>
+                <ChevronRight className="hidden sm:inline h-3 w-3" />
+                <span className="truncate font-semibold text-foreground text-xs sm:text-sm">
                   {NAV[0]?.items.find((i) => i.to === pathname)?.label || "Super Admin"}
                 </span>
               </div>
 
-              <div className="ml-auto flex items-center gap-1.5">
-                <LanguageSelector className="mr-1" />
+              <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+                <LanguageSelector className="shrink-0" />
                 {/* Theme toggle */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground"
+                  className="h-8 w-8 text-muted-foreground shrink-0"
                   onClick={() => {
                     const html = document.documentElement;
                     const nowDark = html.classList.contains("dark");
@@ -290,8 +291,8 @@ function AppShell() {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 pb-20 md:pb-6">
-            <div className="w-full p-4 sm:p-6 lg:p-8">
+          <main className="min-w-0 flex-1 pb-20 md:pb-6 w-full max-w-full overflow-x-hidden">
+            <div className="w-full p-2.5 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
               <Outlet />
             </div>
           </main>

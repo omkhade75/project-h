@@ -1,0 +1,62 @@
+name: Anti-Cold Start Keep-Alive (Zero Spin-Down)
+
+on:
+  schedule:
+    # Runs every 10 minutes (prevents Render 15-minute inactivity spin-down)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows 1-click manual trigger from GitHub Actions
+
+concurrency:
+  group: keep-alive-pinger
+  cancel-in-progress: true
+
+jobs:
+  keep-alive:
+    name: Ping Bizora Backend & Portals
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 🚀 Keep Backend Awake (Lightweight /health)
+        run: |
+          echo "Pinging https://bizora-backend-gtoe.onrender.com/health..."
+          START_TIME=$(date +%s%N)
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://bizora-backend-gtoe.onrender.com/health || echo "000")
+          END_TIME=$(date +%s%N)
+          DURATION=$(( (END_TIME - START_TIME) / 1000000 ))
+          echo "Status: $STATUS_CODE | Latency: ${DURATION}ms"
+          if [ "$STATUS_CODE" -ge 200 ] && [ "$STATUS_CODE" -lt 400 ]; then
+            echo "✅ Backend API is awake and responding!"
+          else
+            echo "⚠️ Backend warm-up ping received status $STATUS_CODE (waking up instance...)"
+          fi
+
+      - name: 🩺 Check Database & Services (/api/health)
+        run: |
+          echo "Pinging https://bizora-backend-gtoe.onrender.com/api/health..."
+          START_TIME=$(date +%s%N)
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 https://bizora-backend-gtoe.onrender.com/api/health || echo "000")
+          END_TIME=$(date +%s%N)
+          DURATION=$(( (END_TIME - START_TIME) / 1000000 ))
+          echo "Status: $STATUS_CODE | Latency: ${DURATION}ms"
+          if [ "$STATUS_CODE" -eq 200 ]; then
+            echo "✅ Databases (Supabase PostgreSQL & MongoDB Atlas) are warm and connected!"
+          else
+            echo "ℹ️ Health endpoint returned status $STATUS_CODE"
+          fi
+
+      - name: 🌐 Prime Frontend Portals
+        run: |
+          PORTALS=(
+            "https://bizora-owner.onrender.com"
+            "https://bizora-customer.onrender.com"
+            "https://bizora-admin.onrender.com"
+            "https://bizora-supplier.onrender.com"
+            "https://bizora-web.onrender.com"
+          )
+          for url in "${PORTALS[@]}"; do
+            echo -n "Pinging $url... "
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$url" || echo "000")
+            echo "Status: $CODE"
+          done
+          echo "✅ All Bizora frontend portals primed!"
