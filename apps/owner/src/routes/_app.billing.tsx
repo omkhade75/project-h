@@ -43,6 +43,7 @@ import {
 import { fmtINR } from "@/lib/mock-data";
 import { useBusinessData } from "@/lib/business-context";
 import { db } from "@/lib/db";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
