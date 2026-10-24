@@ -165,7 +165,32 @@ function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [readNotifs, setReadNotifs] = useState<Set<string>>(new Set());
+  const [readNotifs, setReadNotifs] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("bizora_read_notifs");
+        if (stored) return new Set(JSON.parse(stored));
+      } catch (e) {}
+    }
+    return new Set();
+  });
+
+  const markNotifRead = (id: string | string[]) => {
+    setReadNotifs((prev) => {
+      const next = new Set(prev);
+      if (Array.isArray(id)) {
+        id.forEach((item) => next.add(item));
+      } else {
+        next.add(id);
+      }
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("bizora_read_notifs", JSON.stringify(Array.from(next)));
+        } catch (e) {}
+      }
+      return next;
+    });
+  };
   const notifRef = useRef<HTMLDivElement>(null);
   const pathname: string = (useRouterState({ select: (s: any) => s.location.pathname }) as unknown as string) || "";
   const [activePlanName, setActivePlanName] = useState(() => {
@@ -1001,7 +1026,7 @@ function AppShell() {
                             ...(anomalies || []).map((a) => a.id),
                           ];
                           if (isEndOfMonth) allIds.push(endOfMonthNotifId);
-                          setReadNotifs(new Set(allIds));
+                          markNotifRead(allIds);
                         }}
                         className="text-[11px] font-medium text-primary hover:underline"
                       >
@@ -1016,7 +1041,7 @@ function AppShell() {
                         <button
                           key={endOfMonthNotifId}
                           onClick={() => {
-                            setReadNotifs((prev) => new Set([...prev, endOfMonthNotifId]));
+                            markNotifRead(endOfMonthNotifId);
                             setNotifOpen(false);
                             navigate({ to: "/expenses" });
                           }}
@@ -1071,7 +1096,7 @@ function AppShell() {
                             <button
                               key={a.id}
                               onClick={() => {
-                                setReadNotifs((prev) => new Set([...prev, a.id]));
+                                markNotifRead(a.id);
                                 setNotifOpen(false);
                                 navigate({ to: "/anomalies" });
                               }}
