@@ -247,7 +247,7 @@ function AppShell() {
       {/* Main Area */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Top bar */}
-        <header className="flex h-12 items-center justify-between border-b border-hairline bg-sidebar px-2.5 sm:px-4 md:px-6 w-full max-w-full overflow-hidden">
+        <header className="flex h-12 items-center justify-between border-b border-hairline bg-sidebar px-2.5 sm:px-4 md:px-6 w-full max-w-full">
           <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
             <button
               onClick={() => setMobileOpen(true)}

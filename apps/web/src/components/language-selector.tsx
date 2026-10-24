@@ -42,7 +42,7 @@ export function LanguageSelector({ className }: { className?: string }) {
       </Button>
 
       {open && (
-        <div className="fixed inset-x-3 top-14 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full mt-2 sm:w-64 rounded-2xl border border-hairline bg-popover p-2.5 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95">
+        <div className="absolute right-0 top-full mt-1.5 w-64 max-w-[calc(100vw-1.5rem)] rounded-xl border border-hairline bg-popover p-2 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95">
           <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-hairline mb-1.5">
             <Search className="h-3.5 w-3.5 text-muted-foreground" />
             <input

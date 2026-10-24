@@ -659,7 +659,7 @@ function AppShell() {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 hairline-b glass w-full max-w-full overflow-hidden">
+        <header className="sticky top-0 z-20 hairline-b glass w-full max-w-full">
           <div className="flex h-14 items-center gap-1.5 sm:gap-3 px-2.5 sm:px-6 w-full max-w-full">
             {/* Mobile hamburger */}
             <button
@@ -1011,7 +1011,7 @@ function AppShell() {
                 </Button>
 
                 {notifOpen && (
-                  <div className="fixed inset-x-2 top-14 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px] max-h-[80vh] sm:max-h-[480px] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
+                  <div className="absolute right-0 top-full mt-1.5 w-[360px] max-w-[calc(100vw-2rem)] max-h-[min(480px,80vh)] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 hairline-b">
                       <div>
