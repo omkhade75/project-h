@@ -77,7 +77,7 @@ const NAV: NavSection[] = [
   {
     section: "My Account",
     items: [
-      { to: "/customer-portal", label: "Amazon Fresh Storefront", icon: Store },
+      { to: "/customer-portal", label: "Bizora Fresh Storefront", icon: Store },
       { to: "/transactions", label: "My Orders & Digital Receipts", icon: Receipt },
     ],
   },
