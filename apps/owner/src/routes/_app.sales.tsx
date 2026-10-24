@@ -234,18 +234,38 @@ function RouteComponent() {
   const addToCart = () => {
     if (!selectedItemSku || Number(selectedItemQty) <= 0) return;
 
-    // Check if item already exists in cart
+    const prod = products.find((p) => p.id === selectedItemSku);
+    if (!prod) {
+      toast.error("Selected product not found in catalog.");
+      return;
+    }
+    const availStock = Number(prod.stock) || 0;
+    if (availStock <= 0) {
+      toast.error(`Cannot add "${prod.name}": Product is OUT OF STOCK (0 units available).`);
+      return;
+    }
+
     const existingIndex = cartItems.findIndex((i) => i.productId === selectedItemSku);
+    const inCartQty = existingIndex > -1 ? cartItems[existingIndex].quantity : 0;
+    const requestedQty = Number(selectedItemQty);
+    if (inCartQty + requestedQty > availStock) {
+      toast.error(
+        `Cannot add ${requestedQty} units of "${prod.name}". Available stock is only ${availStock} (Cart already has ${inCartQty}).`
+      );
+      return;
+    }
+
+    // Check if item already exists in cart
     if (existingIndex > -1) {
       const updated = [...cartItems];
-      updated[existingIndex].quantity += Number(selectedItemQty);
+      updated[existingIndex].quantity += requestedQty;
       setCartItems(updated);
     } else {
       setCartItems([
         ...cartItems,
         {
           productId: selectedItemSku,
-          quantity: Number(selectedItemQty),
+          quantity: requestedQty,
           discount: Number(selectedItemDiscount) || 0,
         },
       ]);
@@ -263,6 +283,24 @@ function RouteComponent() {
     if (cartItems.length === 0) {
       toast.error("POS transaction cart is empty.");
       return;
+    }
+
+    // 🛡️ Strict Stock Pre-Validation Check
+    for (const item of cartItems) {
+      const prod = products.find((p) => p.id === item.productId);
+      if (prod) {
+        const avail = Number(prod.stock) || 0;
+        if (avail <= 0) {
+          toast.error(`Checkout blocked: "${prod.name}" is OUT OF STOCK (0 available). Remove it from the cart.`);
+          return;
+        }
+        if (item.quantity > avail) {
+          toast.error(
+            `Checkout blocked: Cart has ${item.quantity} units of "${prod.name}", but only ${avail} available in store stock.`
+          );
+          return;
+        }
+      }
     }
     setSaving(true);
     try {
@@ -698,11 +736,19 @@ function RouteComponent() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-hairline text-[10px] max-h-40">
-                      {products.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} ({fmtINR(p.price)})
-                        </SelectItem>
-                      ))}
+                      {products.map((p) => {
+                        const isOut = (p.stock || 0) <= 0;
+                        return (
+                          <SelectItem
+                            key={p.id}
+                            value={p.id}
+                            disabled={isOut}
+                            className={isOut ? "opacity-50 text-destructive line-through" : ""}
+                          >
+                            {p.name} ({fmtINR(p.price)}) {isOut ? "· ⚠️ OUT OF STOCK (0)" : `· (${p.stock} in stock)`}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -719,6 +765,10 @@ function RouteComponent() {
                 <Button
                   type="button"
                   onClick={addToCart}
+                  disabled={Boolean(
+                    products.find((p) => p.id === selectedItemSku) &&
+                      (products.find((p) => p.id === selectedItemSku)?.stock || 0) <= 0
+                  )}
                   className="bg-primary hover:bg-primary/95 text-primary-foreground h-8 text-xs font-semibold"
                 >
                   Add Item

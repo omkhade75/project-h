@@ -459,6 +459,28 @@ function RouteComponent() {
 
     let productSkuToCart = selectedItemSku;
 
+    // 🛡️ Strict Stock Validation for Catalog Products
+    if (selectedItemSku !== "custom") {
+      const targetProd = products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku);
+      if (!targetProd) {
+        toast.error("Selected product not found in catalog.");
+        return;
+      }
+      const availableStock = Number(targetProd.stock) || 0;
+      if (availableStock <= 0) {
+        toast.error(`Cannot add to invoice: "${targetProd.name}" is OUT OF STOCK (0 units available).`);
+        return;
+      }
+      const existingItem = cartItems.find((i) => i.productId === selectedItemSku);
+      const alreadyInCart = existingItem ? existingItem.quantity : 0;
+      if (alreadyInCart + qty > availableStock) {
+        toast.error(
+          `Cannot add ${qty} units of "${targetProd.name}". Available stock is only ${availableStock} (Cart already has ${alreadyInCart}).`
+        );
+        return;
+      }
+    }
+
     // Handle Custom Item creation
     if (selectedItemSku === "custom") {
       if (!customProdName.trim()) {
@@ -467,6 +489,10 @@ function RouteComponent() {
       }
       if (!customProdPrice.trim() || Number(customProdPrice) <= 0) {
         toast.error("Valid selling price is required.");
+        return;
+      }
+      if (Number(customProdStock) <= 0) {
+        toast.error("Initial stock for custom product must be greater than 0.");
         return;
       }
       if (!customProdCost.trim() || Number(customProdCost) <= 0) {
@@ -669,6 +695,24 @@ function RouteComponent() {
       return;
     }
 
+    // 🛡️ Strict Stock Pre-Validation Check
+    for (const item of cartItems) {
+      const prod = products.find((p) => p.id === item.productId || p.sku === item.productId);
+      if (prod) {
+        const avail = Number(prod.stock) || 0;
+        if (avail <= 0) {
+          toast.error(`Checkout blocked: "${prod.name}" is OUT OF STOCK (0 available). Please remove it from the cart.`);
+          return;
+        }
+        if (item.quantity > avail) {
+          toast.error(
+            `Checkout blocked: Cart contains ${item.quantity} units of "${prod.name}", but only ${avail} units are available in store stock.`
+          );
+          return;
+        }
+      }
+    }
+
     // ARCHITECTURE NOTE: Point of Sale (POS) Dual-Write Strategy
     // 1. Sends atomic transaction request to backend REST server (PostgreSQL via Prisma).
     // 2. Immediately writes transaction to client-side store (db.ts) and increments dataVersion.
@@ -692,6 +736,12 @@ function RouteComponent() {
           email: user?.email || "",
         },
       });
+
+      if (res && (res.error || res.message) && !res.success && !res.transaction) {
+        const errorMsg = res.error || res.message || "Failed to process transaction";
+        toast.error(`Transaction failed: ${errorMsg}`);
+        return;
+      }
 
       const txnData = (res && res.transaction) || (res && res.id ? res : (res && res.data) || null);
       const isSuccess = !!txnData || (res && res.success);
@@ -811,8 +861,21 @@ function RouteComponent() {
         setWalkinPhone("");
       }
     } catch (err: any) {
+      const errMsg = err?.message || String(err || "");
+      // 🛡️ Strict Stock Protection: Never bypass real business inventory errors with self-healing!
+      if (
+        errMsg.toLowerCase().includes("insufficient") ||
+        errMsg.toLowerCase().includes("stock") ||
+        errMsg.toLowerCase().includes("out of stock") ||
+        errMsg.toLowerCase().includes("security alert") ||
+        errMsg.toLowerCase().includes("zero items")
+      ) {
+        toast.error(`Transaction Blocked: ${errMsg}`);
+        return;
+      }
+
       console.warn("Backend transaction exception absorbed by Self-Healing POS Shield:", err);
-      // Autonomous Self-Healing Fallback
+      // Autonomous Self-Healing Fallback ONLY for true offline / network connection loss:
       const custObj = customers.find((c) => c.id === formCustomerId);
       const resolvedCustomerName = formCustomerId === "walkin" ? (walkinPhone ? `Walk-in (${walkinPhone})` : "Walk-in Customer") : (custObj?.name || "Customer");
       const localTxnId = `TXN-POS-${Date.now().toString().slice(-6)}`;
@@ -907,10 +970,14 @@ function RouteComponent() {
                       size="sm"
                       onClick={() => {
                         if (products.length === 0) return;
-                        const targetProd = products[0];
-                        setSelectedItemSku(targetProd.id);
+                        const availableProd = products.find((p) => (p.stock || 0) > 0) || products[0];
+                        if ((availableProd.stock || 0) <= 0) {
+                          toast.error(`Scanned item "${availableProd.name}" is OUT OF STOCK (0 units). Cannot bill.`);
+                          return;
+                        }
+                        setSelectedItemSku(availableProd.id);
                         toast.success(`⚡ BARCODE SCANNED & AUTO-FILLED!`, {
-                          description: `Scanned Barcode: EAN-8901030775984 -> Auto-filled "${targetProd.name}" (${targetProd.sku}) at ${fmtINR(targetProd.price)}`,
+                          description: `Scanned Barcode: EAN-8901030775984 -> Auto-filled "${availableProd.name}" (${availableProd.sku}) at ${fmtINR(availableProd.price)} · Stock: ${availableProd.stock}`,
                           duration: 6000,
                         });
                       }}
@@ -928,13 +995,35 @@ function RouteComponent() {
                       <SelectItem value="custom">
                         ✨ -- Add Custom Unregistered Product --
                       </SelectItem>
-                      {products.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} ({p.sku}) - {fmtINR(p.price)}
-                        </SelectItem>
-                      ))}
+                      {products.map((p) => {
+                        const isOut = (p.stock || 0) <= 0;
+                        return (
+                          <SelectItem
+                            key={p.id}
+                            value={p.id}
+                            disabled={isOut}
+                            className={isOut ? "opacity-50 text-destructive line-through" : ""}
+                          >
+                            {p.name} ({p.sku}) - {fmtINR(p.price)} {isOut ? "· ⚠️ OUT OF STOCK (0)" : `· (${p.stock} in stock)`}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  {selectedItemSku && selectedItemSku !== "custom" && (() => {
+                    const selProd = products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku);
+                    if (!selProd) return null;
+                    const isZero = (selProd.stock || 0) <= 0;
+                    return (
+                      <div className={cn("text-[11px] mt-1.5 flex items-center gap-1.5 font-medium px-2 py-1 rounded", isZero ? "bg-destructive/10 text-destructive font-bold border border-destructive/20" : (selProd.stock || 0) <= 5 ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20")}>
+                        {isZero ? (
+                          <span>⚠️ OUT OF STOCK: 0 units available in store inventory. Cannot add to invoice.</span>
+                        ) : (
+                          <span>✓ Available Stock: <strong>{selProd.stock}</strong> units in store</span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex items-end gap-2.5 w-full sm:w-auto">
                   <div className="flex-1 sm:w-24">
@@ -959,7 +1048,14 @@ function RouteComponent() {
                     type="button"
                     onClick={addToCart}
                     className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
-                    disabled={addingCustomProd}
+                    disabled={
+                      addingCustomProd ||
+                      (selectedItemSku !== "custom" &&
+                        Boolean(
+                          products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku) &&
+                            (products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku)?.stock || 0) <= 0
+                        ))
+                    }
                   >
                     {addingCustomProd ? (
                       <>
@@ -1075,31 +1171,53 @@ function RouteComponent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200">
-                    {calculatedItems.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-zinc-50">
-                        <td className="p-3 font-medium">
-                          {item.productName}
-                          <div className="text-xs text-zinc-500 font-mono">{item.sku}</div>
-                        </td>
-                        <td className="p-3 text-right">{fmtINR(item.unitPrice)}</td>
-                        <td className="p-3 text-center font-semibold">{item.quantity}</td>
-                        <td className="p-3 text-right text-amber-600">
-                          {item.discount > 0 ? `-${fmtINR(item.discount)}` : "—"}
-                        </td>
-                        <td className="p-3 text-right font-bold">{fmtINR(item.net)}</td>
-                        <td className="p-3 text-center">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFromCart(idx)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {calculatedItems.map((item, idx) => {
+                      const prod = products.find((p) => p.id === item.productId || p.sku === item.productId);
+                      const isOutOfStock = prod ? (prod.stock || 0) <= 0 : false;
+                      const hasShortage = prod ? item.quantity > (prod.stock || 0) : false;
+                      return (
+                        <tr
+                          key={idx}
+                          className={cn(
+                            "hover:bg-zinc-50",
+                            (isOutOfStock || hasShortage) && "bg-destructive/5 border-l-4 border-destructive"
+                          )}
+                        >
+                          <td className="p-3 font-medium">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{item.productName}</span>
+                              {isOutOfStock ? (
+                                <span className="text-[10px] bg-destructive text-destructive-foreground font-bold px-1.5 py-0.5 rounded">
+                                  OUT OF STOCK (0)
+                                </span>
+                              ) : hasShortage ? (
+                                <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded">
+                                  Shortage (Avail: {prod?.stock})
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="text-xs text-zinc-500 font-mono">{item.sku}</div>
+                          </td>
+                          <td className="p-3 text-right">{fmtINR(item.unitPrice)}</td>
+                          <td className="p-3 text-center font-semibold">{item.quantity}</td>
+                          <td className="p-3 text-right text-amber-600">
+                            {item.discount > 0 ? `-${fmtINR(item.discount)}` : "—"}
+                          </td>
+                          <td className="p-3 text-right font-bold">{fmtINR(item.net)}</td>
+                          <td className="p-3 text-center">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFromCart(idx)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1216,10 +1334,27 @@ function RouteComponent() {
                 </Button>
               )}
 
+              {cartItems.some((item) => {
+                const prod = products.find((p) => p.id === item.productId || p.sku === item.productId);
+                return prod && ((prod.stock || 0) <= 0 || item.quantity > (prod.stock || 0));
+              }) && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+                  <span>Inventory Block: One or more items in the cart are OUT OF STOCK or exceed available inventory. Remove them to complete the sale.</span>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-emerald-600 hover:bg-emerald-700 h-11 text-base font-semibold"
-                disabled={saving || cartItems.length === 0}
+                disabled={
+                  saving ||
+                  cartItems.length === 0 ||
+                  cartItems.some((item) => {
+                    const prod = products.find((p) => p.id === item.productId || p.sku === item.productId);
+                    return prod && ((prod.stock || 0) <= 0 || item.quantity > (prod.stock || 0));
+                  })
+                }
               >
                 {saving ? (
                   <>
