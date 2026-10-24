@@ -5,7 +5,7 @@
  * strict ID-code exclusion from human names, and UTF-8 BOM stripping.
  */
 
-import type { Product, Customer, Transaction } from "./db";
+import { type Product, type Customer, type Transaction, db } from "./db";
 
 // Dynamic loader for SheetJS (xlsx.full.min.js)
 let xlsxPromise: Promise<any> | null = null;
@@ -446,7 +446,9 @@ export function extractNumber(
 // Candidate alias lists
 const PRODUCT_NAME_ALIASES = [
   "product name",
+  "product_name",
   "item name",
+  "item_name",
   "product description",
   "item description",
   "particulars",
@@ -461,13 +463,16 @@ const PRODUCT_NAME_ALIASES = [
 ];
 
 const SKU_ALIASES = [
+  "product id",
+  "product_id",
   "sku",
   "barcode",
   "item code",
+  "item_code",
   "product code",
+  "product_code",
   "code",
   "item no",
-  "product id",
   "id",
   "part no",
   "ean",
@@ -479,11 +484,13 @@ const SKU_ALIASES = [
 
 const PRICE_ALIASES = [
   "selling price",
+  "selling_price",
+  "unit price",
+  "unit_price",
   "price",
   "mrp",
   "rate",
   "sale price",
-  "unit price",
   "retail price",
   "selling rate",
   "saleprice",
@@ -493,8 +500,10 @@ const PRICE_ALIASES = [
 
 const COST_ALIASES = [
   "cost price",
+  "cost_price",
   "cost",
   "purchase price",
+  "purchase_price",
   "buy price",
   "buying rate",
   "costprice",
@@ -503,11 +512,15 @@ const COST_ALIASES = [
 ];
 
 const STOCK_ALIASES = [
+  "stock quantity",
+  "stock_quantity",
+  "stock qty",
   "stock",
   "quantity",
   "qty",
   "current stock",
   "inventory",
+  "inventory count",
   "count",
   "units",
   "balance",
@@ -519,6 +532,7 @@ const STOCK_ALIASES = [
 
 const CATEGORY_ALIASES = [
   "category",
+  "product category",
   "dept",
   "department",
   "group",
@@ -526,7 +540,6 @@ const CATEGORY_ALIASES = [
   "type",
   "class",
   "family",
-  "product category",
 ];
 
 const BRAND_ALIASES = ["brand", "brand name", "manufacturer", "make", "company", "mfg"];
@@ -534,7 +547,9 @@ const SUPPLIER_ALIASES = ["supplier", "vendor", "distributor", "source", "dealer
 
 const CUSTOMER_NAME_ALIASES = [
   "customer name",
+  "customer_name",
   "client name",
+  "client_name",
   "full name",
   "contact name",
   "party name",
@@ -565,7 +580,19 @@ const CUSTOMER_PHONE_ALIASES = [
 ];
 
 const CUSTOMER_EMAIL_ALIASES = ["email", "email address", "mail", "e-mail", "email id", "email_id"];
-const CUSTOMER_ID_ALIASES = ["customer id", "client id", "id", "code", "account no", "cust id", "party code", "customer code"];
+const CUSTOMER_ID_ALIASES = [
+  "customer id",
+  "customer_id",
+  "client id",
+  "client_id",
+  "cust id",
+  "custid",
+  "account no",
+  "code",
+  "id",
+  "party code",
+  "customer code",
+];
 
 /**
  * Maps raw spreadsheet rows to validated Product entities.
@@ -588,13 +615,32 @@ export function mapRowsToProducts(rows: Array<Record<string, any>>): Product[] {
     const price = extractNumber(r, PRICE_ALIASES, 100);
     const cost = extractNumber(r, COST_ALIASES, Math.round(price * 0.7));
     const stock = extractNumber(r, STOCK_ALIASES, 25);
-    const reorder = extractNumber(r, ["reorder", "reorder level", "min stock"], 10);
+    const reorder = extractNumber(
+      r,
+      ["reorder level", "reorder_level", "reorder", "min stock", "min_stock", "safety stock"],
+      10,
+    );
 
-    // 4. Resolve Metadata
+    // 4. Resolve Metadata & Expiry
     const category = extractField(r, CATEGORY_ALIASES, "General");
     const brand = extractField(r, BRAND_ALIASES, "Standard");
     const supplier = extractField(r, SUPPLIER_ALIASES, "General Supplier");
-    const expiry = extractField(r, ["expiry", "expiry date", "exp date", "validity"], "2026-12-31");
+    const expiry = extractField(
+      r,
+      [
+        "expiry date",
+        "expiry_date",
+        "expiry",
+        "exp date",
+        "exp_date",
+        "validity",
+        "best before",
+        "use by",
+        "expiration date",
+        "expiration_date",
+      ],
+      "2026-12-31",
+    );
 
     const margin = price > 0 ? parseFloat((((price - cost) / price) * 100).toFixed(1)) : 25;
     const status = stock <= 0 ? "critical" : stock <= reorder ? "low" : "ok";
@@ -646,10 +692,24 @@ export function mapRowsToCustomers(rows: Array<Record<string, any>>): Customer[]
     const email = extractField(r, CUSTOMER_EMAIL_ALIASES, `client${i + 1}@example.com`);
 
     // 5. Tier & Metrics
-    const tierRaw = extractField(r, ["membership", "tier", "segment", "loyalty", "grade"], "Regular");
+    const tierRaw = extractField(
+      r,
+      ["membership tier", "membership_tier", "tier", "membership", "segment", "loyalty", "grade", "customer tier"],
+      "Regular",
+    );
     const validTiers: Customer["segment"][] = ["VIP", "Loyal", "New", "Frequent", "At Risk", "Dormant"];
-    const matchedTier = validTiers.find((t) => t.toLowerCase() === tierRaw.toLowerCase()) || "Regular";
-    const segment = (matchedTier === "Regular" ? "New" : matchedTier) as Customer["segment"];
+    const matchedTier = validTiers.find((t) => t.toLowerCase() === tierRaw.toLowerCase());
+    let segment: Customer["segment"] = matchedTier || "New";
+
+    if (!matchedTier) {
+      const tLower = tierRaw.toLowerCase();
+      if (tLower.includes("plat") || tLower.includes("vip")) segment = "VIP";
+      else if (tLower.includes("gold") || tLower.includes("loyal")) segment = "Loyal";
+      else if (tLower.includes("silver") || tLower.includes("freq")) segment = "Frequent";
+      else if (tLower.includes("bronze") || tLower.includes("reg") || tLower.includes("new")) segment = "New";
+      else if (tLower.includes("risk")) segment = "At Risk";
+      else if (tLower.includes("dorm")) segment = "Dormant";
+    }
 
     let spend = extractNumber(r, ["spend", "total spend", "lifetime spend", "amount", "revenue", "sales"], 0);
     let visits = extractNumber(r, ["visits", "visit count", "orders", "orders count", "transactions"], 0);
@@ -665,6 +725,11 @@ export function mapRowsToCustomers(rows: Array<Record<string, any>>): Customer[]
     }
 
     const aov = visits > 0 ? Math.round(spend / visits) : 500;
+    const joined = extractField(
+      r,
+      ["customer since", "customer_since", "joined", "created at", "join date", "date"],
+      new Date().toISOString().split("T")[0],
+    );
 
     return {
       id,
@@ -674,11 +739,11 @@ export function mapRowsToCustomers(rows: Array<Record<string, any>>): Customer[]
       lastName,
       phone,
       email,
-      joined: extractField(r, ["joined", "created at", "join date", "date"], new Date().toISOString().split("T")[0]),
+      joined,
       visits,
       spend,
       aov,
-      favDept: extractField(r, ["department", "fav dept", "preferred dept", "category"], "Grocery"),
+      favDept: extractField(r, ["department", "fav dept", "preferred dept", "category", "city", "state"], "Grocery"),
       lastVisit: new Date().toISOString().split("T")[0],
       segment,
       churn: Math.max(5, (i * 7) % 35),
@@ -688,42 +753,132 @@ export function mapRowsToCustomers(rows: Array<Record<string, any>>): Customer[]
 
 /**
  * Maps raw spreadsheet rows to validated Transaction entities.
+ * Automatically resolves customer names and product names from existing database when missing.
  */
 export function mapRowsToTransactions(rows: Array<Record<string, any>>): Transaction[] {
-  return rows.map((r, i) => {
-    const invNo = extractField(r, ["invoice no", "invoice", "bill no", "bill", "id"], `INV-${Date.now().toString().slice(-5)}${i + 1}`);
-    const dateStr = extractField(r, ["date", "invoice date", "bill date"], new Date().toISOString().split("T")[0]);
-    const custName = extractNameField(r, CUSTOMER_NAME_ALIASES) || "Walk-in Customer";
-    const prodName = extractNameField(r, PRODUCT_NAME_ALIASES) || "General Item";
-    const qty = extractNumber(r, ["quantity", "qty", "count"], 1);
-    const price = extractNumber(r, PRICE_ALIASES, 100);
-    const total = extractNumber(r, ["total", "amount", "grand total", "net amount"], qty * price);
+  // Pre-load existing customers and products for relational resolution
+  let existingCustomers: Customer[] = [];
+  let existingProducts: Product[] = [];
+  try {
+    existingCustomers = db.getCustomers() || [];
+    existingProducts = db.getProducts() || [];
+  } catch (e) {
+    // db might not be loaded in non-browser context
+  }
 
-    const paymentRaw = extractField(r, ["payment", "payment method", "mode", "payment mode"], "UPI").toUpperCase();
+  return rows.map((r, i) => {
+    const invNo = extractField(
+      r,
+      [
+        "transaction id",
+        "transaction_id",
+        "txnid",
+        "txn id",
+        "transaction",
+        "invoice no",
+        "invoice_no",
+        "invoice",
+        "bill no",
+        "bill_no",
+        "bill",
+        "id",
+      ],
+      `INV-${Date.now().toString().slice(-5)}${i + 1}`,
+    );
+
+    const dateStr = extractField(
+      r,
+      ["date", "transaction date", "transaction_date", "txn date", "invoice date", "bill date"],
+      new Date().toISOString().split("T")[0],
+    );
+
+    // Resolve Customer ID & Name
+    const custId = extractField(
+      r,
+      ["customer id", "customer_id", "cust id", "custid", "client id", "client_id", "customer code"],
+      `CUST-${String(i + 1).padStart(3, "0")}`,
+    );
+
+    let custName = extractNameField(r, CUSTOMER_NAME_ALIASES);
+    if (!custName || isCodeOrId(custName)) {
+      // Lookup in existing customers database
+      const matchedCust = existingCustomers.find(
+        (c) =>
+          normalizeKey(c.id) === normalizeKey(custId) ||
+          normalizeKey(c.customerCode || "") === normalizeKey(custId),
+      );
+      if (matchedCust && matchedCust.name && !isCodeOrId(matchedCust.name)) {
+        custName = matchedCust.name;
+      } else {
+        custName = `Customer ${custId.replace(/^CUST-?/i, "") || i + 1}`;
+      }
+    }
+
+    // Resolve Product ID & Name
+    const prodId = extractField(
+      r,
+      ["product id", "product_id", "sku", "item code", "item_code", "product code"],
+      `PROD-${String(i + 1).padStart(3, "0")}`,
+    );
+
+    let prodName = extractNameField(r, PRODUCT_NAME_ALIASES);
+    if (!prodName || isCodeOrId(prodName)) {
+      const matchedProd = existingProducts.find((p) => normalizeKey(p.id) === normalizeKey(prodId));
+      if (matchedProd && matchedProd.name) {
+        prodName = matchedProd.name;
+      } else {
+        prodName = `Item #${prodId.replace(/^PROD-?/i, "") || i + 1}`;
+      }
+    }
+
+    const qty = extractNumber(r, ["quantity", "qty", "count", "units"], 1);
+    const price = extractNumber(
+      r,
+      ["unit price", "unit_price", "price", "selling price", "selling_price", "rate", ...PRICE_ALIASES],
+      100,
+    );
+    const discount = extractNumber(
+      r,
+      ["discount amount", "discount_amount", "discount", "disc", "rebate"],
+      0,
+    );
+    const calculatedTotal = Math.max(0, qty * price - discount);
+    const total = extractNumber(
+      r,
+      ["total amount", "total_amount", "total", "net amount", "grand total", "amount"],
+      calculatedTotal,
+    );
+    const subtotal = total + discount;
+
+    const paymentRaw = extractField(
+      r,
+      ["payment method", "payment_method", "payment", "mode", "payment mode", "pay mode"],
+      "UPI",
+    ).toUpperCase();
     const payment: "Cash" | "Card" | "UPI" | "Wallet" = paymentRaw.includes("CASH")
       ? "Cash"
       : paymentRaw.includes("CARD")
-      ? "Card"
-      : paymentRaw.includes("WALLET")
-      ? "Wallet"
-      : "UPI";
+        ? "Card"
+        : paymentRaw.includes("WALLET")
+          ? "Wallet"
+          : "UPI";
 
     return {
       id: invNo,
       date: dateStr,
       time: "12:00",
       dept: "Supermarket Main",
-      customerId: `CUST-${i + 100}`,
+      customerId: custId,
       customerName: custName,
-      subtotal: total,
+      subtotal,
       tax: Math.round(total * 0.05),
-      discount: 0,
+      discount,
       total,
       payment,
       status: "Completed",
       items: [
         {
-          productId: `PROD-${i + 1}`,
+          productId: prodId,
           name: prodName,
           quantity: qty,
           price,
