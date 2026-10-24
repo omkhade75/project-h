@@ -1,7 +1,8 @@
 /**
  * Robust Spreadsheet & CSV Ingestion Engine for Bizora
  * Supports .xlsx, .xls (SheetJS binary + XML 2003 + HTML tables), .csv, .tsv, .txt
- * Provides intelligent, case-insensitive, fuzzy header mapping and UTF-8 BOM stripping.
+ * Provides intelligent, case-insensitive, fuzzy header mapping, compound name merging,
+ * strict ID-code exclusion from human names, and UTF-8 BOM stripping.
  */
 
 import type { Product, Customer, Transaction } from "./db";
@@ -75,6 +76,34 @@ export function normalizeKey(key: string): string {
     .toLowerCase()
     .replace(/["'\[\]\(\)\{\}]/g, "")
     .replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Detects if a string is an ID code, SKU, or identifier rather than a human/item name.
+ * e.g. "CUST001", "CUST-001", "C001", "SKU-100", "PROD99", "10023", "#123", "ID_44"
+ */
+export function isCodeOrId(val: any): boolean {
+  if (val === undefined || val === null) return false;
+  const s = String(val).trim();
+  if (!s) return false;
+  // Specific code patterns
+  if (/^(CUST|CID|ID|CODE|SKU|PROD|ITEM|ACC|USER|CLIENT|REF|NO|TXN|INV)[-_]?[0-9A-Za-z]+$/i.test(s)) return true;
+  // Patterns like C001, P102, S99
+  if (/^[A-Za-z]{1,4}[-_]?[0-9]{2,}$/.test(s)) return true;
+  // Pure digits (e.g. 1001, 45892)
+  if (/^[0-9]+$/.test(s)) return true;
+  return false;
+}
+
+/**
+ * Checks if a column key represents an ID, code, or number rather than a name.
+ */
+export function isIdColumnKey(key: string): boolean {
+  if (!key) return false;
+  const norm = normalizeKey(key);
+  if (/^(id|code|sku|barcode|hsn|no|num|number|key|uuid|ref|custid|productid|itemcode|clientid)$/.test(norm)) return true;
+  if (norm.endsWith("id") || norm.endsWith("code") || norm.endsWith("no") || norm.endsWith("number") || norm.endsWith("num") || norm.endsWith("key")) return true;
+  return false;
 }
 
 /**
@@ -236,7 +265,7 @@ export async function parseSpreadsheetFile(file: File): Promise<{
 }
 
 /**
- * Finds a value from a row object using normalized fuzzy candidate matching.
+ * Finds a generic value from a row object using normalized candidate matching.
  */
 export function extractField(
   row: Record<string, any>,
@@ -245,11 +274,8 @@ export function extractField(
 ): string {
   if (!row || typeof row !== "object") return fallback;
 
-  // Build normalized lookup map: normalizedKey -> originalValue
   const normalizedMap = new Map<string, any>();
-  const originalEntries = Object.entries(row);
-
-  for (const [key, val] of originalEntries) {
+  for (const [key, val] of Object.entries(row)) {
     const norm = normalizeKey(key);
     if (norm) {
       normalizedMap.set(norm, val);
@@ -272,11 +298,128 @@ export function extractField(
     const normCand = normalizeKey(cand);
     if (normCand.length < 3) continue;
     for (const [key, val] of normalizedMap.entries()) {
-      if (key.includes(normCand) || normCand.includes(key)) {
+      if (key === normCand || key.includes(normCand) || normCand.includes(key)) {
         if (val !== undefined && val !== null && String(val).trim() !== "") {
           return String(val).trim();
         }
       }
+    }
+  }
+
+  return fallback;
+}
+
+/**
+ * Intelligent Name Extractor:
+ * 1. Checks compound Name: First Name + Last Name (handles "first_name", "last_name", etc.)
+ * 2. Checks exact candidate matches, STRICTLY SKIPPING ID columns (e.g. "customerid") and ID values (e.g. "CUST001")
+ * 3. Checks partial candidate matches, skipping ID columns
+ * 4. Checks company or business name
+ * 5. Derives clean human name from email if name is missing (e.g. "rahul.sharma@example.com" -> "Rahul Sharma")
+ * 6. Scans for first non-ID, non-numeric column containing human text
+ */
+export function extractNameField(
+  row: Record<string, any>,
+  candidates: string[],
+  fallback = ""
+): string {
+  if (!row || typeof row !== "object") return fallback;
+
+  const normalizedMap = new Map<string, any>();
+  for (const [k, v] of Object.entries(row)) {
+    const norm = normalizeKey(k);
+    if (norm) normalizedMap.set(norm, v);
+  }
+
+  // 1. First, check compound Name: First Name + Last Name
+  const fnCandidates = ["firstname", "first", "fname", "givenname", "first_name"];
+  const lnCandidates = ["lastname", "last", "lname", "surname", "familyname", "last_name"];
+  let foundFn = "";
+  let foundLn = "";
+
+  for (const cand of fnCandidates) {
+    const norm = normalizeKey(cand);
+    if (normalizedMap.has(norm)) {
+      const val = String(normalizedMap.get(norm) || "").trim();
+      if (val && !isCodeOrId(val)) {
+        foundFn = val;
+        break;
+      }
+    }
+  }
+
+  for (const cand of lnCandidates) {
+    const norm = normalizeKey(cand);
+    if (normalizedMap.has(norm)) {
+      const val = String(normalizedMap.get(norm) || "").trim();
+      if (val && !isCodeOrId(val)) {
+        foundLn = val;
+        break;
+      }
+    }
+  }
+
+  if (foundFn || foundLn) {
+    return `${foundFn} ${foundLn}`.trim();
+  }
+
+  // 2. Check exact matches for candidates, strictly skipping ID columns and ID values
+  for (const cand of candidates) {
+    const normCand = normalizeKey(cand);
+    if (isIdColumnKey(normCand)) continue; // Never treat an ID column as a Name!
+
+    if (normalizedMap.has(normCand)) {
+      const val = String(normalizedMap.get(normCand) || "").trim();
+      if (val && !isCodeOrId(val)) {
+        return val;
+      }
+    }
+  }
+
+  // 3. Check partial matches, strictly avoiding ID column keys
+  for (const cand of candidates) {
+    const normCand = normalizeKey(cand);
+    if (normCand.length < 3 || isIdColumnKey(normCand)) continue;
+
+    for (const [key, val] of normalizedMap.entries()) {
+      if (isIdColumnKey(key)) continue; // SKIP "customerid", "customercode", etc.!
+
+      if (key === normCand || key.includes(normCand) || normCand.includes(key)) {
+        const v = String(val || "").trim();
+        if (v && !isCodeOrId(v)) {
+          return v;
+        }
+      }
+    }
+  }
+
+  // 4. Check company/business/organization name
+  for (const compKey of ["companyname", "company", "businessname", "organization", "firmname", "partyname"]) {
+    if (normalizedMap.has(compKey)) {
+      const val = String(normalizedMap.get(compKey) || "").trim();
+      if (val && !isCodeOrId(val)) return val;
+    }
+  }
+
+  // 5. Check if an email is present: derive clean readable name from email
+  for (const emailKey of ["email", "emailaddress", "mail", "emailid"]) {
+    if (normalizedMap.has(emailKey)) {
+      const emailVal = String(normalizedMap.get(emailKey) || "").trim();
+      if (emailVal && emailVal.includes("@")) {
+        const local = emailVal.split("@")[0].replace(/[0-9._-]+/g, " ").trim();
+        if (local.length >= 2 && !local.toLowerCase().startsWith("client") && !local.toLowerCase().startsWith("user")) {
+          return local.replace(/\b\w/g, (c) => c.toUpperCase());
+        }
+      }
+    }
+  }
+
+  // 6. Look for first non-ID, non-numeric column with real human text
+  for (const [key, val] of Object.entries(row)) {
+    if (isIdColumnKey(key)) continue;
+    const str = String(val || "").trim();
+    if (str.length >= 2 && !isCodeOrId(str) && isNaN(Number(str)) && !str.includes("@") && !/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return str;
     }
   }
 
@@ -300,43 +443,20 @@ export function extractNumber(
   return isNaN(parsed) ? fallback : parsed;
 }
 
-/**
- * Intelligent fallback: looks for the first non-numeric text column in a row.
- * Prevents returning generic placeholder names when real data is present.
- */
-function findFirstHumanReadableText(row: Record<string, any>): string {
-  for (const [_, val] of Object.entries(row)) {
-    if (val === undefined || val === null) continue;
-    const str = String(val).trim();
-    // Skip empty, pure numbers, dates, booleans
-    if (str.length >= 2 && isNaN(Number(str)) && !/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-      return str;
-    }
-  }
-  return "";
-}
-
 // Candidate alias lists
 const PRODUCT_NAME_ALIASES = [
   "product name",
   "item name",
+  "product description",
+  "item description",
+  "particulars",
+  "title",
   "product",
   "item",
-  "title",
-  "description",
-  "particulars",
-  "name",
-  "product_name",
-  "item_name",
-  "prod_name",
-  "prod name",
-  "item description",
-  "product description",
   "article",
   "material",
   "goods",
-  "sku name",
-  "item title",
+  "name",
   "details",
 ];
 
@@ -353,9 +473,7 @@ const SKU_ALIASES = [
   "ean",
   "upc",
   "hsn",
-  "hsn code",
   "batch",
-  "batch no",
   "sku code",
 ];
 
@@ -417,21 +535,18 @@ const SUPPLIER_ALIASES = ["supplier", "vendor", "distributor", "source", "dealer
 const CUSTOMER_NAME_ALIASES = [
   "customer name",
   "client name",
+  "full name",
+  "contact name",
+  "party name",
+  "buyer name",
+  "person name",
   "customer",
   "client",
-  "full name",
-  "party name",
-  "contact name",
-  "buyer name",
   "name",
   "party",
-  "person",
-  "account name",
-  "contact person",
-  "consumer",
+  "contact",
   "buyer",
-  "client_name",
-  "customer_name",
+  "person",
 ];
 
 const CUSTOMER_PHONE_ALIASES = [
@@ -450,23 +565,23 @@ const CUSTOMER_PHONE_ALIASES = [
 ];
 
 const CUSTOMER_EMAIL_ALIASES = ["email", "email address", "mail", "e-mail", "email id", "email_id"];
-const CUSTOMER_ID_ALIASES = ["customer id", "client id", "id", "code", "account no", "cust id", "party code"];
+const CUSTOMER_ID_ALIASES = ["customer id", "client id", "id", "code", "account no", "cust id", "party code", "customer code"];
 
 /**
  * Maps raw spreadsheet rows to validated Product entities.
  */
 export function mapRowsToProducts(rows: Array<Record<string, any>>): Product[] {
   return rows.map((r, i) => {
-    // 1. Resolve Product Name
-    let name = extractField(r, PRODUCT_NAME_ALIASES);
-    if (!name) {
-      name = findFirstHumanReadableText(r) || `Item #${i + 1}`;
-    }
-
-    // 2. Resolve SKU / ID
+    // 1. Resolve SKU / ID
     let sku = extractField(r, SKU_ALIASES);
     if (!sku) {
       sku = `SKU-${Date.now().toString().slice(-4)}${i + 1}`;
+    }
+
+    // 2. Resolve Product Name (strictly never an SKU/code)
+    let name = extractNameField(r, PRODUCT_NAME_ALIASES);
+    if (!name || isCodeOrId(name)) {
+      name = `Item #${sku.replace(/^SKU-?/i, "") || i + 1}`;
     }
 
     // 3. Resolve Pricing & Stock
@@ -509,45 +624,64 @@ export function mapRowsToProducts(rows: Array<Record<string, any>>): Product[] {
  */
 export function mapRowsToCustomers(rows: Array<Record<string, any>>): Customer[] {
   return rows.map((r, i) => {
-    // 1. Resolve Customer Name
-    let name = extractField(r, CUSTOMER_NAME_ALIASES);
-    if (!name) {
-      name = findFirstHumanReadableText(r) || `Customer #${i + 1}`;
-    }
-
-    // 2. Resolve ID
+    // 1. Resolve ID / Code
     let id = extractField(r, CUSTOMER_ID_ALIASES);
     if (!id) {
-      id = `CUST-${Date.now().toString().slice(-4)}${i + 1}`;
+      id = `CUST-${String(i + 1).padStart(3, "0")}`;
     }
 
-    // 3. Contact info
+    // 2. Resolve Customer Name (strictly never an ID code)
+    let name = extractNameField(r, CUSTOMER_NAME_ALIASES);
+    if (!name || isCodeOrId(name)) {
+      name = `Customer ${id.replace(/^CUST-?/i, "") || i + 1}`;
+    }
+
+    // 3. Split Name into First & Last
+    const parts = name.split(" ");
+    const firstName = parts[0] || name;
+    const lastName = parts.slice(1).join(" ") || "";
+
+    // 4. Contact info
     const phone = extractField(r, CUSTOMER_PHONE_ALIASES, `+91 98765 ${String(i + 10).padStart(5, "0")}`);
     const email = extractField(r, CUSTOMER_EMAIL_ALIASES, `client${i + 1}@example.com`);
 
-    // 4. Tier & Metrics
+    // 5. Tier & Metrics
     const tierRaw = extractField(r, ["membership", "tier", "segment", "loyalty", "grade"], "Regular");
     const validTiers: Customer["segment"][] = ["VIP", "Loyal", "New", "Frequent", "At Risk", "Dormant"];
     const matchedTier = validTiers.find((t) => t.toLowerCase() === tierRaw.toLowerCase()) || "Regular";
     const segment = (matchedTier === "Regular" ? "New" : matchedTier) as Customer["segment"];
 
-    const spend = extractNumber(r, ["spend", "total spend", "lifetime spend", "amount"], 2500);
-    const visits = extractNumber(r, ["visits", "visit count", "orders"], 3);
+    let spend = extractNumber(r, ["spend", "total spend", "lifetime spend", "amount", "revenue", "sales"], 0);
+    let visits = extractNumber(r, ["visits", "visit count", "orders", "orders count", "transactions"], 0);
+
+    // If file had no spend/orders data, provide realistic active store baselines
+    if (spend === 0 && visits === 0) {
+      visits = (i % 6) + 1;
+      spend = visits * 750 + ((i * 120) % 500);
+    } else if (spend > 0 && visits === 0) {
+      visits = Math.max(1, Math.round(spend / 650));
+    } else if (visits > 0 && spend === 0) {
+      spend = visits * 650;
+    }
+
     const aov = visits > 0 ? Math.round(spend / visits) : 500;
 
     return {
       id,
+      customerCode: id,
       name,
+      firstName,
+      lastName,
       phone,
       email,
-      joined: new Date().toISOString().split("T")[0],
+      joined: extractField(r, ["joined", "created at", "join date", "date"], new Date().toISOString().split("T")[0]),
       visits,
       spend,
       aov,
-      favDept: "General",
+      favDept: extractField(r, ["department", "fav dept", "preferred dept", "category"], "Grocery"),
       lastVisit: new Date().toISOString().split("T")[0],
       segment,
-      churn: 10,
+      churn: Math.max(5, (i * 7) % 35),
     };
   });
 }
@@ -559,8 +693,8 @@ export function mapRowsToTransactions(rows: Array<Record<string, any>>): Transac
   return rows.map((r, i) => {
     const invNo = extractField(r, ["invoice no", "invoice", "bill no", "bill", "id"], `INV-${Date.now().toString().slice(-5)}${i + 1}`);
     const dateStr = extractField(r, ["date", "invoice date", "bill date"], new Date().toISOString().split("T")[0]);
-    const custName = extractField(r, CUSTOMER_NAME_ALIASES, "Walk-in Customer");
-    const prodName = extractField(r, PRODUCT_NAME_ALIASES, "General Item");
+    const custName = extractNameField(r, CUSTOMER_NAME_ALIASES) || "Walk-in Customer";
+    const prodName = extractNameField(r, PRODUCT_NAME_ALIASES) || "General Item";
     const qty = extractNumber(r, ["quantity", "qty", "count"], 1);
     const price = extractNumber(r, PRICE_ALIASES, 100);
     const total = extractNumber(r, ["total", "amount", "grand total", "net amount"], qty * price);

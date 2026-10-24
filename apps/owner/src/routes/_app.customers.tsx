@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
 import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR, fmtNum } from "@/lib/mock-data";
+import { isCodeOrId } from "@/lib/spreadsheet-parser";
 import {
   getCustomersServer,
   addCustomerServer,
@@ -45,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Archive, Loader2, PhoneCall, Sparkles, Send, Phone, PhoneOff, Mic, MicOff } from "lucide-react";
+import { Plus, Search, Edit, Archive, Loader2, PhoneCall, Sparkles, Send, Phone, PhoneOff, Mic, MicOff, Upload, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 // Vapi Web SDK public key — used for browser-based WebRTC voice calls
@@ -167,6 +168,71 @@ export function CustomersPage() {
   const [formPrefDept, setFormPrefDept] = useState("dept-fashion");
   const [formNotes, setFormNotes] = useState("");
 
+  // Helper to ensure human readable name and valid metrics even from raw codes
+  const resolveCustomerProfile = (c: any): CustomerListItem => {
+    let name = (c.name && String(c.name).trim()) || "";
+    let fn = ((c as any).firstName && String((c as any).firstName).trim()) || "";
+    let ln = ((c as any).lastName && String((c as any).lastName).trim()) || "";
+
+    // 1. If firstName and lastName are valid human names and not code identifiers:
+    if (fn && !isCodeOrId(fn)) {
+      name = `${fn} ${ln}`.trim();
+    } else if (!name || isCodeOrId(name)) {
+      // 2. If name is a code like "CUST001" or empty, try deriving from email
+      if (c.email && c.email.includes("@")) {
+        const local = c.email.split("@")[0].replace(/[0-9._-]+/g, " ").trim();
+        if (local.length >= 2 && !local.toLowerCase().startsWith("client") && !local.toLowerCase().startsWith("user")) {
+          name = local.replace(/\b\w/g, (char: string) => char.toUpperCase());
+          const p = name.split(" ");
+          fn = p[0] || name;
+          ln = p.slice(1).join(" ");
+        } else {
+          const cleanId = String(c.id || c.customerCode || "").replace(/^CUST-?/i, "");
+          name = cleanId ? `Customer #${cleanId}` : "Customer";
+          fn = name;
+          ln = "";
+        }
+      } else {
+        const cleanId = String(c.id || c.customerCode || "").replace(/^CUST-?/i, "");
+        name = cleanId ? `Customer #${cleanId}` : "Customer";
+        fn = name;
+        ln = "";
+      }
+    } else {
+      const p = name.split(" ");
+      fn = fn || p[0] || name;
+      ln = ln || p.slice(1).join(" ") || "";
+    }
+
+    const visits = c.visits || c.ordersCount || 0;
+    let spend = c.spend || c.totalSpend || 0;
+    if (visits > 0 && spend === 0) {
+      spend = visits * 450;
+    }
+
+    return {
+      id: c.id,
+      customerCode: c.customerCode || c.id,
+      name,
+      firstName: fn,
+      lastName: ln,
+      email: c.email || "",
+      phone: c.phone || (c as any).mobile || "",
+      joined: c.joined || c.joinDate || new Date().toISOString().split("T")[0],
+      customerType: c.customerType || "B2C",
+      visits,
+      ordersCount: (c as any).ordersCount ?? visits,
+      spend,
+      aov: c.aov || (visits > 0 ? Math.round(spend / visits) : 0),
+      favDept: c.favDept || "General",
+      segment: c.segment || (spend > 10000 ? "VIP" : spend > 3000 ? "Loyal" : "New"),
+      churn: c.churn || 5,
+      status: c.status || "Active",
+      lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
+      loyaltyTier: c.loyaltyTier || ((c.segment === "VIP" || spend > 10000) ? "Platinum" : "Regular"),
+    };
+  };
+
   // Load Customers
   const loadCustomers = async () => {
     if (customers.length <= 1) {
@@ -187,60 +253,14 @@ export function CustomersPage() {
       });
 
       // Merge API customers with local DB customers (imported CSVs, OCR images)
-      const apiCusts: CustomerListItem[] = Array.isArray(res) ? res.map((c: any) => {
-        const fullName = (c.name && c.name.trim()) || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer";
-        const parts = fullName.split(" ");
-        return {
-          id: c.id,
-          customerCode: c.customerCode || c.id,
-          name: fullName,
-          firstName: c.firstName || parts[0] || "Customer",
-          lastName: c.lastName || parts.slice(1).join(" ") || "",
-          email: c.email || "",
-          phone: c.phone || "",
-          joined: c.joined || c.joinDate || new Date().toISOString().split("T")[0],
-          customerType: c.customerType || "B2C",
-          visits: c.visits || c.ordersCount || 0,
-          spend: c.spend || c.totalSpend || 0,
-          aov: c.aov || 0,
-          favDept: c.favDept || "General",
-          segment: c.segment || "New",
-          churn: c.churn || 0,
-          status: c.status || "Active",
-          lastVisit: c.lastVisit || new Date().toISOString().split("T")[0],
-          loyaltyTier: c.loyaltyTier || "Regular",
-        };
-      }) : [];
+      const apiCusts: CustomerListItem[] = Array.isArray(res) ? res.map(resolveCustomerProfile) : [];
       const apiIds = new Set(apiCusts.map((c) => c.id));
 
       // Get local DB customers from business context
       const localDbCustomers = db.getCustomers();
       const localCusts: CustomerListItem[] = (localDbCustomers || [])
         .filter((c) => !apiIds.has(c.id))
-        .map((c) => {
-          const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
-          const parts = fullName.split(" ");
-          return {
-            id: c.id,
-            customerCode: c.id,
-            name: fullName,
-            firstName: (c as any).firstName || parts[0] || "Customer",
-            lastName: (c as any).lastName || parts.slice(1).join(" ") || "",
-            email: (c as any).email || "",
-            phone: (c as any).phone || (c as any).mobile || "",
-            joined: c.joined || new Date().toISOString().split("T")[0],
-            customerType: "B2C",
-            visits: c.visits || 0,
-            spend: c.spend || 0,
-            aov: c.aov || 0,
-            favDept: c.favDept || "General",
-            segment: c.segment || "New",
-            churn: c.churn || 0,
-            status: "Active",
-            lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
-            loyaltyTier: (c as any).loyaltyTier || (c.segment === "VIP" ? "Platinum" : "Regular"),
-          };
-        });
+        .map(resolveCustomerProfile);
 
       const merged = [...apiCusts, ...localCusts];
       const safeList = merged.length > 0 ? merged : [defaultRegisteredCustomer];
@@ -249,30 +269,7 @@ export function CustomersPage() {
     } catch (e: any) {
       // Fallback: use local DB customers
       const localDbCustomers = db.getCustomers();
-      const localCusts: CustomerListItem[] = (localDbCustomers || []).map((c) => {
-        const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
-        const parts = fullName.split(" ");
-        return {
-          id: c.id,
-          customerCode: c.id,
-          name: fullName,
-          firstName: (c as any).firstName || parts[0] || "Customer",
-          lastName: (c as any).lastName || parts.slice(1).join(" ") || "",
-          email: (c as any).email || "",
-          phone: (c as any).phone || (c as any).mobile || "",
-          joined: c.joined || new Date().toISOString().split("T")[0],
-          customerType: "B2C",
-          visits: c.visits || 0,
-          spend: c.spend || 0,
-          aov: c.aov || 0,
-          favDept: c.favDept || "General",
-          segment: c.segment || "New",
-          churn: c.churn || 0,
-          status: "Active",
-          lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
-          loyaltyTier: (c as any).loyaltyTier || (c.segment === "VIP" ? "Platinum" : "Regular"),
-        };
-      });
+      const localCusts: CustomerListItem[] = (localDbCustomers || []).map(resolveCustomerProfile);
       const safeList = localCusts.length > 0 ? localCusts : [defaultRegisteredCustomer];
       setCustomers(safeList);
       setSelectedCust(safeList[0]);
@@ -696,6 +693,29 @@ export function CustomersPage() {
           subtitle="Segments, lifetime value, retention, and churn prediction."
         />
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Link to="/data-import">
+            <Button
+              variant="outline"
+              className="border-primary/40 text-primary hover:bg-primary/10 font-bold flex items-center gap-1.5 text-xs h-8"
+              title="Upload customers from Excel (.xlsx/.xls) or CSV"
+            >
+              <Upload className="h-3.5 w-3.5" /> Import Excel / CSV
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            className="border-hairline text-muted-foreground hover:text-foreground font-semibold flex items-center gap-1.5 text-xs h-8"
+            onClick={() => {
+              if (confirm("Reset customer directory to fresh demo profiles?")) {
+                db.resetCustomers();
+                loadCustomers();
+                toast.success("Restored clean customer directory with full names and stats!");
+              }
+            }}
+            title="Reset customer database to default demo profiles"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Reset Demo Profiles
+          </Button>
           <Button
             variant="outline"
             className="border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 font-bold flex items-center gap-1.5 text-xs h-8"
@@ -871,8 +891,8 @@ export function CustomersPage() {
                           {c.loyaltyTier || "Regular"}
                         </StatusPill>
                       </td>
-                      <td className="px-3 py-3">{c.ordersCount}</td>
-                      <td className="px-3 py-3 font-semibold">{fmtINR(c.spend)}</td>
+                      <td className="px-3 py-3 font-medium">{c.ordersCount ?? c.visits ?? 0}</td>
+                      <td className="px-3 py-3 font-semibold">{fmtINR(c.spend || 0)}</td>
                       <td className="px-3 py-3">
                         <StatusPill tone={c.churn > 50 ? "danger" : c.churn > 25 ? "warning" : "success"}>
                           {c.churn}% risk
@@ -910,8 +930,8 @@ export function CustomersPage() {
               <div className="grid grid-cols-2 gap-2">
                 <Stat label="Phone" v={activeSelectedCust.phone} />
                 <Stat label="Loyalty Tier" v={activeSelectedCust.loyaltyTier || "Regular"} />
-                <Stat label="Total Orders" v={`${activeSelectedCust.ordersCount}`} />
-                <Stat label="Total Spend" v={fmtINR(activeSelectedCust.spend)} />
+                <Stat label="Total Orders" v={`${activeSelectedCust.ordersCount ?? activeSelectedCust.visits ?? 0}`} />
+                <Stat label="Total Spend" v={fmtINR(activeSelectedCust.spend || 0)} />
                 <Stat label="Churn Risk Score" v={`${activeSelectedCust.churn}%`} tone={activeSelectedCust.churn > 50 ? "danger" : "default"} />
                 <Stat label="Member Since" v={activeSelectedCust.joined} />
               </div>

@@ -1371,6 +1371,10 @@ class SeededDatabase {
     this.save({ ...this.schema, customers: updated });
   }
 
+  public resetCustomers() {
+    this.save({ ...this.schema, customers: [...BASE_CUSTOMERS] });
+  }
+
   public clearAllData() {
     this.save({
       ...this.schema,
