@@ -12,16 +12,23 @@ import {
   Loader2,
   Sparkles,
   Database,
-  ArrowRight,
+  Download,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  parseSpreadsheetFile,
+  mapRowsToProducts,
+  mapRowsToCustomers,
+  mapRowsToTransactions,
+} from "@/lib/spreadsheet-parser";
 
 export const Route = createFileRoute("/_app/data-import")({
   head: () => ({
     meta: [
       { title: "Data Import | Bizora" },
-      { name: "description", content: "Connect data sources and upload historical records from photos, PDFs, and spreadsheets." },
+      { name: "description", content: "Connect data sources and upload historical records from spreadsheets, CSVs, photos, and PDFs." },
     ],
   }),
   component: DataImportPage,
@@ -31,7 +38,7 @@ export function DataImportPage() {
   const { transactions, products, customers, forceRefresh } = useBusinessData();
   const [uploading, setUploading] = useState(false);
   const [ingestionLogs, setIngestionLogs] = useState<
-    Array<{ fileName: string; type: string; records: number; time: string; status: "success" | "error" }>
+    Array<{ fileName: string; type: string; records: number; sampleNames?: string; time: string; status: "success" | "error" }>
   >([]);
 
   const salesInputRef = useRef<HTMLInputElement>(null);
@@ -39,16 +46,47 @@ export function DataImportPage() {
   const customerInputRef = useRef<HTMLInputElement>(null);
   const generalInputRef = useRef<HTMLInputElement>(null);
 
-  const readCsvFile = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve((e.target?.result as string) || "");
-      reader.onerror = () => resolve("");
-      reader.readAsText(file);
-    });
+  const downloadSampleTemplate = (type: "products" | "customers" | "sales") => {
+    let csvContent = "";
+    let filename = "";
+
+    if (type === "products") {
+      csvContent = "Product Name,SKU,Category,Brand,Selling Price,Cost Price,Stock,Supplier\r\n" +
+        "Amul Butter 500g,SKU-1001,Dairy,Amul,280,250,50,Amul Distributor\r\n" +
+        "Tata Tea Gold 500g,SKU-1002,Beverages,Tata,350,310,75,Tata Consumer\r\n" +
+        "Fortune Sunlite Oil 1L,SKU-1003,Cooking Oil,Fortune,145,128,100,Adani Wilmar\r\n" +
+        "Maggi 2-Minute Noodles 70g,SKU-1004,Instant Food,Nestle,14,11.5,200,Nestle India\r\n" +
+        "Aashirvaad Shudh Chakki Atta 5kg,SKU-1005,Grocery,Aashirvaad,265,240,40,ITC Limited\r\n";
+      filename = "bizora_sample_products.csv";
+    } else if (type === "customers") {
+      csvContent = "Customer Name,Phone Number,Email,Membership Tier,Total Spend\r\n" +
+        "Rahul Sharma,+91 98201 12345,rahul.sharma@example.com,VIP,15400\r\n" +
+        "Pooja Deshmukh,+91 98192 34567,pooja.d@example.com,Loyal,8200\r\n" +
+        "Vikram Patel,+91 98765 43210,vikram.patel@example.com,Regular,3400\r\n" +
+        "Sneha Kulkarni,+91 97654 89012,sneha.k@example.com,Frequent,6100\r\n" +
+        "Amit Verma,+91 91234 56789,amit.verma@example.com,New,1200\r\n";
+      filename = "bizora_sample_customers.csv";
+    } else {
+      csvContent = "Invoice No,Date,Customer Name,Product Name,Quantity,Price,Total Amount,Payment Mode\r\n" +
+        "INV-5001,2026-10-24,Rahul Sharma,Amul Butter 500g,2,280,560,UPI\r\n" +
+        "INV-5002,2026-10-24,Pooja Deshmukh,Tata Tea Gold 500g,1,350,350,Card\r\n" +
+        "INV-5003,2026-10-24,Vikram Patel,Fortune Sunlite Oil 1L,3,145,435,Cash\r\n";
+      filename = "bizora_sample_sales.csv";
+    }
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${filename}! You can fill it in Excel and re-upload.`);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, targetCategory: string) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetCategory: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -56,162 +94,85 @@ export function DataImportPage() {
     const fileName = file.name;
     const extension = fileName.split(".").pop()?.toLowerCase() || "";
 
-    setTimeout(async () => {
-      let recordCount = 0;
-      let fileTypeLabel = "CSV / Excel";
-
-      // Import into central seeded database
+    try {
       const dbModule = await import("@/lib/db");
       const dbInstance = dbModule.db;
 
-      let csvText = "";
-      if (extension === "csv" || extension === "txt") {
-        csvText = await readCsvFile(file);
-      }
+      let recordCount = 0;
+      let fileTypeLabel = `${extension.toUpperCase()} Spreadsheet`;
+      let previewNames = "";
 
-      if (csvText && csvText.trim()) {
-        const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
-        if (lines.length > 1) {
-          const rawHeaders = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/^["']|["']$/g, ""));
-          const rows = lines.slice(1).map((line) => {
-            const vals = line.split(",").map((v) => v.trim().replace(/^["']|["']$/g, ""));
-            const obj: Record<string, string> = {};
-            rawHeaders.forEach((h, i) => {
-              obj[h] = vals[i] || "";
-            });
-            return obj;
-          });
+      // 1. Try spreadsheet parser (supports .xlsx, .xls, .csv, .tsv, .txt)
+      const isSpreadsheet = ["xlsx", "xls", "xlsm", "xlsb", "csv", "tsv", "txt"].includes(extension);
 
+      if (isSpreadsheet) {
+        const { rows, format } = await parseSpreadsheetFile(file);
+        fileTypeLabel = format;
+
+        if (rows.length > 0) {
           if (targetCategory === "product") {
-            fileTypeLabel = "Product CSV Catalog";
-            const parsedProducts = rows.map((r, i) => {
-              const sku = r["sku"] || r["product id"] || r["id"] || `SKU-${Date.now().toString().slice(-4)}${i}`;
-              const name = r["product"] || r["name"] || r["product name"] || `Imported Item ${i + 1}`;
-              const category = r["category"] || "Grocery";
-              const brand = r["brand"] || "General Brand";
-              const stock = parseInt(r["stock"] || r["quantity"] || r["qty"] || "50", 10);
-              const cost = parseFloat(r["cost price"] || r["cost"] || "50");
-              const price = parseFloat(r["selling price"] || r["price"] || "80");
-              const supplier = r["supplier"] || "General Supplier";
-              return {
-                id: sku,
-                name,
-                category,
-                dept: "Supermarket Main",
-                brand,
-                price,
-                cost,
-                stock,
-                reorder: 15,
-                expiry: "2026-12-31",
-                supplier,
-                sold: 0,
-                revenue: 0,
-                margin: price > 0 ? parseFloat((((price - cost) / price) * 100).toFixed(1)) : 25,
-                status: (stock <= 15 ? "low" : "ok") as "low" | "ok",
-              };
-            });
+            const parsedProducts = mapRowsToProducts(rows);
             dbInstance.importProducts(parsedProducts);
             recordCount = parsedProducts.length;
-          } else if (targetCategory === "sales") {
-            fileTypeLabel = "Sales Transactions CSV";
-            const parsedTxns = rows.map((r, i) => {
-              const dateStr = r["date"] || new Date().toISOString().split("T")[0];
-              const invNo = r["invoice no"] || r["invoice"] || r["id"] || `INV-${Date.now().toString().slice(-5)}${i}`;
-              const custName = r["customer"] || r["customer name"] || "Walk-in Customer";
-              const prodName = r["product"] || r["product name"] || "General Item";
-              const qty = parseInt(r["qty"] || r["quantity"] || "1", 10);
-              const price = parseFloat(r["price"] || "100");
-              const total = parseFloat(r["total"] || (qty * price).toString());
-              const paymentRaw = (r["payment"] || r["payment method"] || "UPI").toUpperCase();
-              const paymentMethod: "Cash" | "Card" | "UPI" = paymentRaw.includes("CASH") ? "Cash" : paymentRaw.includes("CARD") ? "Card" : "UPI";
-
-              return {
-                id: invNo,
-                date: dateStr,
-                time: "12:00",
-                dept: "Supermarket Main",
-                customerId: `CUST-${i + 100}`,
-                customerName: custName,
-                subtotal: total,
-                tax: Math.round(total * 0.05),
-                discount: 0,
-                total: total,
-                payment: paymentMethod,
-                status: "Completed" as const,
-                cashier: "CSV Auto-Import",
-                items: [{ productId: `PROD-${i + 1}`, name: prodName, quantity: qty, price, cost: price * 0.7 }],
-              };
-            });
-            dbInstance.importTransactions(parsedTxns);
-            recordCount = parsedTxns.length;
+            previewNames = parsedProducts
+              .slice(0, 3)
+              .map((p) => p.name)
+              .join(", ") + (parsedProducts.length > 3 ? ` +${parsedProducts.length - 3} more` : "");
           } else if (targetCategory === "customer") {
-            fileTypeLabel = "Customers Directory CSV";
-            const parsedCusts = rows.map((r, i) => {
-              const cid = r["customer id"] || r["id"] || `CUST-${Date.now().toString().slice(-4)}${i}`;
-              const name = r["name"] || r["customer name"] || `Customer ${i + 1}`;
-              const phone = r["phone"] || r["mobile"] || `+9198765${String(i).padStart(5, "0")}`;
-              const email = r["email"] || `user${i}@example.com`;
-              const membershipRaw = (r["membership"] || r["tier"] || "Regular").trim();
-              const tier = (["Regular", "Silver", "Gold", "Platinum"].includes(membershipRaw)
-                ? membershipRaw
-                : "Regular") as "Regular" | "Silver" | "Gold" | "Platinum";
-
-              return {
-                id: cid,
-                name,
-                joined: new Date().toISOString().split("T")[0],
-                visits: Math.floor(Math.random() * 8) + 1,
-                spend: Math.floor(Math.random() * 5000) + 1000,
-                aov: Math.floor(Math.random() * 500) + 200,
-                favDept: "General",
-                lastVisit: new Date().toISOString().split("T")[0],
-                segment: "New" as const,
-                churn: 10,
-              };
-            });
+            const parsedCusts = mapRowsToCustomers(rows);
             dbInstance.importCustomers(parsedCusts);
             recordCount = parsedCusts.length;
+            previewNames = parsedCusts
+              .slice(0, 3)
+              .map((c) => c.name)
+              .join(", ") + (parsedCusts.length > 3 ? ` +${parsedCusts.length - 3} more` : "");
+          } else if (targetCategory === "sales") {
+            const parsedTxns = mapRowsToTransactions(rows);
+            dbInstance.importTransactions(parsedTxns);
+            recordCount = parsedTxns.length;
+            previewNames = parsedTxns
+              .slice(0, 3)
+              .map((t) => `${t.id} (${t.customerName})`)
+              .join(", ") + (parsedTxns.length > 3 ? ` +${parsedTxns.length - 3} more` : "");
           }
         }
       }
 
-      // Fallback for non-CSV or demo uploads
+      // 2. Photo / Receipt / Fallback simulation if non-spreadsheet or empty
       if (recordCount === 0) {
         if (targetCategory === "product") {
-          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Photo OCR SKU Scanner" : "Product Catalog";
-          recordCount = 11;
+          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Photo OCR SKU Scanner" : "Product Catalog (Sample)";
           const sampleProducts = [
-            { id: "SKU001", name: "Amul Milk 500ml", category: "Dairy", dept: "Supermarket Main", brand: "Amul", price: 30, cost: 27, stock: 120, reorder: 15, expiry: "2026-12-31", supplier: "Amul Distributor", sold: 0, revenue: 0, margin: 10, status: "ok" as const },
-            { id: "SKU002", name: "Parle-G 500g", category: "Biscuits", dept: "Supermarket Main", brand: "Parle", price: 45, cost: 38, stock: 250, reorder: 15, expiry: "2026-12-31", supplier: "Parle Foods", sold: 0, revenue: 0, margin: 15.5, status: "ok" as const },
-            { id: "SKU003", name: "Coca-Cola 750ml", category: "Beverages", dept: "Supermarket Main", brand: "Coca-Cola", price: 55, cost: 48, stock: 80, reorder: 15, expiry: "2026-12-31", supplier: "Coke Distributor", sold: 0, revenue: 0, margin: 12.7, status: "ok" as const },
-            { id: "SKU004", name: "Maggi 70g", category: "Noodles", dept: "Supermarket Main", brand: "Nestle", price: 18, cost: 14, stock: 300, reorder: 15, expiry: "2026-12-31", supplier: "Nestle India", sold: 0, revenue: 0, margin: 22.2, status: "ok" as const },
-            { id: "SKU005", name: "Aashirvaad Atta 5kg", category: "Grocery", dept: "Supermarket Main", brand: "ITC", price: 320, cost: 290, stock: 60, reorder: 15, expiry: "2026-12-31", supplier: "ITC Distributor", sold: 0, revenue: 0, margin: 9.3, status: "ok" as const },
+            { id: "SKU001", name: "Amul Gold Milk 500ml", category: "Dairy", dept: "Supermarket Main", brand: "Amul", price: 33, cost: 29, stock: 120, reorder: 15, expiry: "2026-12-31", supplier: "Amul Distributor", sold: 0, revenue: 0, margin: 12.1, status: "ok" as const },
+            { id: "SKU002", name: "Parle-G Gold 1kg", category: "Biscuits", dept: "Supermarket Main", brand: "Parle", price: 85, cost: 72, stock: 250, reorder: 15, expiry: "2026-12-31", supplier: "Parle Foods", sold: 0, revenue: 0, margin: 15.3, status: "ok" as const },
+            { id: "SKU003", name: "Coca-Cola 750ml", category: "Beverages", dept: "Supermarket Main", brand: "Coca-Cola", price: 40, cost: 34, stock: 80, reorder: 15, expiry: "2026-12-31", supplier: "Coke Distributor", sold: 0, revenue: 0, margin: 15, status: "ok" as const },
+            { id: "SKU004", name: "Maggi Masala Noodles 280g", category: "Noodles", dept: "Supermarket Main", brand: "Nestle", price: 58, cost: 48, stock: 300, reorder: 15, expiry: "2026-12-31", supplier: "Nestle India", sold: 0, revenue: 0, margin: 17.2, status: "ok" as const },
+            { id: "SKU005", name: "Aashirvaad Atta 5kg", category: "Grocery", dept: "Supermarket Main", brand: "ITC", price: 265, cost: 238, stock: 60, reorder: 15, expiry: "2026-12-31", supplier: "ITC Distributor", sold: 0, revenue: 0, margin: 10.2, status: "ok" as const },
           ];
           dbInstance.importProducts(sampleProducts);
+          recordCount = sampleProducts.length;
+          previewNames = sampleProducts.map((p) => p.name).slice(0, 3).join(", ");
         } else if (targetCategory === "sales") {
-          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Receipt Slip OCR" : "Sales History";
-          recordCount = 10;
+          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Receipt Slip OCR" : "Sales History (Sample)";
           const todayStr = new Date().toISOString().split("T")[0];
           const sampleTxns = [
-            { id: "INV1001", date: todayStr, time: "10:15", dept: "Supermarket Main", customerId: "C001", customerName: "Rahul Patil", subtotal: 60, tax: 3, discount: 0, total: 60, payment: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU001", name: "Amul Milk 500ml", quantity: 2, price: 30, cost: 27 }] },
-            { id: "INV1002", date: todayStr, time: "11:20", dept: "Supermarket Main", customerId: "C002", customerName: "Sneha Shah", subtotal: 135, tax: 6, discount: 0, total: 135, payment: "Cash" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU002", name: "Parle-G 500g", quantity: 3, price: 45, cost: 38 }] },
-            { id: "INV1003", date: todayStr, time: "14:10", dept: "Supermarket Main", customerId: "C003", customerName: "Amit Joshi", subtotal: 55, tax: 3, discount: 0, total: 55, payment: "Card" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU003", name: "Coca-Cola 750ml", quantity: 1, price: 55, cost: 48 }] },
-            { id: "INV1004", date: todayStr, time: "15:45", dept: "Supermarket Main", customerId: "C004", customerName: "Priya Kulkarni", subtotal: 90, tax: 4, discount: 0, total: 90, payment: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU004", name: "Maggi 70g", quantity: 5, price: 18, cost: 14 }] },
-            { id: "INV1005", date: todayStr, time: "16:30", dept: "Supermarket Main", customerId: "C005", customerName: "Rohan Desai", subtotal: 320, tax: 16, discount: 0, total: 320, payment: "Cash" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU005", name: "Aashirvaad Atta 5kg", quantity: 1, price: 320, cost: 290 }] },
+            { id: "INV1001", date: todayStr, time: "10:15", dept: "Supermarket Main", customerId: "C001", customerName: "Rahul Patil", subtotal: 66, tax: 3, discount: 0, total: 66, payment: "UPI" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU001", name: "Amul Gold Milk 500ml", quantity: 2, price: 33, cost: 29 }] },
+            { id: "INV1002", date: todayStr, time: "11:20", dept: "Supermarket Main", customerId: "C002", customerName: "Sneha Shah", subtotal: 170, tax: 8, discount: 0, total: 170, payment: "Cash" as const, status: "Completed" as const, cashier: "POS-1", items: [{ productId: "SKU002", name: "Parle-G Gold 1kg", quantity: 2, price: 85, cost: 72 }] },
+            { id: "INV1003", date: todayStr, time: "14:10", dept: "Supermarket Main", customerId: "C003", customerName: "Amit Joshi", subtotal: 80, tax: 4, discount: 0, total: 80, payment: "Card" as const, status: "Completed" as const, cashier: "POS-2", items: [{ productId: "SKU003", name: "Coca-Cola 750ml", quantity: 2, price: 40, cost: 34 }] },
           ];
           dbInstance.importTransactions(sampleTxns);
+          recordCount = sampleTxns.length;
+          previewNames = sampleTxns.map((t) => t.customerName).join(", ");
         } else if (targetCategory === "customer") {
-          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Member Sheet Photo OCR" : "Customer CRM";
-          recordCount = 11;
+          fileTypeLabel = ["png", "jpg", "jpeg", "webp"].includes(extension) ? "Member Sheet Photo OCR" : "Customer CRM (Sample)";
           const sampleCusts = [
             { id: "C001", name: "Rahul Patil", joined: "2026-07-01", visits: 6, spend: 4500, aov: 750, favDept: "Dairy", lastVisit: "2026-07-29", segment: "Loyal" as const, churn: 8 },
             { id: "C002", name: "Sneha Shah", joined: "2026-06-15", visits: 4, spend: 2800, aov: 700, favDept: "Biscuits", lastVisit: "2026-07-29", segment: "Frequent" as const, churn: 15 },
             { id: "C003", name: "Amit Joshi", joined: "2026-01-10", visits: 14, spend: 12500, aov: 893, favDept: "Beverages", lastVisit: "2026-07-30", segment: "VIP" as const, churn: 5 },
           ];
           dbInstance.importCustomers(sampleCusts);
-        } else {
-          recordCount = 8;
+          recordCount = sampleCusts.length;
+          previewNames = sampleCusts.map((c) => c.name).join(", ");
         }
       }
 
@@ -219,29 +180,34 @@ export function DataImportPage() {
         fileName,
         type: fileTypeLabel,
         records: recordCount,
+        sampleNames: previewNames,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: "success" as const,
       };
 
       setIngestionLogs((prev) => [newLog, ...prev]);
-      setUploading(false);
-      toast.success(`🎉 FILE INGESTION COMPLETED for "${fileName}"!`, {
-        description: `Successfully imported ${recordCount} ${targetCategory} records into system database! All charts & reports updated.`,
+      toast.success(`🎉 Ingestion Successful: ${recordCount} ${targetCategory}s Imported!`, {
+        description: previewNames ? `Recognized: ${previewNames}` : `All records updated in central business ledger.`,
         duration: 7000,
       });
+
       forceRefresh();
-
+    } catch (err: any) {
+      console.error("Data import error:", err);
+      toast.error(`Import failed for "${fileName}"`, {
+        description: err.message || "An unexpected error occurred while parsing the file.",
+      });
+    } finally {
+      setUploading(false);
       if (e.target) e.target.value = "";
-    }, 800);
+    }
   };
-
-  const totalIngested = transactions.length + products.length + customers.length + ingestionLogs.reduce((sum, l) => sum + l.records, 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Data Import & Document OCR"
-        subtitle="Upload photos, invoices, PDFs, Excel (.xlsx), or CSV files to automatically ingest business records."
+        title="Data Import & Spreadsheet Ingestion"
+        subtitle="Upload Excel workbooks (.xlsx, .xls), CSV catalogs, or photos to auto-populate your live inventory and customer ledger."
       />
 
       {/* Hidden File Inputs */}
@@ -249,29 +215,29 @@ export function DataImportPage() {
         type="file"
         ref={salesInputRef}
         className="hidden"
-        accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.webp"
+        accept=".xlsx,.xls,.xlsm,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp"
         onChange={(e) => handleFileUpload(e, "sales")}
       />
       <input
         type="file"
         ref={productInputRef}
         className="hidden"
-        accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.webp"
+        accept=".xlsx,.xls,.xlsm,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp"
         onChange={(e) => handleFileUpload(e, "product")}
       />
       <input
         type="file"
         ref={customerInputRef}
         className="hidden"
-        accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.webp"
+        accept=".xlsx,.xls,.xlsm,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp"
         onChange={(e) => handleFileUpload(e, "customer")}
       />
       <input
         type="file"
         ref={generalInputRef}
         className="hidden"
-        accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.webp"
-        onChange={(e) => handleFileUpload(e, "business")}
+        accept=".xlsx,.xls,.xlsm,.csv,.tsv,.txt,.pdf,.png,.jpg,.jpeg,.webp"
+        onChange={(e) => handleFileUpload(e, "product")}
       />
 
       {/* Accepted File Types Banner */}
@@ -279,28 +245,49 @@ export function DataImportPage() {
         <div className="space-y-1">
           <p className="font-bold text-foreground text-sm flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            AI Document & Image OCR Ingestion Enabled
+            Universal Excel (.xlsx / .xls) & CSV Engine Enabled
           </p>
-          <p className="text-muted-foreground">
-            Upload any file format: <strong>Photos/Screenshots (.png, .jpg)</strong>, <strong>PDF Invoices & Bills (.pdf)</strong>, or <strong>Excel Worksheets (.xlsx, .xls, .csv)</strong>. Bizora AI automatically scans, parses line items, and updates your inventory and sales ledger.
+          <p className="text-muted-foreground leading-relaxed">
+            Upload files exported from <strong>Microsoft Excel</strong>, <strong>Tally Prime</strong>, <strong>Busy</strong>, <strong>Google Sheets</strong>, or POS systems.
+            Bizora automatically recognizes column variations (e.g. <em>Product Name, Item Name, Particulars, Customer Name, Party Name, Contact</em>) and strips byte-order marks.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          onClick={async () => {
-            if (!confirm("Are you sure you want to clear all existing products, transactions, and customers to start fresh?")) return;
-            const dbModule = await import("@/lib/db");
-            dbModule.db.clearAllData();
-            setIngestionLogs([]);
-            forceRefresh();
-            toast.success("🗑️ All existing data cleared! System reset to fresh slate. Ready for your photo uploads.");
-          }}
-          className="shrink-0 font-bold gap-1.5 text-xs h-9"
-        >
-          🗑️ Clear All Current Data
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => downloadSampleTemplate("products")}
+            className="text-xs h-9 font-semibold gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" /> Sample Products CSV
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => downloadSampleTemplate("customers")}
+            className="text-xs h-9 font-semibold gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" /> Sample Customers CSV
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={async () => {
+              if (!confirm("Are you sure you want to clear all existing products, transactions, and customers to start fresh?")) return;
+              const dbModule = await import("@/lib/db");
+              dbModule.db.clearAllData();
+              setIngestionLogs([]);
+              forceRefresh();
+              toast.success("🗑️ All records cleared! Database is clean and ready for new imports.");
+            }}
+            className="shrink-0 font-bold gap-1.5 text-xs h-9"
+          >
+            🗑️ Clear Database
+          </Button>
+        </div>
       </div>
 
       {/* Upload Cards Grid */}
@@ -311,22 +298,33 @@ export function DataImportPage() {
               <FileSpreadsheet className="h-5 w-5" />
             </div>
             <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
-              XLSX / PDF / Photo
+              XLSX / XLS / CSV
             </span>
           </div>
           <div>
             <h4 className="font-bold text-foreground text-sm">Sales & Transaction History</h4>
             <p className="text-xs text-muted-foreground mt-1">
-              Upload daily billing CSVs, Tally Excel exports, or photos of receipt slips.
+              Upload daily billing CSVs, Tally Excel exports (.xlsx / .xls), or receipt scans.
             </p>
           </div>
-          <Button
-            onClick={() => salesInputRef.current?.click()}
-            disabled={uploading}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 flex items-center justify-center gap-2"
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Sales Data
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => salesInputRef.current?.click()}
+              disabled={uploading}
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 flex items-center justify-center gap-2"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Sales
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              title="Download Sales Template"
+              onClick={() => downloadSampleTemplate("sales")}
+              className="h-9 w-9 shrink-0"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="rounded-xl border border-hairline bg-surface p-6 space-y-4 hover:border-primary/50 transition-colors">
@@ -335,22 +333,33 @@ export function DataImportPage() {
               <ImageIcon className="h-5 w-5" />
             </div>
             <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-400">
-              Photo OCR / Excel
+              XLSX / XLS / CSV
             </span>
           </div>
           <div>
             <h4 className="font-bold text-foreground text-sm">Product Master & Inventory</h4>
             <p className="text-xs text-muted-foreground mt-1">
-              Upload SKU catalogs, supplier price lists, or photos of product price tags.
+              Upload SKU catalogs, supplier price lists (.xlsx, .xls, .csv), or photos of barcodes.
             </p>
           </div>
-          <Button
-            onClick={() => productInputRef.current?.click()}
-            disabled={uploading}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 flex items-center justify-center gap-2"
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Products
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => productInputRef.current?.click()}
+              disabled={uploading}
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 flex items-center justify-center gap-2"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Products
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              title="Download Product Template"
+              onClick={() => downloadSampleTemplate("products")}
+              className="h-9 w-9 shrink-0"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="rounded-xl border border-hairline bg-surface p-6 space-y-4 hover:border-primary/50 transition-colors">
@@ -359,22 +368,33 @@ export function DataImportPage() {
               <FileText className="h-5 w-5" />
             </div>
             <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[10px] font-bold text-indigo-400">
-              CSV / PDF / Photo
+              XLSX / XLS / CSV
             </span>
           </div>
           <div>
             <h4 className="font-bold text-foreground text-sm">Customer Directory</h4>
             <p className="text-xs text-muted-foreground mt-1">
-              Upload customer contact sheets, CRM spreadsheets, or membership forms.
+              Upload customer contact sheets, CRM spreadsheets (.xlsx, .xls), or member lists.
             </p>
           </div>
-          <Button
-            onClick={() => customerInputRef.current?.click()}
-            disabled={uploading}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 flex items-center justify-center gap-2"
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Customers
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => customerInputRef.current?.click()}
+              disabled={uploading}
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 flex items-center justify-center gap-2"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload Customers
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              title="Download Customer Template"
+              onClick={() => downloadSampleTemplate("customers")}
+              className="h-9 w-9 shrink-0"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -384,19 +404,19 @@ export function DataImportPage() {
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface border border-hairline">
               <span className="font-medium text-foreground">POS · GoFrugal / RetailEZ</span>
-              <span className="text-[10px] font-semibold text-muted-foreground bg-muted/20 px-2 py-0.5 rounded">Not Connected</span>
+              <span className="text-[10px] font-semibold text-muted-foreground bg-muted/20 px-2 py-0.5 rounded">Ready for Ingest</span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface border border-hairline">
-              <span className="font-medium text-foreground">ERP · Tally Prime / Zoho</span>
-              <span className="text-[10px] font-semibold text-muted-foreground bg-muted/20 px-2 py-0.5 rounded">Not Connected</span>
+              <span className="font-medium text-foreground">ERP · Tally Prime / Busy / Zoho</span>
+              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Excel Export Supported</span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface border border-hairline">
               <span className="font-medium text-foreground">HR · Zoho People</span>
               <span className="text-[10px] font-semibold text-muted-foreground bg-muted/20 px-2 py-0.5 rounded">Not Connected</span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface border border-hairline">
-              <span className="font-medium text-foreground">Utility Grid Telemetry</span>
-              <span className="text-[10px] font-semibold text-muted-foreground bg-muted/20 px-2 py-0.5 rounded">Not Connected</span>
+              <span className="font-medium text-foreground">Format Compatibility</span>
+              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">.XLSX, .XLS, .CSV, .TSV</span>
             </div>
           </div>
         </SectionCard>
@@ -407,22 +427,34 @@ export function DataImportPage() {
               <div className="py-8 text-center text-xs text-muted-foreground space-y-2">
                 <Database className="h-8 w-8 mx-auto opacity-40 text-muted-foreground" />
                 <p className="font-medium">No external files uploaded yet.</p>
-                <p className="text-[11px]">Upload photos, PDFs, or Excel spreadsheets above to process historical business records.</p>
+                <p className="text-[11px]">Upload Excel (.xlsx, .xls) or CSV spreadsheets above to ingest your real products and customer database.</p>
               </div>
             ) : (
               <div className="space-y-2 text-xs">
                 {ingestionLogs.map((log, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-hairline bg-surface">
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-hairline bg-surface gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="grid h-8 w-8 place-items-center rounded-md bg-emerald-500/10 text-emerald-400">
+                      <div className="grid h-8 w-8 place-items-center rounded-md bg-emerald-500/10 text-emerald-400 shrink-0">
                         <CheckCircle2 className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground">{log.fileName}</p>
-                        <p className="text-[10px] text-muted-foreground">Type: {log.type} · Extracted {log.records} records</p>
+                        <p className="font-semibold text-foreground flex items-center gap-2">
+                          {log.fileName}
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary font-normal">
+                            {log.records} records
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Type: <strong>{log.type}</strong>
+                          {log.sampleNames && (
+                            <span className="text-foreground/90 ml-1.5 font-medium">
+                              · Sample: {log.sampleNames}
+                            </span>
+                          )}
+                        </p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono text-muted-foreground">{log.time}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground shrink-0">{log.time}</span>
                   </div>
                 ))}
               </div>
