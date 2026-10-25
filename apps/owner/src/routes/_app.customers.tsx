@@ -474,7 +474,12 @@ export function CustomersPage() {
           email: cleanEmail,
           loyaltyTier: formLoyaltyTier,
         } as any;
-        db.save({ ...db.getSchema(), customers: allLocalCusts });
+        if (typeof (db as any).setCustomers === "function") {
+          (db as any).setCustomers(allLocalCusts);
+        } else {
+          const currentSchema = typeof (db as any).getSchema === "function" ? (db as any).getSchema() : ((db as any).schema || {});
+          db.save({ ...currentSchema, customers: allLocalCusts });
+        }
       } else {
         db.importCustomers([
           {
@@ -749,7 +754,12 @@ export function CustomersPage() {
       });
       // Also remove from local db
       const allLocalCusts = db.getCustomers().filter((c) => c.id !== id);
-      db.save({ ...db.getSchema(), customers: allLocalCusts });
+      if (typeof (db as any).setCustomers === "function") {
+        (db as any).setCustomers(allLocalCusts);
+      } else {
+        const currentSchema = typeof (db as any).getSchema === "function" ? (db as any).getSchema() : ((db as any).schema || {});
+        db.save({ ...currentSchema, customers: allLocalCusts });
+      }
 
       toast.success("Customer archived successfully.");
       setCustomers((prev) => prev.filter((c) => c.id !== id));

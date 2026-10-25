@@ -1220,6 +1220,14 @@ class SeededDatabase {
     }
   }
 
+  public getSchema(): Schema {
+    return this.schema;
+  }
+
+  public setCustomers(customers: Customer[]) {
+    this.save({ ...this.schema, customers });
+  }
+
   public getProducts(): Product[] {
     return this.schema.products;
   }
