@@ -124,7 +124,7 @@ export function CustomersPage() {
 
   // Vapi Voice Call Modal State
   const [vapiModalOpen, setVapiModalOpen] = useState(false);
-  const [vapiCallMode, setVapiCallMode] = useState<"browser" | "cellular">("browser");
+  const [vapiCallMode, setVapiCallMode] = useState<"browser" | "cellular">("cellular");
   const [vapiErrorDetails, setVapiErrorDetails] = useState<string | null>(null);
   const [vapiName, setVapiName] = useState("Om Khade");
   const [vapiPhone, setVapiPhone] = useState("+91 75880 21256");
@@ -485,11 +485,15 @@ export function CustomersPage() {
 
       if (response && response.success) {
         toast.success(`📞 OUTBOUND CELLULAR CALL DISPATCHED!`, {
-          description: `AI Voice Agent is ringing ${cleanPhone} (${vapiName}) now. Check your phone!`,
+          description: `Twilio PSTN gateway is ringing ${cleanPhone} (${vapiName}) right now!`,
           duration: 8000,
         });
-        setVapiCallStatus("idle");
-        setVapiModalOpen(false);
+        setVapiCallStatus("active");
+        setVapiCallDuration(0);
+        if (callTimerRef.current) clearInterval(callTimerRef.current);
+        callTimerRef.current = setInterval(() => {
+          setVapiCallDuration((prev) => prev + 1);
+        }, 1000);
       } else {
         const errMsg =
           response?.error ||
@@ -1066,17 +1070,22 @@ export function CustomersPage() {
                   <Phone className="h-10 w-10 text-emerald-600" />
                 </div>
                 <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs font-bold shadow">
-                  🎙️
+                  {vapiCallMode === "cellular" ? "📱" : "🎙️"}
                 </span>
               </div>
 
               <div>
                 <h3 className="text-base font-bold text-foreground">
-                  Speaking with {vapiName}
+                  {vapiCallMode === "cellular" ? `Calling ${vapiName}'s Mobile Phone...` : `Speaking with ${vapiName}`}
                 </h3>
                 <p className="font-mono text-xs text-muted-foreground mt-0.5">
-                  {vapiPhone} · Duration: {Math.floor(vapiCallDuration / 60)}:{(vapiCallDuration % 60).toString().padStart(2, "0")}
+                  {vapiPhone} · {vapiCallMode === "cellular" ? "Twilio PSTN Gateway · " : ""}Duration: {Math.floor(vapiCallDuration / 60)}:{(vapiCallDuration % 60).toString().padStart(2, "0")}
                 </p>
+                {vapiCallMode === "cellular" && (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 animate-pulse">
+                    🔔 Ringing your mobile device now — please pick up the call!
+                  </p>
+                )}
               </div>
 
               <div className="p-3 bg-surface rounded-xl border border-hairline max-w-sm text-left space-y-1">
@@ -1088,7 +1097,7 @@ export function CustomersPage() {
                 </p>
               </div>
 
-              {userSpeechHeard && (
+              {vapiCallMode === "browser" && userSpeechHeard && (
                 <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
                   <span className="font-bold">Heard from Mic:</span> &ldquo;{userSpeechHeard}&rdquo;
                 </div>

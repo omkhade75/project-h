@@ -269,9 +269,8 @@ export class CommsService {
       logId = log.id;
     } catch (dbErr) {}
 
-    // Dispatch real outbound phone call via Vapi REST API with HD trained voice & noise cancellation
+    // Dispatch real outbound phone call via Vapi REST API with verified schema
     try {
-      // Build trained inline assistant config with noise suppression and calibrated natural speech
       const vapiPayload: any = {
         phoneNumberId: config.vapiPhoneId,
         customer: {
@@ -279,13 +278,12 @@ export class CommsService {
           name: recipientName,
         },
         assistant: {
-          name: "Bizora AI Trained Voice Agent",
+          name: "Bizora AI Voice Agent",
+          firstMessage: `Namaste ${recipientName} ji! Main GrandSquare Supermart se Bizora AI assistant bol rahi hoon. ${contextMsg}`,
           transcriber: {
             provider: "deepgram",
             model: "nova-2",
             language: "hi",
-            smartFormat: true,
-            backgroundDenoisingEnabled: true,
           },
           model: {
             provider: "openai",
@@ -308,18 +306,12 @@ TRAINED SPEECH & VOICE CLARITY GUIDELINES:
           voice: {
             provider: "azure",
             voiceId: "hi-IN-SwaraNeural",
-            speed: 0.92,
-            style: "customerservice",
           },
-          backgroundDenoisingEnabled: true,
-          responseDelaySeconds: 0.4,
-          numWordsToInterrupt: 3,
-          firstMessage: `Namaste ${recipientName} ji! Main GrandSquare Supermart se Bizora AI assistant bol rahi hoon. ${contextMsg}`,
           endCallMessage: `Dhanyavaad ${recipientName} ji! Aapka din shubh ho. GrandSquare Supermart mein aapka swagat hai.`,
         },
       };
 
-      const vapiResponse = await fetch("https://api.vapi.ai/call/phone", {
+      const vapiResponse = await fetch("https://api.vapi.ai/call", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${config.vapiPrivateKey}`,
