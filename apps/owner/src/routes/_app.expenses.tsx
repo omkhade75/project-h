@@ -55,7 +55,8 @@ export const Route = createFileRoute("/_app/expenses")({
 
 function Expenses() {
   const { user } = useAuth();
-  const { scopedExpenses, scopedTransactions, forceRefresh, activeDate, dataVersion } = useBusinessData();
+  const { scopedExpenses, scopedTransactions, forceRefresh, activeDate, dataVersion } =
+    useBusinessData();
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -78,9 +79,14 @@ function Expenses() {
   }, [effectiveExpenses]);
 
   const totalRevenue = useMemo(() => {
-    const isCleared = typeof window !== "undefined" && window.localStorage.getItem("omnimind_db_cleared") === "true";
+    const isCleared =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("omnimind_db_cleared") === "true";
     if (isCleared) return 0;
-    const list = scopedTransactions && scopedTransactions.length > 0 ? scopedTransactions : db.getTransactions();
+    const list =
+      scopedTransactions && scopedTransactions.length > 0
+        ? scopedTransactions
+        : db.getTransactions();
     return (list || []).reduce((sum, t) => sum + (t.total || 0), 0);
   }, [scopedTransactions, dataVersion]);
 
@@ -100,7 +106,7 @@ function Expenses() {
 
   const momChange = useMemo(() => {
     if (effectiveExpenses.length === 0 || total === 0) return "0.0%";
-    
+
     // Group expenses by YYYY-MM
     const monthTotals: Record<string, number> = {};
     effectiveExpenses.forEach((e) => {
@@ -342,9 +348,7 @@ function Expenses() {
                     <td className="py-3 text-muted-foreground">{e.desc}</td>
                     <td className="py-3 text-muted-foreground">{e.vendor}</td>
                     <td className="py-3 text-right font-semibold pr-4">{fmtINR(e.amount)}</td>
-                    <td className="py-3 pl-4 text-muted-foreground">
-                      {e.dept || "Mall-wide"}
-                    </td>
+                    <td className="py-3 pl-4 text-muted-foreground">{e.dept || "Mall-wide"}</td>
                     <td className="py-3">
                       <StatusPill tone={e.status === "Paid" ? "success" : "warning"}>
                         {e.status}

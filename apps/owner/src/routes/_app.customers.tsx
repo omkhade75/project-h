@@ -46,7 +46,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Edit, Archive, Loader2, PhoneCall, Sparkles, Send, Phone, PhoneOff, Mic, MicOff, Upload, RotateCcw } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Archive,
+  Loader2,
+  PhoneCall,
+  Sparkles,
+  Send,
+  Phone,
+  PhoneOff,
+  Mic,
+  MicOff,
+  Upload,
+  RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 
 // Vapi Web SDK public key — used for browser-based WebRTC voice calls
@@ -106,7 +121,9 @@ export function CustomersPage() {
   // Customer List state
   const [customers, setCustomers] = useState<CustomerListItem[]>([defaultRegisteredCustomer]);
   const [loading, setLoading] = useState(true);
-  const [selectedCust, setSelectedCust] = useState<CustomerListItem | null>(defaultRegisteredCustomer);
+  const [selectedCust, setSelectedCust] = useState<CustomerListItem | null>(
+    defaultRegisteredCustomer,
+  );
 
   // Dialog state
   const [addOpen, setAddOpen] = useState(false);
@@ -116,7 +133,7 @@ export function CustomersPage() {
   const [waName, setWaName] = useState("Om Khade");
   const [waPhone, setWaPhone] = useState("+91 75880 21256");
   const [waMessage, setWaMessage] = useState(
-    "Namaste Om Khade! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!"
+    "Namaste Om Khade! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!",
   );
   const [waSending, setWaSending] = useState(false);
   const [isBroadcastMode, setIsBroadcastMode] = useState(false);
@@ -128,9 +145,13 @@ export function CustomersPage() {
   const [vapiErrorDetails, setVapiErrorDetails] = useState<string | null>(null);
   const [vapiName, setVapiName] = useState("Om Khade");
   const [vapiPhone, setVapiPhone] = useState("+91 75880 21256");
-  const [vapiScript, setVapiScript] = useState("Namaste Om Khade! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.");
+  const [vapiScript, setVapiScript] = useState(
+    "Namaste Om Khade! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.",
+  );
   const [vapiDialing, setVapiDialing] = useState(false);
-  const [vapiCallStatus, setVapiCallStatus] = useState<"idle" | "connecting" | "active" | "ended" | "failed">("idle");
+  const [vapiCallStatus, setVapiCallStatus] = useState<
+    "idle" | "connecting" | "active" | "ended" | "failed"
+  >("idle");
   const [vapiCallDuration, setVapiCallDuration] = useState(0);
   const [userSpeechHeard, setUserSpeechHeard] = useState("");
   const vapiRef = useRef<any>(null);
@@ -143,7 +164,11 @@ export function CustomersPage() {
         window.speechSynthesis.cancel();
       }
       if (vapiRef.current) {
-        try { vapiRef.current.stop(); } catch (e) {}
+        try {
+          vapiRef.current.stop();
+        } catch (e) {
+          /* ignore error stopping voice ref */
+        }
       }
       if (callTimerRef.current) clearInterval(callTimerRef.current);
     };
@@ -154,7 +179,11 @@ export function CustomersPage() {
       window.speechSynthesis.cancel();
     }
     if (vapiRef.current) {
-      try { vapiRef.current.stop(); } catch (e) {}
+      try {
+        vapiRef.current.stop();
+      } catch (e) {
+        /* ignore error stopping voice ref */
+      }
       vapiRef.current = null;
     }
     if (callTimerRef.current) {
@@ -193,13 +222,15 @@ export function CustomersPage() {
 
     const voices = window.speechSynthesis.getVoices();
     const voice = voices.find(
-      (v) => v.lang.includes("hi") || v.lang.includes("en-IN") || v.name.toLowerCase().includes("india")
+      (v) =>
+        v.lang.includes("hi") || v.lang.includes("en-IN") || v.name.toLowerCase().includes("india"),
     );
     if (voice) utterance.voice = voice;
 
     utterance.onend = () => {
       // Listen for user speech reply via microphone if supported
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (!SpeechRecognition) return;
 
       try {
@@ -214,7 +245,9 @@ export function CustomersPage() {
             setUserSpeechHeard(heard);
             toast.success(`Heard you: "${heard}"`);
             setTimeout(() => {
-              const reply = new SpeechSynthesisUtterance("Dhanyavaad! GrandSquare Supermart mein aapka swagat hai.");
+              const reply = new SpeechSynthesisUtterance(
+                "Dhanyavaad! GrandSquare Supermart mein aapka swagat hai.",
+              );
               reply.lang = "hi-IN";
               reply.rate = 0.92;
               reply.onend = () => stopVapiCall();
@@ -224,7 +257,9 @@ export function CustomersPage() {
         };
 
         recognition.start();
-      } catch (e) {}
+      } catch (e) {
+        /* ignore speech recognition failure */
+      }
     };
 
     window.speechSynthesis.speak(utterance);
@@ -257,8 +292,15 @@ export function CustomersPage() {
       ln = ln || p.slice(1).join(" ") || "";
     } else if (c.email && c.email.includes("@")) {
       // 3. Try deriving from email if email is a human name
-      const local = c.email.split("@")[0].replace(/[0-9._-]+/g, " ").trim();
-      if (local.length >= 2 && !local.toLowerCase().startsWith("client") && !local.toLowerCase().startsWith("user")) {
+      const local = c.email
+        .split("@")[0]
+        .replace(/[0-9._-]+/g, " ")
+        .trim();
+      if (
+        local.length >= 2 &&
+        !local.toLowerCase().startsWith("client") &&
+        !local.toLowerCase().startsWith("user")
+      ) {
         name = local.replace(/\b\w/g, (char: string) => char.toUpperCase());
         const p = name.split(" ");
         fn = p[0] || name;
@@ -301,7 +343,7 @@ export function CustomersPage() {
       churn: c.churn || 5,
       status: c.status || "Active",
       lastVisit: c.lastVisit || c.joined || new Date().toISOString().split("T")[0],
-      loyaltyTier: c.loyaltyTier || ((c.segment === "VIP" || spend > 10000) ? "Platinum" : "Regular"),
+      loyaltyTier: c.loyaltyTier || (c.segment === "VIP" || spend > 10000 ? "Platinum" : "Regular"),
     };
   };
 
@@ -325,7 +367,9 @@ export function CustomersPage() {
       });
 
       // Merge API customers with local DB customers (imported CSVs, OCR images)
-      const apiCusts: CustomerListItem[] = Array.isArray(res) ? res.map(resolveCustomerProfile) : [];
+      const apiCusts: CustomerListItem[] = Array.isArray(res)
+        ? res.map(resolveCustomerProfile)
+        : [];
       const apiIds = new Set(apiCusts.map((c) => c.id));
 
       // Get local DB customers from business context
@@ -462,7 +506,10 @@ export function CustomersPage() {
       // 2. Persist directly to local database & localStorage so changes survive refreshes
       const allLocalCusts = db.getCustomers();
       const existingIdx = allLocalCusts.findIndex(
-        (c) => c.id === selectedCust.id || c.name === selectedCust.name || (c.email && c.email === selectedCust.email)
+        (c) =>
+          c.id === selectedCust.id ||
+          c.name === selectedCust.name ||
+          (c.email && c.email === selectedCust.email),
       );
       if (existingIdx >= 0) {
         allLocalCusts[existingIdx] = {
@@ -477,7 +524,10 @@ export function CustomersPage() {
         if (typeof (db as any).setCustomers === "function") {
           (db as any).setCustomers(allLocalCusts);
         } else {
-          const currentSchema = typeof (db as any).getSchema === "function" ? (db as any).getSchema() : ((db as any).schema || {});
+          const currentSchema =
+            typeof (db as any).getSchema === "function"
+              ? (db as any).getSchema()
+              : (db as any).schema || {};
           db.save({ ...currentSchema, customers: allLocalCusts });
         }
       } else {
@@ -512,15 +562,15 @@ export function CustomersPage() {
         loyaltyTier: formLoyaltyTier,
       };
 
-      setCustomers((prev) =>
-        prev.map((c) => (c.id === selectedCust.id ? updatedCustomer : c))
-      );
+      setCustomers((prev) => prev.map((c) => (c.id === selectedCust.id ? updatedCustomer : c)));
       setSelectedCust(updatedCustomer);
 
       // 4. Update Vapi Voice & WhatsApp target state immediately
       setVapiName(fullName);
       setVapiPhone(cleanPhone);
-      setVapiScript(`Namaste ${fullName}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`);
+      setVapiScript(
+        `Namaste ${fullName}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`,
+      );
       setWaName(fullName);
       setWaPhone(cleanPhone);
 
@@ -604,17 +654,19 @@ export function CustomersPage() {
 
   const handleOpenWaModal = (c?: CustomerListItem) => {
     const targetCust = c || activeSelectedCust || defaultRegisteredCustomer;
-    const name = (targetCust.name || `${targetCust.firstName || ""} ${targetCust.lastName || ""}`).trim() || "Customer";
+    const name =
+      (targetCust.name || `${targetCust.firstName || ""} ${targetCust.lastName || ""}`).trim() ||
+      "Customer";
     setWaName(name);
     setWaPhone(targetCust.phone);
     setWaMessage(
-      `Namaste ${name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`
+      `Namaste ${name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`,
     );
     setWaModalOpen(true);
   };
 
   const handleDirectOpenWa = () => {
-    let cleanPhone = formatPhoneForWA(waPhone);
+    const cleanPhone = formatPhoneForWA(waPhone);
     // Use location.href to avoid popup blockers — this navigates the current tab
     // but we use a link click approach that is more reliable across browsers
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
@@ -636,15 +688,16 @@ export function CustomersPage() {
     setWaSending(true);
     try {
       const waConfigApi = await import("@/lib/api-whatsapp-config");
-      
-      if (isBroadcastMode) {
-        const targetAudience = broadcastAudience === "vip" 
-          ? displayCustomers.filter(c => c.segment === "VIP Champions")
-          : broadcastAudience === "loyal"
-          ? displayCustomers.filter(c => c.segment === "Loyal Regulars")
-          : displayCustomers;
 
-        const recipients = targetAudience.map(c => ({
+      if (isBroadcastMode) {
+        const targetAudience =
+          broadcastAudience === "vip"
+            ? displayCustomers.filter((c) => c.segment === "VIP Champions")
+            : broadcastAudience === "loyal"
+              ? displayCustomers.filter((c) => c.segment === "Loyal Regulars")
+              : displayCustomers;
+
+        const recipients = targetAudience.map((c) => ({
           phone: c.phone || "+917588021256",
           name: `${c.firstName} ${c.lastName}`.trim() || c.name || "Customer",
         }));
@@ -673,7 +726,7 @@ export function CustomersPage() {
           message: waMessage,
         });
         console.log("[WhatsApp Frontend] API result:", result);
-        
+
         // Check various error states
         if (result && result.status === "NO_CREDENTIALS") {
           toast.error(`⚠️ Twilio/Meta API keys not configured!`, {
@@ -682,10 +735,16 @@ export function CustomersPage() {
           });
         } else if (result && result.status === "FAILED") {
           toast.error(`❌ Twilio API Error`, {
-            description: result.error || result.message || `WhatsApp message failed to send. Check Twilio dashboard for details.`,
+            description:
+              result.error ||
+              result.message ||
+              `WhatsApp message failed to send. Check Twilio dashboard for details.`,
             duration: 12000,
           });
-        } else if (result && (result.sid || result.status === "queued" || result.status === "sent")) {
+        } else if (
+          result &&
+          (result.sid || result.status === "queued" || result.status === "sent")
+        ) {
           toast.success(`✅ WHATSAPP MESSAGE SENT!`, {
             description: `Message delivered to ${waName} (${waPhone}) via Twilio. SID: ${result.sid || "N/A"}`,
             duration: 8000,
@@ -719,18 +778,21 @@ export function CustomersPage() {
     setWaName("All Registered Customers");
     setWaPhone("+91 75880 21256 (Broadcast Queue)");
     setWaMessage(
-      `Namaste {name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`
+      `Namaste {name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`,
     );
     setWaModalOpen(true);
   };
 
   const handleOpenVapiModal = () => {
     const cust = activeSelectedCust || selectedCust;
-    const name = (cust?.name || `${cust?.firstName || ""} ${cust?.lastName || ""}`).trim() || "Om Khade";
+    const name =
+      (cust?.name || `${cust?.firstName || ""} ${cust?.lastName || ""}`).trim() || "Om Khade";
     const phone = cust?.phone || "+91 75880 21256";
     setVapiName(name);
     setVapiPhone(phone);
-    setVapiScript(`Namaste ${name}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`);
+    setVapiScript(
+      `Namaste ${name}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`,
+    );
     setVapiCallMode("cellular");
     setVapiCallStatus("idle");
     setVapiErrorDetails(null);
@@ -757,7 +819,10 @@ export function CustomersPage() {
       if (typeof (db as any).setCustomers === "function") {
         (db as any).setCustomers(allLocalCusts);
       } else {
-        const currentSchema = typeof (db as any).getSchema === "function" ? (db as any).getSchema() : ((db as any).schema || {});
+        const currentSchema =
+          typeof (db as any).getSchema === "function"
+            ? (db as any).getSchema()
+            : (db as any).schema || {};
         db.save({ ...currentSchema, customers: allLocalCusts });
       }
 
@@ -798,17 +863,24 @@ export function CustomersPage() {
     setEditOpen(true);
   };
 
-
   const { transactions } = useBusinessData();
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
   const displayCustomers = useMemo(() => {
     return customers.map((c) => {
-      const custTxns = safeTransactions.filter((t: any) => t.customerId === c.id || (c.email && t.customerEmail === c.email));
+      const custTxns = safeTransactions.filter(
+        (t: any) => t.customerId === c.id || (c.email && t.customerEmail === c.email),
+      );
       const realOrders = custTxns.length;
       const realSpend = custTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0);
-      const realTier = realSpend >= 50000 ? "Platinum" : realSpend >= 10000 ? "Gold" : (c.loyaltyTier || "Regular");
-      const realSegment = realSpend >= 50000 ? "VIP Champions" : realSpend >= 10000 ? "Loyal Regulars" : "New Customer";
+      const realTier =
+        realSpend >= 50000 ? "Platinum" : realSpend >= 10000 ? "Gold" : c.loyaltyTier || "Regular";
+      const realSegment =
+        realSpend >= 50000
+          ? "VIP Champions"
+          : realSpend >= 10000
+            ? "Loyal Regulars"
+            : "New Customer";
       return {
         ...c,
         ordersCount: realOrders,
@@ -840,11 +912,15 @@ export function CustomersPage() {
   }));
 
   const returningCount = displayCustomers.filter((c) => (c.ordersCount || 0) > 1).length;
-  const returningRate = customers.length > 0 ? Math.round((returningCount / customers.length) * 100) : 0;
+  const returningRate =
+    customers.length > 0 ? Math.round((returningCount / customers.length) * 100) : 0;
   const repeatOrders = safeTransactions.filter((t) => t.customerId).length;
-  const repeatRate = safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;
+  const repeatRate =
+    safeTransactions.length > 0 ? Math.round((repeatOrders / safeTransactions.length) * 100) : 0;
   const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split("T")[0];
-  const new30dCount = customers.filter((c) => c.joined && c.joined >= thirtyDaysAgoStr).length || (customers.length > 0 ? 1 : 0);
+  const new30dCount =
+    customers.filter((c) => c.joined && c.joined >= thirtyDaysAgoStr).length ||
+    (customers.length > 0 ? 1 : 0);
 
   const acquisitionData = useMemo(() => {
     return Array.from({ length: 30 }, (_, i) => {
@@ -927,7 +1003,11 @@ export function CustomersPage() {
         <Kpi label="Returning Rate" v={`${returningRate}%`} />
         <Kpi label="Repeat Rate" v={`${repeatRate}%`} />
         <Kpi label="Avg LTV" v={fmtINR(avgLtv, { compact: true })} />
-        <Kpi label="High Churn Risk" v={`${churnRiskCount}`} tone={churnRiskCount > 0 ? "warning" : undefined} />
+        <Kpi
+          label="High Churn Risk"
+          v={`${churnRiskCount}`}
+          tone={churnRiskCount > 0 ? "warning" : undefined}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -936,14 +1016,19 @@ export function CustomersPage() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={chartSegments.length > 0 ? chartSegments : [{ name: "VIP Champions", v: 1 }]}
+                  data={
+                    chartSegments.length > 0 ? chartSegments : [{ name: "VIP Champions", v: 1 }]
+                  }
                   dataKey="v"
                   nameKey="name"
                   innerRadius={50}
                   outerRadius={75}
                   paddingAngle={3}
                 >
-                  {(chartSegments.length > 0 ? chartSegments : [{ name: "VIP Champions", v: 1 }]).map((_, i) => (
+                  {(chartSegments.length > 0
+                    ? chartSegments
+                    : [{ name: "VIP Champions", v: 1 }]
+                  ).map((_, i) => (
                     <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
                   ))}
                 </Pie>
@@ -964,7 +1049,12 @@ export function CustomersPage() {
                 <Tooltip contentStyle={ttStyle} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="new" name="New" fill="var(--color-chart-1)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="returning" name="Returning" fill="var(--color-chart-2)" radius={[2, 2, 0, 0]} />
+                <Bar
+                  dataKey="returning"
+                  name="Returning"
+                  fill="var(--color-chart-2)"
+                  radius={[2, 2, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1042,15 +1132,19 @@ export function CustomersPage() {
                       onClick={() => setSelectedCust(c)}
                       className={cn(
                         "cursor-pointer transition-colors hover:bg-surface/50",
-                        isSelected && "bg-surface font-semibold text-primary"
+                        isSelected && "bg-surface font-semibold text-primary",
                       )}
                     >
                       <td className="px-3 py-3">
                         <p className="font-bold text-foreground">
-                          {c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer"}
+                          {c.name ||
+                            `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+                            "Customer"}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {c.phone || c.email ? `${c.phone || ""}${c.phone && c.email ? " · " : ""}${c.email || ""}` : (c.customerCode || "Registered Customer")}
+                          {c.phone || c.email
+                            ? `${c.phone || ""}${c.phone && c.email ? " · " : ""}${c.email || ""}`
+                            : c.customerCode || "Registered Customer"}
                         </p>
                       </td>
                       <td className="px-3 py-3">
@@ -1059,10 +1153,10 @@ export function CustomersPage() {
                             c.loyaltyTier === "Platinum"
                               ? "violet"
                               : c.loyaltyTier === "Gold"
-                              ? "warning"
-                              : c.loyaltyTier === "Silver"
-                              ? "info"
-                              : "default"
+                                ? "warning"
+                                : c.loyaltyTier === "Silver"
+                                  ? "info"
+                                  : "default"
                           }
                         >
                           {c.loyaltyTier || "Regular"}
@@ -1071,16 +1165,31 @@ export function CustomersPage() {
                       <td className="px-3 py-3 font-medium">{c.ordersCount ?? c.visits ?? 0}</td>
                       <td className="px-3 py-3 font-semibold">{fmtINR(c.spend || 0)}</td>
                       <td className="px-3 py-3">
-                        <StatusPill tone={c.churn > 50 ? "danger" : c.churn > 25 ? "warning" : "success"}>
+                        <StatusPill
+                          tone={c.churn > 50 ? "danger" : c.churn > 25 ? "warning" : "success"}
+                        >
                           {c.churn}% risk
                         </StatusPill>
                       </td>
                       <td className="px-3 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
+                        <div
+                          className="flex items-center justify-end gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => openEdit(c)}
+                          >
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleArchiveCustomer(c.id)}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive"
+                            onClick={() => handleArchiveCustomer(c.id)}
+                          >
                             <Archive className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -1097,7 +1206,9 @@ export function CustomersPage() {
               <div className="flex items-center justify-between border-b border-hairline pb-3">
                 <div>
                   <h4 className="text-base font-bold text-foreground">
-                    {activeSelectedCust.name || `${activeSelectedCust.firstName || ""} ${activeSelectedCust.lastName || ""}`.trim() || "Customer"}
+                    {activeSelectedCust.name ||
+                      `${activeSelectedCust.firstName || ""} ${activeSelectedCust.lastName || ""}`.trim() ||
+                      "Customer"}
                   </h4>
                   <p className="text-[11px] text-muted-foreground">{activeSelectedCust.email}</p>
                 </div>
@@ -1107,9 +1218,16 @@ export function CustomersPage() {
               <div className="grid grid-cols-2 gap-2">
                 <Stat label="Phone" v={activeSelectedCust.phone} />
                 <Stat label="Loyalty Tier" v={activeSelectedCust.loyaltyTier || "Regular"} />
-                <Stat label="Total Orders" v={`${activeSelectedCust.ordersCount ?? activeSelectedCust.visits ?? 0}`} />
+                <Stat
+                  label="Total Orders"
+                  v={`${activeSelectedCust.ordersCount ?? activeSelectedCust.visits ?? 0}`}
+                />
                 <Stat label="Total Spend" v={fmtINR(activeSelectedCust.spend || 0)} />
-                <Stat label="Churn Risk Score" v={`${activeSelectedCust.churn}%`} tone={activeSelectedCust.churn > 50 ? "danger" : "default"} />
+                <Stat
+                  label="Churn Risk Score"
+                  v={`${activeSelectedCust.churn}%`}
+                  tone={activeSelectedCust.churn > 50 ? "danger" : "default"}
+                />
                 <Stat label="Member Since" v={activeSelectedCust.joined} />
               </div>
 
@@ -1117,10 +1235,12 @@ export function CustomersPage() {
                 <p className="font-bold text-foreground">AI Next Best Action</p>
                 <div className="p-3 rounded-lg bg-surface-2 border border-hairline text-muted-foreground space-y-1">
                   <p className="text-foreground font-semibold flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-400" /> Initiate Vapi AI Voice Re-engagement
+                    <Sparkles className="h-3.5 w-3.5 text-amber-400" /> Initiate Vapi AI Voice
+                    Re-engagement
                   </p>
                   <p className="text-[11px]">
-                    Customer has high LTV ({fmtINR(activeSelectedCust.spend)}). Trigger autonomous AI voice call with 15% promotional discount.
+                    Customer has high LTV ({fmtINR(activeSelectedCust.spend)}). Trigger autonomous
+                    AI voice call with 15% promotional discount.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1144,7 +1264,13 @@ export function CustomersPage() {
       </SectionCard>
 
       {/* Vapi Outbound AI Phone Call Modal */}
-      <Dialog open={vapiModalOpen} onOpenChange={(open) => { if (!open && vapiCallStatus === "active") return; setVapiModalOpen(open); }}>
+      <Dialog
+        open={vapiModalOpen}
+        onOpenChange={(open) => {
+          if (!open && vapiCallStatus === "active") return;
+          setVapiModalOpen(open);
+        }}
+      >
         <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[480px] p-4 sm:p-6 overflow-x-hidden box-border">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground text-sm sm:text-base">
@@ -1152,10 +1278,10 @@ export function CustomersPage() {
               {vapiCallStatus === "active"
                 ? "🟢 Live AI Voice Agent (In-Call)"
                 : vapiCallStatus === "connecting"
-                ? "Connecting..."
-                : vapiCallStatus === "failed"
-                ? "⚠️ Call Gateway Notice"
-                : "AI Voice Agent Call Center"}
+                  ? "Connecting..."
+                  : vapiCallStatus === "failed"
+                    ? "⚠️ Call Gateway Notice"
+                    : "AI Voice Agent Call Center"}
             </DialogTitle>
           </DialogHeader>
 
@@ -1173,10 +1299,14 @@ export function CustomersPage() {
 
               <div className="max-w-full overflow-hidden px-1">
                 <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
-                  {vapiCallMode === "cellular" ? `Calling ${vapiName}'s Mobile...` : `Speaking with ${vapiName}`}
+                  {vapiCallMode === "cellular"
+                    ? `Calling ${vapiName}'s Mobile...`
+                    : `Speaking with ${vapiName}`}
                 </h3>
                 <p className="font-mono text-xs text-muted-foreground mt-0.5 break-all">
-                  {vapiPhone} · {vapiCallMode === "cellular" ? "Twilio PSTN · " : ""}Duration: {Math.floor(vapiCallDuration / 60)}:{(vapiCallDuration % 60).toString().padStart(2, "0")}
+                  {vapiPhone} · {vapiCallMode === "cellular" ? "Twilio PSTN · " : ""}Duration:{" "}
+                  {Math.floor(vapiCallDuration / 60)}:
+                  {(vapiCallDuration % 60).toString().padStart(2, "0")}
                 </p>
                 {vapiCallMode === "cellular" && (
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 animate-pulse">
@@ -1217,7 +1347,8 @@ export function CustomersPage() {
                   <span>Cellular Outbound Call Notice</span>
                 </div>
                 <p className="text-muted-foreground text-[11px] leading-relaxed break-words">
-                  Direct PSTN cellular phone dialing to <strong>{vapiPhone}</strong> requires active Vapi.ai Telephony credentials & Twilio SIP trunk credits.
+                  Direct PSTN cellular phone dialing to <strong>{vapiPhone}</strong> requires active
+                  Vapi.ai Telephony credentials & Twilio SIP trunk credits.
                 </p>
                 {vapiErrorDetails && (
                   <p className="font-mono text-[10px] bg-background/80 p-2 rounded border border-hairline text-destructive break-all break-words max-w-full overflow-hidden">
@@ -1283,10 +1414,15 @@ export function CustomersPage() {
             </div>
           ) : (
             /* IDLE FORM: Choose Mode (Cellular vs Browser) */
-            <form onSubmit={handleInitiateVapiCall} className="space-y-3.5 py-2 text-xs max-w-full overflow-hidden">
+            <form
+              onSubmit={handleInitiateVapiCall}
+              className="space-y-3.5 py-2 text-xs max-w-full overflow-hidden"
+            >
               {/* Call Mode Switcher */}
               <div className="space-y-1">
-                <Label className="text-[11px] text-muted-foreground">Select Call Execution Mode</Label>
+                <Label className="text-[11px] text-muted-foreground">
+                  Select Call Execution Mode
+                </Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -1295,14 +1431,16 @@ export function CustomersPage() {
                       "p-2.5 rounded-xl border text-left transition-all w-full",
                       vapiCallMode === "cellular"
                         ? "border-primary bg-primary/10 text-primary font-bold"
-                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground",
                     )}
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm shrink-0">📱</span>
                       <span className="text-xs font-bold">Cellular Outbound</span>
                     </div>
-                    <p className="text-[10px] opacity-80 mt-0.5 break-words">Dials mobile via Twilio PSTN</p>
+                    <p className="text-[10px] opacity-80 mt-0.5 break-words">
+                      Dials mobile via Twilio PSTN
+                    </p>
                   </button>
 
                   <button
@@ -1312,14 +1450,16 @@ export function CustomersPage() {
                       "p-2.5 rounded-xl border text-left transition-all w-full",
                       vapiCallMode === "browser"
                         ? "border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
-                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground",
                     )}
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm shrink-0">🎙️</span>
                       <span className="text-xs">Browser Voice Call</span>
                     </div>
-                    <p className="text-[10px] opacity-80 mt-0.5 break-words">Zero setup · Speakers & mic</p>
+                    <p className="text-[10px] opacity-80 mt-0.5 break-words">
+                      Zero setup · Speakers & mic
+                    </p>
                   </button>
                 </div>
               </div>
@@ -1372,7 +1512,7 @@ export function CustomersPage() {
                     "w-full text-white font-bold flex items-center justify-center gap-2 h-auto min-h-[44px] py-2.5 px-3 text-xs sm:text-sm whitespace-normal text-center leading-snug break-words max-w-full",
                     vapiCallMode === "browser"
                       ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-[#007AFF] hover:bg-[#0066CC]"
+                      : "bg-[#007AFF] hover:bg-[#0066CC]",
                   )}
                 >
                   {vapiDialing ? (
@@ -1386,8 +1526,8 @@ export function CustomersPage() {
                     {vapiDialing
                       ? "Connecting Call..."
                       : vapiCallMode === "browser"
-                      ? `🎙️ START IN-BROWSER VOICE CALL WITH ${vapiName.toUpperCase()}`
-                      : `📞 DIAL ${vapiName.toUpperCase()} VIA CELLULAR`}
+                        ? `🎙️ START IN-BROWSER VOICE CALL WITH ${vapiName.toUpperCase()}`
+                        : `📞 DIAL ${vapiName.toUpperCase()} VIA CELLULAR`}
                   </span>
                 </Button>
               </DialogFooter>
@@ -1409,7 +1549,9 @@ export function CustomersPage() {
           <div className="space-y-4 py-2 text-xs">
             {isBroadcastMode ? (
               <div className="space-y-2 p-3 rounded-lg bg-surface border border-hairline">
-                <Label className="text-xs font-bold text-foreground">Select Broadcast Audience</Label>
+                <Label className="text-xs font-bold text-foreground">
+                  Select Broadcast Audience
+                </Label>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button
                     type="button"
@@ -1427,7 +1569,8 @@ export function CustomersPage() {
                     className="text-xs h-7"
                     onClick={() => setBroadcastAudience("vip")}
                   >
-                    VIP Champions ({displayCustomers.filter((c) => c.segment === "VIP Champions").length})
+                    VIP Champions (
+                    {displayCustomers.filter((c) => c.segment === "VIP Champions").length})
                   </Button>
                   <Button
                     type="button"
@@ -1436,7 +1579,8 @@ export function CustomersPage() {
                     className="text-xs h-7"
                     onClick={() => setBroadcastAudience("loyal")}
                   >
-                    Loyal Regulars ({displayCustomers.filter((c) => c.segment === "Loyal Regulars").length})
+                    Loyal Regulars (
+                    {displayCustomers.filter((c) => c.segment === "Loyal Regulars").length})
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground pt-1">
@@ -1445,8 +1589,8 @@ export function CustomersPage() {
                     {broadcastAudience === "vip"
                       ? displayCustomers.filter((c) => c.segment === "VIP Champions").length
                       : broadcastAudience === "loyal"
-                      ? displayCustomers.filter((c) => c.segment === "Loyal Regulars").length
-                      : displayCustomers.length}{" "}
+                        ? displayCustomers.filter((c) => c.segment === "Loyal Regulars").length
+                        : displayCustomers.length}{" "}
                     recipients
                   </strong>
                   . Use <code>{"{name}"}</code> in the message for dynamic personalized names.
@@ -1519,7 +1663,11 @@ export function CustomersPage() {
                   disabled={waSending}
                   className="w-full border-hairline text-muted-foreground hover:bg-muted/50 font-semibold flex items-center justify-center gap-2 h-9 text-xs"
                 >
-                  {waSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {waSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                   {waSending ? "Sending via API..." : "Send via Twilio Cloud API"}
                 </Button>
                 <p className="text-[10px] text-muted-foreground mt-1.5">
@@ -1727,7 +1875,9 @@ function Kpi({ label, v, tone }: { label: string; v: string; tone?: "warning" })
   return (
     <div className="card-elevated p-3">
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={`mt-1.5 font-display text-lg font-semibold ${tone === "warning" ? "text-warning" : ""}`}>
+      <p
+        className={`mt-1.5 font-display text-lg font-semibold ${tone === "warning" ? "text-warning" : ""}`}
+      >
         {v}
       </p>
     </div>

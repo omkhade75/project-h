@@ -69,7 +69,14 @@ export const Route = createFileRoute("/_app/sales")({
 });
 
 function RouteComponent() {
-  const { openCustomer360, transactions: ctxTransactions, products: ctxProducts, customers: ctxCustomers, dataVersion, forceRefresh } = useBusinessData();
+  const {
+    openCustomer360,
+    transactions: ctxTransactions,
+    products: ctxProducts,
+    customers: ctxCustomers,
+    dataVersion,
+    forceRefresh,
+  } = useBusinessData();
   const { user } = useAuth();
 
   // Data states
@@ -121,19 +128,26 @@ function RouteComponent() {
         getProductOptionsServer(payload).catch(() => ({ departments: [], categories: [] })),
       ]);
 
-      const apiTxs: any[] = Array.isArray(txs) ? txs : Array.isArray((txs as any)?.data) ? (txs as any).data : [];
+      const apiTxs: any[] = Array.isArray(txs)
+        ? txs
+        : Array.isArray((txs as any)?.data)
+          ? (txs as any).data
+          : [];
       const apiTxIds = new Set(apiTxs.map((t) => t.id || t.transactionNumber));
 
-      const isCleared = typeof window !== "undefined" && (
-        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-        (user?.workspaceId && window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true")
-      );
+      const isCleared =
+        typeof window !== "undefined" &&
+        (window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+          (user?.workspaceId &&
+            window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true"));
 
       // ARCHITECTURE NOTE: Resilient 3-Source Telemetry Merging
       // 1. Backend Ledger (apiTxs): Cloud database records for historical reporting.
       // 2. Local Storage (db.getTransactions()): Offline-first buffer stored in browser.
       // 3. React Context (ctxTransactions): Realtime state from active cashier checkout.
-      const rawLocalTxs = isCleared ? [] : [...(db.getTransactions() || []), ...(ctxTransactions || [])];
+      const rawLocalTxs = isCleared
+        ? []
+        : [...(db.getTransactions() || []), ...(ctxTransactions || [])];
       const seenTxIds = new Set<string>();
       const localTxs: TransactionListItem[] = [];
 
@@ -157,22 +171,28 @@ function RouteComponent() {
           dept: t.dept || "General",
           customerId: t.customerId || "walkin",
           customerName: t.customerName || "Walk-in Customer",
-          items: Array.isArray(t.items) ? t.items.map((it: any) => ({
-            productId: it.productId || it.id,
-            name: it.name || it.productName || "Product",
-            productName: it.name || it.productName || "Product",
-            quantity: it.quantity || 1,
-            price: it.price || 0,
-            cost: it.cost || 0,
-            total: it.total || (it.price * (it.quantity || 1)),
-          })) : [],
+          items: Array.isArray(t.items)
+            ? t.items.map((it: any) => ({
+                productId: it.productId || it.id,
+                name: it.name || it.productName || "Product",
+                productName: it.name || it.productName || "Product",
+                quantity: it.quantity || 1,
+                price: it.price || 0,
+                cost: it.cost || 0,
+                total: it.total || it.price * (it.quantity || 1),
+              }))
+            : [],
         });
       }
 
       const mergedTxs = isCleared && apiTxs.length === 0 ? [] : [...apiTxs, ...localTxs];
 
       // Merge products
-      const apiProds: ProductListItem[] = Array.isArray(prods) ? prods : Array.isArray((prods as any)?.data) ? (prods as any).data : [];
+      const apiProds: ProductListItem[] = Array.isArray(prods)
+        ? prods
+        : Array.isArray((prods as any)?.data)
+          ? (prods as any).data
+          : [];
       const apiProdIds = new Set(apiProds.map((p) => p.id || p.sku));
       const rawLocalProds = isCleared ? [] : [...(db.getProducts() || []), ...(ctxProducts || [])];
       const seenProdIds = new Set<string>();
@@ -207,7 +227,11 @@ function RouteComponent() {
       }
       const mergedProds = [...apiProds, ...localProds];
 
-      const safeCusts = Array.isArray(custs) ? custs : Array.isArray((custs as any)?.data) ? (custs as any).data : [];
+      const safeCusts = Array.isArray(custs)
+        ? custs
+        : Array.isArray((custs as any)?.data)
+          ? (custs as any).data
+          : [];
       const safeDepts = Array.isArray(opts?.departments) ? opts.departments : [];
 
       setTransactions(mergedTxs);
@@ -223,11 +247,12 @@ function RouteComponent() {
       }
     } catch (e) {
       console.warn("Failed to load sales database records fallback:", e);
-      const isCleared = typeof window !== "undefined" && (
-        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-        (user?.workspaceId && window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true")
-      );
-      const localTxs = isCleared ? [] : (db.getTransactions() || []);
+      const isCleared =
+        typeof window !== "undefined" &&
+        (window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+          (user?.workspaceId &&
+            window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true"));
+      const localTxs = isCleared ? [] : db.getTransactions() || [];
       setTransactions(localTxs as any);
       setProducts(isCleared ? [] : ((db.getProducts() || []) as any));
     } finally {
@@ -258,7 +283,7 @@ function RouteComponent() {
     const requestedQty = Number(selectedItemQty);
     if (inCartQty + requestedQty > availStock) {
       toast.error(
-        `Cannot add ${requestedQty} units of "${prod.name}". Available stock is only ${availStock} (Cart already has ${inCartQty}).`
+        `Cannot add ${requestedQty} units of "${prod.name}". Available stock is only ${availStock} (Cart already has ${inCartQty}).`,
       );
       return;
     }
@@ -299,12 +324,14 @@ function RouteComponent() {
       if (prod) {
         const avail = Number(prod.stock) || 0;
         if (avail <= 0) {
-          toast.error(`Checkout blocked: "${prod.name}" is OUT OF STOCK (0 available). Remove it from the cart.`);
+          toast.error(
+            `Checkout blocked: "${prod.name}" is OUT OF STOCK (0 available). Remove it from the cart.`,
+          );
           return;
         }
         if (item.quantity > avail) {
           toast.error(
-            `Checkout blocked: Cart has ${item.quantity} units of "${prod.name}", but only ${avail} available in store stock.`
+            `Checkout blocked: Cart has ${item.quantity} units of "${prod.name}", but only ${avail} available in store stock.`,
           );
           return;
         }
@@ -324,29 +351,37 @@ function RouteComponent() {
       });
       try {
         const localTxnId = `TXN-${Date.now().toString().slice(-6)}`;
-        db.importTransactions([{
-          id: localTxnId,
-          date: new Date().toISOString().split("T")[0],
-          time: new Date().toTimeString().slice(0, 5),
-          customerId: formCustomerId === "walkin" ? "" : formCustomerId,
-          customerName: "Customer",
-          dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
-          items: cartItems.map((ci) => ({
-            productId: ci.productId,
-            name: products.find((p) => p.id === ci.productId)?.name || "Product",
-            quantity: ci.quantity,
-            price: products.find((p) => p.id === ci.productId)?.price || 0,
-            cost: 0,
-          })),
-          subtotal: 0,
-          discount: 0,
-          tax: 0,
-          total: cartItems.reduce((sum, ci) => sum + (products.find((p) => p.id === ci.productId)?.price || 0) * ci.quantity, 0),
-          payment: formPaymentMethod as any,
-          status: "Completed" as const,
-        }]);
+        db.importTransactions([
+          {
+            id: localTxnId,
+            date: new Date().toISOString().split("T")[0],
+            time: new Date().toTimeString().slice(0, 5),
+            customerId: formCustomerId === "walkin" ? "" : formCustomerId,
+            customerName: "Customer",
+            dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
+            items: cartItems.map((ci) => ({
+              productId: ci.productId,
+              name: products.find((p) => p.id === ci.productId)?.name || "Product",
+              quantity: ci.quantity,
+              price: products.find((p) => p.id === ci.productId)?.price || 0,
+              cost: 0,
+            })),
+            subtotal: 0,
+            discount: 0,
+            tax: 0,
+            total: cartItems.reduce(
+              (sum, ci) =>
+                sum + (products.find((p) => p.id === ci.productId)?.price || 0) * ci.quantity,
+              0,
+            ),
+            payment: formPaymentMethod as any,
+            status: "Completed" as const,
+          },
+        ]);
         forceRefresh();
-      } catch (_) {}
+      } catch (_) {
+        /* ignore local memory push error */
+      }
 
       toast.success("Transaction billed and stock updated successfully.");
       setCheckoutOpen(false);
@@ -462,10 +497,30 @@ function RouteComponent() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiCard label="Gross Revenue" value={totalRevenue} delta={totalOrders > 0 ? 8.4 : 0} format="inr-compact" />
-        <KpiCard label="Net Profit Est." value={totalProfit} delta={totalOrders > 0 ? 5.2 : 0} format="inr-compact" />
-        <KpiCard label="Total Orders" value={totalOrders} delta={totalOrders > 0 ? 12.6 : 0} format="num" />
-        <KpiCard label="Average Order Value" value={avgOrderVal} delta={totalOrders > 0 ? 3.1 : 0} format="inr-compact" />
+        <KpiCard
+          label="Gross Revenue"
+          value={totalRevenue}
+          delta={totalOrders > 0 ? 8.4 : 0}
+          format="inr-compact"
+        />
+        <KpiCard
+          label="Net Profit Est."
+          value={totalProfit}
+          delta={totalOrders > 0 ? 5.2 : 0}
+          format="inr-compact"
+        />
+        <KpiCard
+          label="Total Orders"
+          value={totalOrders}
+          delta={totalOrders > 0 ? 12.6 : 0}
+          format="num"
+        />
+        <KpiCard
+          label="Average Order Value"
+          value={avgOrderVal}
+          delta={totalOrders > 0 ? 3.1 : 0}
+          format="inr-compact"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -753,7 +808,8 @@ function RouteComponent() {
                             disabled={isOut}
                             className={isOut ? "opacity-50 text-destructive line-through" : ""}
                           >
-                            {p.name} ({fmtINR(p.price)}) {isOut ? "· ⚠️ OUT OF STOCK (0)" : `· (${p.stock} in stock)`}
+                            {p.name} ({fmtINR(p.price)}){" "}
+                            {isOut ? "· ⚠️ OUT OF STOCK (0)" : `· (${p.stock} in stock)`}
                           </SelectItem>
                         );
                       })}
@@ -775,7 +831,7 @@ function RouteComponent() {
                   onClick={addToCart}
                   disabled={Boolean(
                     products.find((p) => p.id === selectedItemSku) &&
-                      (products.find((p) => p.id === selectedItemSku)?.stock || 0) <= 0
+                    (products.find((p) => p.id === selectedItemSku)?.stock || 0) <= 0,
                   )}
                   className="bg-primary hover:bg-primary/95 text-primary-foreground h-8 text-xs font-semibold"
                 >

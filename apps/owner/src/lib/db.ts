@@ -1180,7 +1180,8 @@ class SeededDatabase {
     if (typeof window !== "undefined") {
       const isCleared =
         window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-        (this.workspaceId && window.localStorage.getItem(`omnimind_db_${this.workspaceId}_cleared`) === "true");
+        (this.workspaceId &&
+          window.localStorage.getItem(`omnimind_db_${this.workspaceId}_cleared`) === "true");
 
       if (isCleared) {
         return emptyDatabase();
@@ -1247,17 +1248,21 @@ class SeededDatabase {
     let custom: Supplier[] = [];
     if (typeof window !== "undefined") {
       try {
-        const key = this.workspaceId ? `bizora_custom_suppliers_${this.workspaceId}` : "bizora_custom_suppliers";
+        const key = this.workspaceId
+          ? `bizora_custom_suppliers_${this.workspaceId}`
+          : "bizora_custom_suppliers";
         const stored = window.localStorage.getItem(key);
         if (stored) custom = JSON.parse(stored);
-      } catch (e) {}
+      } catch (e) {
+        /* ignore storage access error */
+      }
     }
     const combinedMap = new Map<string, Supplier>();
     memory.forEach((s) => {
-      if (s && (s.id || s.email)) combinedMap.set(s.id || s.email || '', s);
+      if (s && (s.id || s.email)) combinedMap.set(s.id || s.email || "", s);
     });
     custom.forEach((s) => {
-      if (s && (s.id || s.email)) combinedMap.set(s.id || s.email || '', s);
+      if (s && (s.id || s.email)) combinedMap.set(s.id || s.email || "", s);
     });
     return Array.from(combinedMap.values());
   }
@@ -1273,14 +1278,18 @@ class SeededDatabase {
     }
     if (typeof window !== "undefined") {
       try {
-        const key = this.workspaceId ? `bizora_custom_suppliers_${this.workspaceId}` : "bizora_custom_suppliers";
+        const key = this.workspaceId
+          ? `bizora_custom_suppliers_${this.workspaceId}`
+          : "bizora_custom_suppliers";
         const stored = window.localStorage.getItem(key);
         const list: Supplier[] = stored ? JSON.parse(stored) : [];
         if (!list.some((x) => x.id === s.id || (x.email && x.email === s.email))) {
           list.unshift(s);
           window.localStorage.setItem(key, JSON.stringify(list));
         }
-      } catch (e) {}
+      } catch (e) {
+        /* ignore storage access error */
+      }
     }
   }
 
@@ -1292,13 +1301,15 @@ class SeededDatabase {
         (x) =>
           (!x.id || x.id.toLowerCase().trim() !== target) &&
           (!x.email || x.email.toLowerCase().trim() !== target) &&
-          (!x.name || x.name.toLowerCase().trim() !== target)
+          (!x.name || x.name.toLowerCase().trim() !== target),
       );
       this.save(this.schema);
     }
     if (typeof window !== "undefined") {
       try {
-        const key = this.workspaceId ? `bizora_custom_suppliers_${this.workspaceId}` : "bizora_custom_suppliers";
+        const key = this.workspaceId
+          ? `bizora_custom_suppliers_${this.workspaceId}`
+          : "bizora_custom_suppliers";
         const stored = window.localStorage.getItem(key);
         if (stored) {
           const list: Supplier[] = JSON.parse(stored);
@@ -1306,11 +1317,13 @@ class SeededDatabase {
             (x) =>
               (!x.id || x.id.toLowerCase().trim() !== target) &&
               (!x.email || x.email.toLowerCase().trim() !== target) &&
-              (!x.name || x.name.toLowerCase().trim() !== target)
+              (!x.name || x.name.toLowerCase().trim() !== target),
           );
           window.localStorage.setItem(key, JSON.stringify(filtered));
         }
-      } catch (e) {}
+      } catch (e) {
+        /* ignore storage access error */
+      }
     }
   }
 
@@ -1406,11 +1419,17 @@ class SeededDatabase {
       window.localStorage.setItem("omnimind_db", JSON.stringify(emptyDatabase()));
       window.localStorage.setItem("omnimind_db_grandsquare-mall", JSON.stringify(emptyDatabase()));
       window.localStorage.setItem("omnimind_db_grandsquare-mall_cleared", "true");
-      window.localStorage.setItem("omnimind_db_ws_owner_gmail_com", JSON.stringify(emptyDatabase()));
+      window.localStorage.setItem(
+        "omnimind_db_ws_owner_gmail_com",
+        JSON.stringify(emptyDatabase()),
+      );
       window.localStorage.setItem("omnimind_db_ws_owner_gmail_com_cleared", "true");
 
       if (this.workspaceId) {
-        window.localStorage.setItem(`omnimind_db_${this.workspaceId}`, JSON.stringify(emptyDatabase()));
+        window.localStorage.setItem(
+          `omnimind_db_${this.workspaceId}`,
+          JSON.stringify(emptyDatabase()),
+        );
         window.localStorage.setItem(`omnimind_db_${this.workspaceId}_cleared`, "true");
       }
 
@@ -1422,7 +1441,9 @@ class SeededDatabase {
             window.localStorage.setItem(`${k}_cleared`, "true");
           }
         }
-      } catch (_) {}
+      } catch (_) {
+        /* ignore storage access error */
+      }
     }
   }
 
@@ -1468,7 +1489,9 @@ class SeededDatabase {
 
   // Aggregate daily statistics for the Time Machine & AI Reasoning
   public getDailySnapshot(date: string): DailySnapshot {
-    const targetDateStr = (date || new Date().toISOString().split("T")[0]).split("T")[0].split(" ")[0];
+    const targetDateStr = (date || new Date().toISOString().split("T")[0])
+      .split("T")[0]
+      .split(" ")[0];
     const exactTxns = this.schema.transactions.filter((t) => {
       const d = (t.date || "").split("T")[0].split(" ")[0];
       return d === targetDateStr;
@@ -1486,7 +1509,10 @@ class SeededDatabase {
       0,
     );
     const orders = txns.length;
-    const refunds = txns.reduce((sum, t) => (t.status === "Refunded" ? sum + (t.total || 0) : sum), 0);
+    const refunds = txns.reduce(
+      (sum, t) => (t.status === "Refunded" ? sum + (t.total || 0) : sum),
+      0,
+    );
     const discounts = txns.reduce((sum, t) => sum + (t.discount || 0), 0);
 
     // Expenses

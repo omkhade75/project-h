@@ -143,7 +143,9 @@ function RouteComponent() {
   };
 
   // --- Dynamic calculations for active month ---
-  const activeYearMonth = (activeDate || new Date().toISOString().split("T")[0]).split("T")[0].slice(0, 7);
+  const activeYearMonth = (activeDate || new Date().toISOString().split("T")[0])
+    .split("T")[0]
+    .slice(0, 7);
   const formattedMonth = new Date(activeDate || new Date()).toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
@@ -152,7 +154,9 @@ function RouteComponent() {
   // Combine transactions from context and local DB
   const allTxns = [...(ctxTransactions || []), ...(db.getTransactions() || [])];
   const uniqueTxnsMap = new Map<string, any>();
-  allTxns.forEach((t) => { if (t && t.id) uniqueTxnsMap.set(t.id, t); });
+  allTxns.forEach((t) => {
+    if (t && t.id) uniqueTxnsMap.set(t.id, t);
+  });
   const combinedTransactions = Array.from(uniqueTxnsMap.values());
 
   // 1. Sales revenue from transactions
@@ -168,8 +172,8 @@ function RouteComponent() {
   let grossSales = 0;
   let discounts = 0;
   thisMonthTxns.forEach((t) => {
-    grossSales += (t.subtotal || t.total || 0);
-    discounts += (t.discount || 0);
+    grossSales += t.subtotal || t.total || 0;
+    discounts += t.discount || 0;
   });
   const netSales = Math.max(0, grossSales - discounts);
 
@@ -178,9 +182,10 @@ function RouteComponent() {
     .filter((p) => p.accountCode === "4200" && (p.date || "").startsWith(activeYearMonth))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const isCleared = typeof window !== "undefined" && window.localStorage.getItem("omnimind_db_cleared") === "true";
-  const totalRent = isCleared ? 0 : (rentLedgerSum > 0 ? rentLedgerSum : 0);
-  const totalOther = isCleared ? 0 : (otherLedgerSum > 0 ? otherLedgerSum : 0);
+  const isCleared =
+    typeof window !== "undefined" && window.localStorage.getItem("omnimind_db_cleared") === "true";
+  const totalRent = isCleared ? 0 : rentLedgerSum > 0 ? rentLedgerSum : 0;
+  const totalOther = isCleared ? 0 : otherLedgerSum > 0 ? otherLedgerSum : 0;
 
   const totalIncome = netSales + totalRent + totalOther;
 

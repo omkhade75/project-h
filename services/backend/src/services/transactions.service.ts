@@ -1,25 +1,30 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { LedgerService } from './ledger.service';
+import { Injectable, BadRequestException } from "@nestjs/common";
+import { DatabaseService } from "../database/database.service";
+import { LedgerService } from "./ledger.service";
 
 @Injectable()
 export class TransactionsService {
   constructor(
     private readonly db: DatabaseService,
-    private readonly ledgerService: LedgerService
+    private readonly ledgerService: LedgerService,
   ) {}
 
-  async createTransaction(workspaceId: string, email: string, role: string, data: {
-    customerId?: string;
-    walkinPhone?: string;
-    departmentId: string;
-    items: Array<{ productId: string; quantity: number; discount: number }>;
-    paymentMethod: string;
-    cashierId?: string;
-    transactionDate?: string;
-  }) {
+  async createTransaction(
+    workspaceId: string,
+    email: string,
+    role: string,
+    data: {
+      customerId?: string;
+      walkinPhone?: string;
+      departmentId: string;
+      items: Array<{ productId: string; quantity: number; discount: number }>;
+      paymentMethod: string;
+      cashierId?: string;
+      transactionDate?: string;
+    },
+  ) {
     if (data.items.length === 0) {
-      throw new BadRequestException('Cannot create a sale with zero items.');
+      throw new BadRequestException("Cannot create a sale with zero items.");
     }
 
     // ARCHITECTURE NOTE: PostgreSQL ACID Transaction ($transaction)
@@ -55,14 +60,18 @@ export class TransactionsService {
           (p) =>
             p.id === item.productId ||
             p.sku === item.productId ||
-            (p.sku && (item as any).sku && p.sku.toLowerCase() === (item as any).sku.toLowerCase()) ||
-            (p.barcode && p.barcode === item.productId)
+            (p.sku &&
+              (item as any).sku &&
+              p.sku.toLowerCase() === (item as any).sku.toLowerCase()) ||
+            (p.barcode && p.barcode === item.productId),
         );
 
         // If product is not in database (e.g. offline-first POS / CSV import / local catalog), auto-provision it seamlessly
         if (!prod) {
-          const cleanSku = (((item as any).sku || item.productId || '').trim()).replace(/[^a-zA-Z0-9_-]/g, '') || `SKU-${Date.now().toString().slice(-6)}`;
-          let existingBySku = await tx.product.findFirst({
+          const cleanSku =
+            ((item as any).sku || item.productId || "").trim().replace(/[^a-zA-Z0-9_-]/g, "") ||
+            `SKU-${Date.now().toString().slice(-6)}`;
+          const existingBySku = await tx.product.findFirst({
             where: {
               workspaceId,
               OR: [
@@ -82,9 +91,9 @@ export class TransactionsService {
               if (!dept) {
                 dept = await tx.department.create({
                   data: {
-                    name: 'General Retail',
-                    code: 'GENERAL',
-                    floor: 'Ground Floor',
+                    name: "General Retail",
+                    code: "GENERAL",
+                    floor: "Ground Floor",
                     targetRevenue: 100000,
                     workspaceId,
                   },
@@ -92,7 +101,7 @@ export class TransactionsService {
               }
               category = await tx.category.create({
                 data: {
-                  name: 'General Goods',
+                  name: "General Goods",
                   departmentId: dept.id,
                   workspaceId,
                 },
@@ -103,9 +112,9 @@ export class TransactionsService {
             if (!dept) {
               dept = await tx.department.create({
                 data: {
-                  name: 'General Retail',
-                  code: 'GENERAL',
-                  floor: 'Ground Floor',
+                  name: "General Retail",
+                  code: "GENERAL",
+                  floor: "Ground Floor",
                   targetRevenue: 100000,
                   workspaceId,
                 },
@@ -114,7 +123,8 @@ export class TransactionsService {
 
             const rawPrice = Number((item as any).price) || 135;
             const rawCost = Number((item as any).cost) || Math.round(rawPrice * 0.75);
-            const prodName = (item as any).name || (item as any).productName || `Product ${cleanSku}`;
+            const prodName =
+              (item as any).name || (item as any).productName || `Product ${cleanSku}`;
 
             prod = await tx.product.create({
               data: {
@@ -123,13 +133,13 @@ export class TransactionsService {
                 name: prodName,
                 categoryId: category.id,
                 departmentId: dept.id,
-                brand: 'Store Brand',
+                brand: "Store Brand",
                 sellingPrice: rawPrice,
                 costPrice: rawCost,
                 taxRate: 18.0,
                 reorderLevel: 5,
                 reorderQuantity: 20,
-                status: 'Active',
+                status: "Active",
                 workspaceId,
               },
             });
@@ -141,7 +151,7 @@ export class TransactionsService {
         const qty = Number(item.quantity);
         if (!Number.isFinite(qty) || !Number.isInteger(qty) || qty <= 0 || qty > 10000) {
           throw new BadRequestException(
-            `Security Alert: Invalid quantity (${item.quantity}) for product "${prod.name}". Must be a positive integer between 1 and 10,000.`
+            `Security Alert: Invalid quantity (${item.quantity}) for product "${prod.name}". Must be a positive integer between 1 and 10,000.`,
           );
         }
 
@@ -154,7 +164,7 @@ export class TransactionsService {
         const itemSubtotal = price * qty;
         if (rawDiscount > itemSubtotal) {
           throw new BadRequestException(
-            `Financial Safeguard: Discount ₹${rawDiscount} cannot exceed line subtotal ₹${itemSubtotal} for "${prod.name}".`
+            `Financial Safeguard: Discount ₹${rawDiscount} cannot exceed line subtotal ₹${itemSubtotal} for "${prod.name}".`,
           );
         }
 
@@ -165,7 +175,7 @@ export class TransactionsService {
 
         let stockRecords = await tx.inventoryStock.findMany({
           where: { productId: prod.id, workspaceId },
-          orderBy: { locationId: 'asc' },
+          orderBy: { locationId: "asc" },
         });
 
         let totalStock = stockRecords.reduce((sum, s) => sum + s.quantityOnHand, 0);
@@ -175,9 +185,9 @@ export class TransactionsService {
           if (!location) {
             location = await tx.inventoryLocation.create({
               data: {
-                name: 'Main Store Shelf',
-                type: 'RETAIL_FLOOR',
-                floor: 'Ground Floor',
+                name: "Main Store Shelf",
+                type: "RETAIL_FLOOR",
+                floor: "Ground Floor",
                 workspaceId,
               },
             });
@@ -214,7 +224,7 @@ export class TransactionsService {
 
         const productBatches = await tx.productBatch.findMany({
           where: { productId: prod.id, quantityRemaining: { gt: 0 }, workspaceId },
-          orderBy: { expiryDate: 'asc' },
+          orderBy: { expiryDate: "asc" },
         });
 
         let batchDeductRemaining = item.quantity;
@@ -258,9 +268,9 @@ export class TransactionsService {
             movementData.push({
               productId: prod.id,
               locationId: stockRecord.locationId,
-              movementType: 'SALE',
+              movementType: "SALE",
               quantity: qtyToDeduct,
-              reason: 'POS Sale Checkout',
+              reason: "POS Sale Checkout",
               performedBy: role,
             });
             remainingToDeduct -= qtyToDeduct;
@@ -280,7 +290,9 @@ export class TransactionsService {
 
       const totalAmount = Math.max(0, subtotal - totalDiscount + totalTax);
       if (totalAmount < 0) {
-        throw new BadRequestException('Security Alert: Transaction total amount cannot be negative.');
+        throw new BadRequestException(
+          "Security Alert: Transaction total amount cannot be negative.",
+        );
       }
       const transactionId = `TXN-${Date.now().toString().slice(-6)}`;
 
@@ -290,9 +302,9 @@ export class TransactionsService {
         if (!defaultDept) {
           defaultDept = await tx.department.create({
             data: {
-              name: 'General Retail',
-              code: 'GENERAL',
-              floor: 'Ground Floor',
+              name: "General Retail",
+              code: "GENERAL",
+              floor: "Ground Floor",
               targetRevenue: 100000,
               workspaceId,
             },
@@ -302,7 +314,7 @@ export class TransactionsService {
       }
 
       let resolvedCustomerId: string | null = null;
-      if (data.customerId && data.customerId !== 'walkin') {
+      if (data.customerId && data.customerId !== "walkin") {
         const existingCust = await tx.customer.findFirst({
           where: {
             workspaceId,
@@ -317,15 +329,17 @@ export class TransactionsService {
           resolvedCustomerId = existingCust.id;
         } else {
           try {
-            const cleanCode = data.customerId.startsWith('CUST') ? data.customerId : `CUST-${Date.now().toString().slice(-4)}`;
+            const cleanCode = data.customerId.startsWith("CUST")
+              ? data.customerId
+              : `CUST-${Date.now().toString().slice(-4)}`;
             const newCust: any = await (tx.customer as any).create({
               data: {
                 customerCode: cleanCode,
-                firstName: 'Om',
-                lastName: 'Khade',
+                firstName: "Om",
+                lastName: "Khade",
                 email: `${cleanCode.toLowerCase()}@grandsquare.store`,
-                phone: data.walkinPhone || '+917588021256',
-                loyaltyTier: 'Regular',
+                phone: data.walkinPhone || "+917588021256",
+                loyaltyTier: "Regular",
                 workspaceId,
               },
             });
@@ -342,14 +356,14 @@ export class TransactionsService {
           transactionNumber: transactionId,
           customerId: resolvedCustomerId,
           departmentId: resolvedDeptId,
-          cashierId: data.cashierId || 'cashier-01',
+          cashierId: data.cashierId || "cashier-01",
           transactionDate: data.transactionDate ? new Date(data.transactionDate) : new Date(),
           subtotal,
           discountAmount: totalDiscount,
           taxAmount: totalTax,
           totalAmount,
-          paymentStatus: 'Paid',
-          status: 'Completed',
+          paymentStatus: "Paid",
+          status: "Completed",
           workspaceId,
         },
       });
@@ -376,7 +390,7 @@ export class TransactionsService {
           transactionId: transaction.id,
           method: data.paymentMethod,
           amount: totalAmount,
-          status: 'Success',
+          status: "Success",
           paidAt: new Date(),
           workspaceId,
         },
@@ -407,7 +421,7 @@ export class TransactionsService {
             quantity: mv.quantity,
             reason: mv.reason,
             performedBy: mv.performedBy,
-            referenceType: 'Transaction',
+            referenceType: "Transaction",
             referenceId: transaction.id,
             workspaceId,
           },
@@ -421,30 +435,35 @@ export class TransactionsService {
             where: { id: resolvedCustomerId, workspaceId },
             data: { loyaltyPoints: { increment: addedPoints } },
           });
-        } catch (_) {}
+        } catch (_) {
+          // ignore loyalty points update if customer is missing
+        }
       }
 
-      const totalCost = txItemsData.reduce((sum, item) => sum + Number(item.costPriceSnapshot) * item.quantity, 0);
-      
+      const totalCost = txItemsData.reduce(
+        (sum, item) => sum + Number(item.costPriceSnapshot) * item.quantity,
+        0,
+      );
+
       await this.ledgerService.recordDoubleEntry(tx, workspaceId, {
         journalId: `JNL-SALE-${transaction.id}`,
-        referenceType: 'Transaction',
+        referenceType: "Transaction",
         referenceId: transaction.id,
         description: `POS Sale Receipt: ${transaction.transactionNumber}`,
         debits: [
-          { code: '1000', amount: totalAmount },
-          { code: '5000', amount: totalCost },
+          { code: "1000", amount: totalAmount },
+          { code: "5000", amount: totalCost },
         ],
         credits: [
-          { code: '4000', amount: totalAmount },
-          { code: '1300', amount: totalCost },
+          { code: "4000", amount: totalAmount },
+          { code: "1300", amount: totalCost },
         ],
       });
 
       await tx.businessEvent.create({
         data: {
-          eventType: 'SALE_COMPLETED',
-          entityType: 'Transaction',
+          eventType: "SALE_COMPLETED",
+          entityType: "Transaction",
           entityId: transaction.id,
           title: `Sale Completed: ${transaction.transactionNumber}`,
           description: `Total amount ₹${totalAmount.toFixed(0)} processed via ${data.paymentMethod}.`,
@@ -456,8 +475,8 @@ export class TransactionsService {
       await tx.auditLog.create({
         data: {
           userId: email,
-          action: 'TRANSACTION_CREATED',
-          entityType: 'Transaction',
+          action: "TRANSACTION_CREATED",
+          entityType: "Transaction",
           entityId: transaction.id,
           afterData: JSON.stringify(transaction),
           workspaceId,
@@ -477,87 +496,89 @@ export class TransactionsService {
 
   async getTransactions(workspaceId: string, role: string, email: string) {
     try {
-    // In a real app we might scope by department. Assuming all depts for manager/admin.
-    const transactions = await this.db.transaction.findMany({
-      where: { workspaceId },
-      include: {
-        customer: true,
-        payments: true,
-        items: { include: { product: true } },
-      },
-      orderBy: { transactionDate: 'desc' },
-    });
-
-    const depts = await this.db.department.findMany({ where: { workspaceId } });
-
-    const mappedList = transactions.map((t) => {
-      const deptObj = depts.find((d) => d.id === t.departmentId);
-
-      return {
-        id: t.id,
-        transactionNumber: t.transactionNumber,
-        customerName: t.customer ? `${t.customer.firstName} ${t.customer.lastName}`.trim() : 'Walk-in Customer',
-        customerId: t.customerId,
-        customerType: t.customer?.customerType || null,
-        dept: deptObj ? deptObj.name : 'Others',
-        departmentId: t.departmentId,
-        date: t.transactionDate.toISOString().split('T')[0],
-        time: t.transactionDate.toTimeString().split(' ')[0].slice(0, 5),
-        subtotal: Number(t.subtotal),
-        discount: Number(t.discountAmount),
-        tax: Number(t.taxAmount),
-        total: Number(t.totalAmount),
-        payment: t.payments[0]?.method || 'UPI',
-        status: t.status,
-        items: t.items.map((item) => ({
-          productId: item.productId,
-          productName: item.product.name,
-          quantity: item.quantity,
-          price: Number(item.unitPrice),
-        })),
-      };
-    });
-
-    const investments = await this.db.investment.findMany({
-      where: { workspaceId },
-      orderBy: { purchasedAt: 'desc' },
-    });
-
-    const investmentItems = investments.map((inv) => ({
-      id: inv.id,
-      transactionNumber: `INV-${inv.id.slice(0, 6).toUpperCase()}`,
-      customerName: 'Corporate Treasury',
-      customerId: 'TREASURY-01',
-      customerType: 'B2B',
-      dept: 'Investments',
-      departmentId: 'dept-investments',
-      date: inv.purchasedAt.toISOString().split('T')[0],
-      time: inv.purchasedAt.toTimeString().split(' ')[0].slice(0, 5),
-      subtotal: Number(inv.totalCost),
-      discount: 0,
-      tax: 0,
-      total: Number(inv.totalCost),
-      payment: 'Ledger 1000',
-      status: inv.status === 'Active' ? 'Completed' : 'Refunded',
-      items: [
-        {
-          productId: inv.id,
-          productName: `${inv.assetName} (${inv.symbol})`,
-          quantity: Number(inv.quantity),
-          price: Number(inv.purchasePrice),
+      // In a real app we might scope by department. Assuming all depts for manager/admin.
+      const transactions = await this.db.transaction.findMany({
+        where: { workspaceId },
+        include: {
+          customer: true,
+          payments: true,
+          items: { include: { product: true } },
         },
-      ],
-    }));
+        orderBy: { transactionDate: "desc" },
+      });
 
-    const combinedList = [...mappedList, ...investmentItems];
+      const depts = await this.db.department.findMany({ where: { workspaceId } });
 
-    combinedList.sort((a, b) => {
-      const dateA = new Date(`${a.date}T${a.time}`);
-      const dateB = new Date(`${b.date}T${b.time}`);
-      return dateB.getTime() - dateA.getTime();
-    });
+      const mappedList = transactions.map((t) => {
+        const deptObj = depts.find((d) => d.id === t.departmentId);
 
-    return combinedList;
+        return {
+          id: t.id,
+          transactionNumber: t.transactionNumber,
+          customerName: t.customer
+            ? `${t.customer.firstName} ${t.customer.lastName}`.trim()
+            : "Walk-in Customer",
+          customerId: t.customerId,
+          customerType: t.customer?.customerType || null,
+          dept: deptObj ? deptObj.name : "Others",
+          departmentId: t.departmentId,
+          date: t.transactionDate.toISOString().split("T")[0],
+          time: t.transactionDate.toTimeString().split(" ")[0].slice(0, 5),
+          subtotal: Number(t.subtotal),
+          discount: Number(t.discountAmount),
+          tax: Number(t.taxAmount),
+          total: Number(t.totalAmount),
+          payment: t.payments[0]?.method || "UPI",
+          status: t.status,
+          items: t.items.map((item) => ({
+            productId: item.productId,
+            productName: item.product.name,
+            quantity: item.quantity,
+            price: Number(item.unitPrice),
+          })),
+        };
+      });
+
+      const investments = await this.db.investment.findMany({
+        where: { workspaceId },
+        orderBy: { purchasedAt: "desc" },
+      });
+
+      const investmentItems = investments.map((inv) => ({
+        id: inv.id,
+        transactionNumber: `INV-${inv.id.slice(0, 6).toUpperCase()}`,
+        customerName: "Corporate Treasury",
+        customerId: "TREASURY-01",
+        customerType: "B2B",
+        dept: "Investments",
+        departmentId: "dept-investments",
+        date: inv.purchasedAt.toISOString().split("T")[0],
+        time: inv.purchasedAt.toTimeString().split(" ")[0].slice(0, 5),
+        subtotal: Number(inv.totalCost),
+        discount: 0,
+        tax: 0,
+        total: Number(inv.totalCost),
+        payment: "Ledger 1000",
+        status: inv.status === "Active" ? "Completed" : "Refunded",
+        items: [
+          {
+            productId: inv.id,
+            productName: `${inv.assetName} (${inv.symbol})`,
+            quantity: Number(inv.quantity),
+            price: Number(inv.purchasePrice),
+          },
+        ],
+      }));
+
+      const combinedList = [...mappedList, ...investmentItems];
+
+      combinedList.sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time}`);
+        const dateB = new Date(`${b.date}T${b.time}`);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      return combinedList;
     } catch (err) {
       console.warn("[TransactionsService] getTransactions error:", err);
       return [];

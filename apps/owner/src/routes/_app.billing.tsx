@@ -73,7 +73,13 @@ export const Route = createFileRoute("/_app/billing")({
 
 function RouteComponent() {
   const { user } = useAuth();
-  const { activeDate, products: ctxProducts, customers: ctxCustomers, forceRefresh, dataVersion } = useBusinessData();
+  const {
+    activeDate,
+    products: ctxProducts,
+    customers: ctxCustomers,
+    forceRefresh,
+    dataVersion,
+  } = useBusinessData();
 
   // Data states
   const [products, setProducts] = useState<ProductListItem[]>([]);
@@ -200,27 +206,31 @@ function RouteComponent() {
 
       // Save to local database immediately
       try {
-        db.importCustomers([{
-          id: newCustId,
-          name: rawName,
-          firstName,
-          lastName,
-          email: newCustomerObj.email,
-          phone: rawPhone,
-          customerCode,
-          loyaltyTier: tier,
-          joined: new Date().toISOString().split("T")[0],
-          visits: 1,
-          spend: 0,
-          aov: 0,
-          favDept: formDepartmentId || "General",
-          segment: tier === "VIP" ? "VIP" : tier === "Loyal" ? "Loyal" : "New",
-          churn: 0,
-          status: "Active",
-          lastVisit: new Date().toISOString().split("T")[0],
-        }]);
+        db.importCustomers([
+          {
+            id: newCustId,
+            name: rawName,
+            firstName,
+            lastName,
+            email: newCustomerObj.email,
+            phone: rawPhone,
+            customerCode,
+            loyaltyTier: tier,
+            joined: new Date().toISOString().split("T")[0],
+            visits: 1,
+            spend: 0,
+            aov: 0,
+            favDept: formDepartmentId || "General",
+            segment: tier === "VIP" ? "VIP" : tier === "Loyal" ? "Loyal" : "New",
+            churn: 0,
+            status: "Active",
+            lastVisit: new Date().toISOString().split("T")[0],
+          },
+        ]);
         forceRefresh();
-      } catch (_) {}
+      } catch (_) {
+        /* ignore local memory customer cache error */
+      }
 
       // Update state and select new customer for checkout
       setCustomers((prev) => [newCustomerObj, ...prev.filter((c) => c.id !== newCustId)]);
@@ -307,7 +317,10 @@ function RouteComponent() {
       // Merge API customers with local DB customers
       const rawApiCusts: any[] = Array.isArray(custsRes) ? custsRes : [];
       const apiCusts: CustomerListItem[] = rawApiCusts.map((c) => {
-        const fullName = (c.name && c.name.trim()) || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer";
+        const fullName =
+          (c.name && c.name.trim()) ||
+          `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+          "Customer";
         return {
           id: c.id,
           customerCode: c.customerCode || c.id,
@@ -337,7 +350,10 @@ function RouteComponent() {
       for (const c of localDbCusts) {
         if (!c || !c.id || apiCustIds.has(c.id) || seenCustIds.has(c.id)) continue;
         seenCustIds.add(c.id);
-        const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
+        const fullName =
+          (c.name && c.name.trim()) ||
+          `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() ||
+          "Customer";
         localCusts.push({
           id: c.id,
           customerCode: (c as any).customerCode || c.id,
@@ -366,9 +382,10 @@ function RouteComponent() {
         { id: "dept-general", name: "General Retail", code: "GENERAL" },
         { id: "dept-fmcg", name: "Dairy & Staples", code: "FMCG" },
       ];
-      const safeDepts = Array.isArray(optsRes?.departments) && optsRes.departments.length > 0
-        ? optsRes.departments
-        : fallbackDepts;
+      const safeDepts =
+        Array.isArray(optsRes?.departments) && optsRes.departments.length > 0
+          ? optsRes.departments
+          : fallbackDepts;
 
       setProducts(mergedProds);
       setCustomers(mergedCusts);
@@ -473,21 +490,25 @@ function RouteComponent() {
 
     // 🛡️ Strict Stock Validation for Catalog Products
     if (selectedItemSku !== "custom") {
-      const targetProd = products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku);
+      const targetProd = products.find(
+        (p) => p.id === selectedItemSku || p.sku === selectedItemSku,
+      );
       if (!targetProd) {
         toast.error("Selected product not found in catalog.");
         return;
       }
       const availableStock = Number(targetProd.stock) || 0;
       if (availableStock <= 0) {
-        toast.error(`Cannot add to invoice: "${targetProd.name}" is OUT OF STOCK (0 units available).`);
+        toast.error(
+          `Cannot add to invoice: "${targetProd.name}" is OUT OF STOCK (0 units available).`,
+        );
         return;
       }
       const existingItem = cartItems.find((i) => i.productId === selectedItemSku);
       const alreadyInCart = existingItem ? existingItem.quantity : 0;
       if (alreadyInCart + qty > availableStock) {
         toast.error(
-          `Cannot add ${qty} units of "${targetProd.name}". Available stock is only ${availableStock} (Cart already has ${alreadyInCart}).`
+          `Cannot add ${qty} units of "${targetProd.name}". Available stock is only ${availableStock} (Cart already has ${alreadyInCart}).`,
         );
         return;
       }
@@ -565,25 +586,29 @@ function RouteComponent() {
         };
 
         try {
-          db.importProducts([{
-            id: sku,
-            name: customProdName,
-            dept: newProd.dept || "Grocery",
-            category: newProd.category || "General",
-            brand: customProdBrand || "Generic",
-            price: Number(customProdPrice),
-            cost: Number(customProdCost),
-            stock: Number(customProdStock) || 10,
-            reorder: 5,
-            expiry: null,
-            supplier: "Wholesalers",
-            sold: 0,
-            revenue: 0,
-            margin: newProd.margin || 25,
-            status: "ok",
-          }]);
+          db.importProducts([
+            {
+              id: sku,
+              name: customProdName,
+              dept: newProd.dept || "Grocery",
+              category: newProd.category || "General",
+              brand: customProdBrand || "Generic",
+              price: Number(customProdPrice),
+              cost: Number(customProdCost),
+              stock: Number(customProdStock) || 10,
+              reorder: 5,
+              expiry: null,
+              supplier: "Wholesalers",
+              sold: 0,
+              revenue: 0,
+              margin: newProd.margin || 25,
+              status: "ok",
+            },
+          ]);
           forceRefresh();
-        } catch (_) {}
+        } catch (_) {
+          /* ignore local cache sync error */
+        }
 
         setProducts((prev) => [...prev, newProd]);
         productSkuToCart = sku;
@@ -656,15 +681,24 @@ function RouteComponent() {
         setFormCustomerId(res.id);
         // Also write to local DB so other pages (Customers, Live Ops, AI) see this customer
         try {
-          db.importCustomers([{
-            id: res.id || `cust-${Date.now()}`,
-            name, joined: new Date().toISOString().split("T")[0],
-            visits: 0, spend: 0, aov: 0, favDept: newCustDept || "General",
-            lastVisit: new Date().toISOString().split("T")[0],
-            segment: "New" as const, churn: 0,
-          }]);
+          db.importCustomers([
+            {
+              id: res.id || `cust-${Date.now()}`,
+              name,
+              joined: new Date().toISOString().split("T")[0],
+              visits: 0,
+              spend: 0,
+              aov: 0,
+              favDept: newCustDept || "General",
+              lastVisit: new Date().toISOString().split("T")[0],
+              segment: "New" as const,
+              churn: 0,
+            },
+          ]);
           forceRefresh();
-        } catch (_) {}
+        } catch (_) {
+          /* ignore local cache sync error */
+        }
         setShowAddCustomerModal(false);
         setNewCustFirst("");
         setNewCustLast("");
@@ -713,12 +747,14 @@ function RouteComponent() {
       if (prod) {
         const avail = Number(prod.stock) || 0;
         if (avail <= 0) {
-          toast.error(`Checkout blocked: "${prod.name}" is OUT OF STOCK (0 available). Please remove it from the cart.`);
+          toast.error(
+            `Checkout blocked: "${prod.name}" is OUT OF STOCK (0 available). Please remove it from the cart.`,
+          );
           return;
         }
         if (item.quantity > avail) {
           toast.error(
-            `Checkout blocked: Cart contains ${item.quantity} units of "${prod.name}", but only ${avail} units are available in store stock.`
+            `Checkout blocked: Cart contains ${item.quantity} units of "${prod.name}", but only ${avail} units are available in store stock.`,
           );
           return;
         }
@@ -754,14 +790,22 @@ function RouteComponent() {
       });
 
       if (res && (res.error || res.message) && !res.success && !res.transaction) {
-        console.warn("Backend transaction notice, engaging POS fallback:", res.error || res.message);
+        console.warn(
+          "Backend transaction notice, engaging POS fallback:",
+          res.error || res.message,
+        );
       }
 
       const txnData = (res && res.transaction) || (res && res.id ? res : (res && res.data) || null);
       const isSuccess = !!txnData || (res && res.success);
 
       const custObj = customers.find((c) => c.id === formCustomerId);
-      const resolvedCustomerName = formCustomerId === "walkin" ? (walkinPhone ? `Walk-in (${walkinPhone})` : "Walk-in Customer") : (custObj?.name || "Customer");
+      const resolvedCustomerName =
+        formCustomerId === "walkin"
+          ? walkinPhone
+            ? `Walk-in (${walkinPhone})`
+            : "Walk-in Customer"
+          : custObj?.name || "Customer";
       const resolvedItems = calculatedItems.map((ci) => ({
         productId: ci.productId,
         productName: ci.productName,
@@ -775,7 +819,8 @@ function RouteComponent() {
         const finalTxn = {
           ...(txnData || {}),
           id: txnData?.id || txnData?.transactionNumber || `TXN-${Date.now().toString().slice(-6)}`,
-          transactionNumber: txnData?.transactionNumber || txnData?.id || `TXN-${Date.now().toString().slice(-6)}`,
+          transactionNumber:
+            txnData?.transactionNumber || txnData?.id || `TXN-${Date.now().toString().slice(-6)}`,
           date: txnData?.date || activeDate,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           total: grandTotal,
@@ -785,28 +830,36 @@ function RouteComponent() {
           taxAmount: txnData?.taxAmount || tax,
           paymentMethod: formPaymentMethod,
           customerName: resolvedCustomerName,
-          customerPhone: formCustomerId === "walkin" ? walkinPhone : (custObj?.phone || ""),
+          customerPhone: formCustomerId === "walkin" ? walkinPhone : custObj?.phone || "",
           items: resolvedItems,
         };
         toast.success("Transaction completed successfully!");
         setCompletedTxn(finalTxn);
         // Write transaction to local DB so Live Ops, Command Center, Analytics update immediately
         try {
-          db.importTransactions([{
-            id: finalTxn.id,
-            date: activeDate,
-            time: new Date().toTimeString().slice(0, 5),
-            customerId: formCustomerId === "walkin" ? "" : formCustomerId,
-            customerName: resolvedCustomerName,
-            dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
-            items: calculatedItems.map((ci) => ({
-              productId: ci.productId, name: ci.productName,
-              quantity: ci.quantity, price: ci.unitPrice, cost: 0,
-            })),
-            subtotal, discount: 0, tax, total: grandTotal,
-            payment: formPaymentMethod as any,
-            status: "Completed" as const,
-          }]);
+          db.importTransactions([
+            {
+              id: finalTxn.id,
+              date: activeDate,
+              time: new Date().toTimeString().slice(0, 5),
+              customerId: formCustomerId === "walkin" ? "" : formCustomerId,
+              customerName: resolvedCustomerName,
+              dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
+              items: calculatedItems.map((ci) => ({
+                productId: ci.productId,
+                name: ci.productName,
+                quantity: ci.quantity,
+                price: ci.unitPrice,
+                cost: 0,
+              })),
+              subtotal,
+              discount: 0,
+              tax,
+              total: grandTotal,
+              payment: formPaymentMethod as any,
+              status: "Completed" as const,
+            },
+          ]);
 
           // Deduct purchased quantities from product inventory in local DB
           calculatedItems.forEach((ci) => {
@@ -818,7 +871,9 @@ function RouteComponent() {
           });
 
           forceRefresh();
-        } catch (_) {}
+        } catch (_) {
+          /* ignore local cache sync error */
+        }
         setCartItems([]);
         setWalkinPhone("");
       } else {
@@ -836,7 +891,7 @@ function RouteComponent() {
           taxAmount: tax,
           paymentMethod: formPaymentMethod,
           customerName: resolvedCustomerName,
-          customerPhone: formCustomerId === "walkin" ? walkinPhone : (custObj?.phone || ""),
+          customerPhone: formCustomerId === "walkin" ? walkinPhone : custObj?.phone || "",
           paymentStatus: "Paid",
           status: "Completed",
           items: resolvedItems,
@@ -845,21 +900,29 @@ function RouteComponent() {
         setCompletedTxn(localTxn);
 
         try {
-          db.importTransactions([{
-            id: localTxnId,
-            date: activeDate,
-            time: new Date().toTimeString().slice(0, 5),
-            customerId: formCustomerId === "walkin" ? "" : formCustomerId,
-            customerName: resolvedCustomerName,
-            dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
-            items: calculatedItems.map((ci) => ({
-              productId: ci.productId, name: ci.productName,
-              quantity: ci.quantity, price: ci.unitPrice, cost: 0,
-            })),
-            subtotal, discount: 0, tax, total: grandTotal,
-            payment: formPaymentMethod as any,
-            status: "Completed" as const,
-          }]);
+          db.importTransactions([
+            {
+              id: localTxnId,
+              date: activeDate,
+              time: new Date().toTimeString().slice(0, 5),
+              customerId: formCustomerId === "walkin" ? "" : formCustomerId,
+              customerName: resolvedCustomerName,
+              dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
+              items: calculatedItems.map((ci) => ({
+                productId: ci.productId,
+                name: ci.productName,
+                quantity: ci.quantity,
+                price: ci.unitPrice,
+                cost: 0,
+              })),
+              subtotal,
+              discount: 0,
+              tax,
+              total: grandTotal,
+              payment: formPaymentMethod as any,
+              status: "Completed" as const,
+            },
+          ]);
 
           calculatedItems.forEach((ci) => {
             const currentProd = db.getProducts().find((p) => p.id === ci.productId);
@@ -870,7 +933,9 @@ function RouteComponent() {
           });
 
           forceRefresh();
-        } catch (_) {}
+        } catch (_) {
+          /* ignore local cache sync error */
+        }
         setCartItems([]);
         setWalkinPhone("");
       }
@@ -891,7 +956,12 @@ function RouteComponent() {
       console.warn("Backend transaction exception absorbed by Self-Healing POS Shield:", err);
       // Autonomous Self-Healing Fallback ONLY for true offline / network connection loss:
       const custObj = customers.find((c) => c.id === formCustomerId);
-      const resolvedCustomerName = formCustomerId === "walkin" ? (walkinPhone ? `Walk-in (${walkinPhone})` : "Walk-in Customer") : (custObj?.name || "Customer");
+      const resolvedCustomerName =
+        formCustomerId === "walkin"
+          ? walkinPhone
+            ? `Walk-in (${walkinPhone})`
+            : "Walk-in Customer"
+          : custObj?.name || "Customer";
       const localTxnId = `TXN-POS-${Date.now().toString().slice(-6)}`;
       const localTxn = {
         id: localTxnId,
@@ -905,7 +975,7 @@ function RouteComponent() {
         taxAmount: tax,
         paymentMethod: formPaymentMethod,
         customerName: resolvedCustomerName,
-        customerPhone: formCustomerId === "walkin" ? walkinPhone : (custObj?.phone || ""),
+        customerPhone: formCustomerId === "walkin" ? walkinPhone : custObj?.phone || "",
         paymentStatus: "Paid",
         status: "Completed",
         items: calculatedItems.map((ci) => ({
@@ -921,21 +991,29 @@ function RouteComponent() {
       setCompletedTxn(localTxn);
 
       try {
-        db.importTransactions([{
-          id: localTxnId,
-          date: activeDate,
-          time: new Date().toTimeString().slice(0, 5),
-          customerId: formCustomerId === "walkin" ? "" : formCustomerId,
-          customerName: resolvedCustomerName,
-          dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
-          items: calculatedItems.map((ci) => ({
-            productId: ci.productId, name: ci.productName,
-            quantity: ci.quantity, price: ci.unitPrice, cost: 0,
-          })),
-          subtotal, discount: 0, tax, total: grandTotal,
-          payment: formPaymentMethod as any,
-          status: "Completed" as const,
-        }]);
+        db.importTransactions([
+          {
+            id: localTxnId,
+            date: activeDate,
+            time: new Date().toTimeString().slice(0, 5),
+            customerId: formCustomerId === "walkin" ? "" : formCustomerId,
+            customerName: resolvedCustomerName,
+            dept: departments.find((d) => d.id === formDepartmentId)?.name || "General",
+            items: calculatedItems.map((ci) => ({
+              productId: ci.productId,
+              name: ci.productName,
+              quantity: ci.quantity,
+              price: ci.unitPrice,
+              cost: 0,
+            })),
+            subtotal,
+            discount: 0,
+            tax,
+            total: grandTotal,
+            payment: formPaymentMethod as any,
+            status: "Completed" as const,
+          },
+        ]);
 
         calculatedItems.forEach((ci) => {
           const currentProd = db.getProducts().find((p) => p.id === ci.productId);
@@ -946,7 +1024,9 @@ function RouteComponent() {
         });
 
         forceRefresh();
-      } catch (_) {}
+      } catch (_) {
+        /* ignore local memory customer cache error */
+      }
       setCartItems([]);
       setWalkinPhone("");
     } finally {
@@ -984,9 +1064,12 @@ function RouteComponent() {
                       size="sm"
                       onClick={() => {
                         if (products.length === 0) return;
-                        const availableProd = products.find((p) => (p.stock || 0) > 0) || products[0];
+                        const availableProd =
+                          products.find((p) => (p.stock || 0) > 0) || products[0];
                         if ((availableProd.stock || 0) <= 0) {
-                          toast.error(`Scanned item "${availableProd.name}" is OUT OF STOCK (0 units). Cannot bill.`);
+                          toast.error(
+                            `Scanned item "${availableProd.name}" is OUT OF STOCK (0 units). Cannot bill.`,
+                          );
                           return;
                         }
                         setSelectedItemSku(availableProd.id);
@@ -1018,26 +1101,45 @@ function RouteComponent() {
                             disabled={isOut}
                             className={isOut ? "opacity-50 text-destructive line-through" : ""}
                           >
-                            {p.name} ({p.sku}) - {fmtINR(p.price)} {isOut ? "· ⚠️ OUT OF STOCK (0)" : `· (${p.stock} in stock)`}
+                            {p.name} ({p.sku}) - {fmtINR(p.price)}{" "}
+                            {isOut ? "· ⚠️ OUT OF STOCK (0)" : `· (${p.stock} in stock)`}
                           </SelectItem>
                         );
                       })}
                     </SelectContent>
                   </Select>
-                  {selectedItemSku && selectedItemSku !== "custom" && (() => {
-                    const selProd = products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku);
-                    if (!selProd) return null;
-                    const isZero = (selProd.stock || 0) <= 0;
-                    return (
-                      <div className={cn("text-[11px] mt-1.5 flex items-center gap-1.5 font-medium px-2 py-1 rounded", isZero ? "bg-destructive/10 text-destructive font-bold border border-destructive/20" : (selProd.stock || 0) <= 5 ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20")}>
-                        {isZero ? (
-                          <span>⚠️ OUT OF STOCK: 0 units available in store inventory. Cannot add to invoice.</span>
-                        ) : (
-                          <span>✓ Available Stock: <strong>{selProd.stock}</strong> units in store</span>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  {selectedItemSku &&
+                    selectedItemSku !== "custom" &&
+                    (() => {
+                      const selProd = products.find(
+                        (p) => p.id === selectedItemSku || p.sku === selectedItemSku,
+                      );
+                      if (!selProd) return null;
+                      const isZero = (selProd.stock || 0) <= 0;
+                      return (
+                        <div
+                          className={cn(
+                            "text-[11px] mt-1.5 flex items-center gap-1.5 font-medium px-2 py-1 rounded",
+                            isZero
+                              ? "bg-destructive/10 text-destructive font-bold border border-destructive/20"
+                              : (selProd.stock || 0) <= 5
+                                ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                                : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20",
+                          )}
+                        >
+                          {isZero ? (
+                            <span>
+                              ⚠️ OUT OF STOCK: 0 units available in store inventory. Cannot add to
+                              invoice.
+                            </span>
+                          ) : (
+                            <span>
+                              ✓ Available Stock: <strong>{selProd.stock}</strong> units in store
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                 </div>
                 <div className="flex items-end gap-2.5 w-full sm:w-auto">
                   <div className="flex-1 sm:w-24">
@@ -1066,8 +1168,12 @@ function RouteComponent() {
                       addingCustomProd ||
                       (selectedItemSku !== "custom" &&
                         Boolean(
-                          products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku) &&
-                            (products.find((p) => p.id === selectedItemSku || p.sku === selectedItemSku)?.stock || 0) <= 0
+                          products.find(
+                            (p) => p.id === selectedItemSku || p.sku === selectedItemSku,
+                          ) &&
+                          (products.find(
+                            (p) => p.id === selectedItemSku || p.sku === selectedItemSku,
+                          )?.stock || 0) <= 0,
                         ))
                     }
                   >
@@ -1186,7 +1292,9 @@ function RouteComponent() {
                   </thead>
                   <tbody className="divide-y divide-zinc-200">
                     {calculatedItems.map((item, idx) => {
-                      const prod = products.find((p) => p.id === item.productId || p.sku === item.productId);
+                      const prod = products.find(
+                        (p) => p.id === item.productId || p.sku === item.productId,
+                      );
                       const isOutOfStock = prod ? (prod.stock || 0) <= 0 : false;
                       const hasShortage = prod ? item.quantity > (prod.stock || 0) : false;
                       return (
@@ -1194,7 +1302,8 @@ function RouteComponent() {
                           key={idx}
                           className={cn(
                             "hover:bg-zinc-50",
-                            (isOutOfStock || hasShortage) && "bg-destructive/5 border-l-4 border-destructive"
+                            (isOutOfStock || hasShortage) &&
+                              "bg-destructive/5 border-l-4 border-destructive",
                           )}
                         >
                           <td className="p-3 font-medium">
@@ -1263,7 +1372,8 @@ function RouteComponent() {
                   <SelectContent>
                     <SelectItem value="walkin">-- Walk-in (No Name) --</SelectItem>
                     {customers.map((c) => {
-                      const custName = c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer";
+                      const custName =
+                        c.name || `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Customer";
                       const contactInfo = c.phone || c.email || c.customerCode || "Active";
                       return (
                         <SelectItem key={c.id} value={c.id}>
@@ -1349,12 +1459,17 @@ function RouteComponent() {
               )}
 
               {cartItems.some((item) => {
-                const prod = products.find((p) => p.id === item.productId || p.sku === item.productId);
+                const prod = products.find(
+                  (p) => p.id === item.productId || p.sku === item.productId,
+                );
                 return prod && ((prod.stock || 0) <= 0 || item.quantity > (prod.stock || 0));
               }) && (
                 <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
-                  <span>Inventory Block: One or more items in the cart are OUT OF STOCK or exceed available inventory. Remove them to complete the sale.</span>
+                  <span>
+                    Inventory Block: One or more items in the cart are OUT OF STOCK or exceed
+                    available inventory. Remove them to complete the sale.
+                  </span>
                 </div>
               )}
 
@@ -1365,7 +1480,9 @@ function RouteComponent() {
                   saving ||
                   cartItems.length === 0 ||
                   cartItems.some((item) => {
-                    const prod = products.find((p) => p.id === item.productId || p.sku === item.productId);
+                    const prod = products.find(
+                      (p) => p.id === item.productId || p.sku === item.productId,
+                    );
                     return prod && ((prod.stock || 0) <= 0 || item.quantity > (prod.stock || 0));
                   })
                 }
@@ -1393,7 +1510,8 @@ function RouteComponent() {
               <UserPlus className="h-5 w-5" /> Quick Register Customer
             </DialogTitle>
             <DialogDescription>
-              Register a walk-in shopper to automatically attach to this bill and credit loyalty points.
+              Register a walk-in shopper to automatically attach to this bill and credit loyalty
+              points.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleQuickRegisterCustomer} className="space-y-4 pt-2">
@@ -1439,10 +1557,18 @@ function RouteComponent() {
               </Select>
             </div>
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setShowAddCustomerModal(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddCustomerModal(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={addingCustomer} className="bg-indigo-600 hover:bg-indigo-700">
+              <Button
+                type="submit"
+                disabled={addingCustomer}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
                 {addingCustomer ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Registering...
@@ -1485,7 +1611,9 @@ function RouteComponent() {
               </div>
               <div className="text-right">
                 <span className="text-muted-foreground">Amount to Collect:</span>
-                <p className="font-mono text-xl font-black text-emerald-600">{fmtINR(grandTotal)}</p>
+                <p className="font-mono text-xl font-black text-emerald-600">
+                  {fmtINR(grandTotal)}
+                </p>
               </div>
             </div>
 
@@ -1493,29 +1621,37 @@ function RouteComponent() {
             <div className="p-3 bg-white rounded-2xl border-2 border-zinc-200 shadow-md flex flex-col items-center">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(
-                  `upi://pay?pa=grandsquare.store@okaxis&pn=GrandSquare+Supermart&am=${grandTotal}&cu=INR&tn=POS-Bill`
+                  `upi://pay?pa=grandsquare.store@okaxis&pn=GrandSquare+Supermart&am=${grandTotal}&cu=INR&tn=POS-Bill`,
                 )}`}
                 alt="Dynamic UPI QR Code"
                 className="h-48 w-48 rounded-lg"
               />
-              <span className="text-[11px] text-zinc-500 mt-2 font-mono">Present to customer screen or mobile</span>
+              <span className="text-[11px] text-zinc-500 mt-2 font-mono">
+                Present to customer screen or mobile
+              </span>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
-              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">Google Pay</span>
-              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">PhonePe</span>
-              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">Paytm</span>
-              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">BHIM UPI</span>
-              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">Cred</span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">
+                Google Pay
+              </span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">
+                PhonePe
+              </span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">
+                Paytm
+              </span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">
+                BHIM UPI
+              </span>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 font-medium text-zinc-600">
+                Cred
+              </span>
             </div>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowUpiQrModal(false)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowUpiQrModal(false)}>
               Close QR
             </Button>
             <Button
@@ -1562,14 +1698,16 @@ function RouteComponent() {
                   <span>
                     {item.productName || item.name || item.productId} x{item.quantity}
                   </span>
-                  <span>{fmtINR(item.total || ((item.price || 0) * (item.quantity || 1)))}</span>
+                  <span>{fmtINR(item.total || (item.price || 0) * (item.quantity || 1))}</span>
                 </div>
               ))}
             </div>
             <div className="border-t pt-2 space-y-1 text-xs font-sans">
               <div className="flex justify-between text-zinc-600">
                 <span>Payment Method</span>
-                <span className="font-semibold">{completedTxn?.paymentMethod || formPaymentMethod}</span>
+                <span className="font-semibold">
+                  {completedTxn?.paymentMethod || formPaymentMethod}
+                </span>
               </div>
               <div className="flex justify-between text-zinc-600">
                 <span>Subtotal (Excl. GST)</span>
@@ -1581,7 +1719,9 @@ function RouteComponent() {
               </div>
               <div className="flex justify-between text-zinc-900 font-bold text-sm border-t pt-1">
                 <span>Total Paid</span>
-                <span className="text-emerald-600">{fmtINR(completedTxn?.total || completedTxn?.totalAmount || grandTotal)}</span>
+                <span className="text-emerald-600">
+                  {fmtINR(completedTxn?.total || completedTxn?.totalAmount || grandTotal)}
+                </span>
               </div>
             </div>
           </div>
@@ -1595,7 +1735,10 @@ function RouteComponent() {
                   const phone = (completedTxn.customerPhone || "").replace(/\D/g, "");
                   const cleanPhone = phone.length === 10 ? "91" + phone : phone;
                   const billMsg = `Namaste ${completedTxn.customerName || "Customer"}! 🧾 GrandSquare Supermart se aapka digital bill:\n\nInvoice: #${completedTxn.id}\nDate: ${completedTxn.date}\nTotal Amount: ₹${completedTxn.total || completedTxn.totalAmount}\nPayment: ${completedTxn.paymentMethod || "PAID"}\n\nDhanyavaad! Phir zaroor aayein.`;
-                  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(billMsg)}`, "_blank");
+                  window.open(
+                    `https://wa.me/${cleanPhone}?text=${encodeURIComponent(billMsg)}`,
+                    "_blank",
+                  );
                 }}
                 className="w-full sm:w-auto border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 font-bold"
               >
@@ -1622,7 +1765,10 @@ function RouteComponent() {
       </Dialog>
 
       {/* Dedicated Printable GST Tax Invoice (Hidden on screen, styled specifically for window.print()) */}
-      <div id="bizora-print-receipt" className="hidden text-black bg-white p-6 font-mono max-w-[380px] mx-auto text-xs leading-relaxed">
+      <div
+        id="bizora-print-receipt"
+        className="hidden text-black bg-white p-6 font-mono max-w-[380px] mx-auto text-xs leading-relaxed"
+      >
         <div className="text-center pb-3 border-b-2 border-dashed border-black">
           <h1 className="text-base font-bold tracking-tight">GRAND SQUARE RETAIL MALL</h1>
           <p className="text-[10px] text-zinc-600">Omni-Channel Retail Hypermarket POS</p>
@@ -1634,21 +1780,47 @@ function RouteComponent() {
 
         <div className="py-2 border-b border-dashed border-black text-[10px] space-y-0.5">
           <div className="flex justify-between">
-            <span>Invoice No: <strong>{completedTxn?.id || `INV-${Date.now()}`}</strong></span>
-            <span>Date: <strong>{completedTxn?.date || new Date().toISOString().split("T")[0]}</strong></span>
+            <span>
+              Invoice No: <strong>{completedTxn?.id || `INV-${Date.now()}`}</strong>
+            </span>
+            <span>
+              Date: <strong>{completedTxn?.date || new Date().toISOString().split("T")[0]}</strong>
+            </span>
           </div>
           <div className="flex justify-between">
-            <span>Customer: <strong>{completedTxn?.customerName || (formCustomerId === "walkin" ? "Walk-in Customer" : (customers.find((c) => c.id === formCustomerId)?.name || "Shopper"))}</strong></span>
-            <span>Time: <strong>{completedTxn?.time || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong></span>
+            <span>
+              Customer:{" "}
+              <strong>
+                {completedTxn?.customerName ||
+                  (formCustomerId === "walkin"
+                    ? "Walk-in Customer"
+                    : customers.find((c) => c.id === formCustomerId)?.name || "Shopper")}
+              </strong>
+            </span>
+            <span>
+              Time:{" "}
+              <strong>
+                {completedTxn?.time ||
+                  new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </strong>
+            </span>
           </div>
           <div className="flex justify-between">
-            <span>Payment: <strong>{completedTxn?.paymentMethod || formPaymentMethod}</strong></span>
-            <span>Counter: <strong>POS-01 (Main)</strong></span>
+            <span>
+              Payment: <strong>{completedTxn?.paymentMethod || formPaymentMethod}</strong>
+            </span>
+            <span>
+              Counter: <strong>POS-01 (Main)</strong>
+            </span>
           </div>
           {completedTxn?.customerPhone && (
             <div className="flex justify-between">
-              <span>Mobile: <strong>{completedTxn.customerPhone}</strong></span>
-              <span>Status: <strong>PAID</strong></span>
+              <span>
+                Mobile: <strong>{completedTxn.customerPhone}</strong>
+              </span>
+              <span>
+                Status: <strong>PAID</strong>
+              </span>
             </div>
           )}
         </div>
@@ -1665,10 +1837,12 @@ function RouteComponent() {
             </thead>
             <tbody className="divide-y divide-dotted divide-zinc-300">
               {(completedTxn?.items || cartItems).map((it: any, idx: number) => {
-                const itemTotal = it.total || ((it.price || 0) * (it.quantity || 1));
+                const itemTotal = it.total || (it.price || 0) * (it.quantity || 1);
                 return (
                   <tr key={idx} className="py-1">
-                    <td className="py-1 pr-1 font-medium">{it.productName || it.name || it.productId}</td>
+                    <td className="py-1 pr-1 font-medium">
+                      {it.productName || it.name || it.productId}
+                    </td>
                     <td className="py-1 text-center">{it.quantity || 1}</td>
                     <td className="py-1 text-right">{fmtINR(it.price || 0)}</td>
                     <td className="py-1 text-right font-semibold">{fmtINR(itemTotal)}</td>
@@ -1686,22 +1860,30 @@ function RouteComponent() {
           </div>
           <div className="flex justify-between">
             <span>CGST (9.0%)</span>
-            <span>{fmtINR(Math.round(((completedTxn?.tax || completedTxn?.taxAmount || tax) / 2)))}</span>
+            <span>
+              {fmtINR(Math.round((completedTxn?.tax || completedTxn?.taxAmount || tax) / 2))}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>SGST (9.0%)</span>
-            <span>{fmtINR(Math.round(((completedTxn?.tax || completedTxn?.taxAmount || tax) / 2)))}</span>
+            <span>
+              {fmtINR(Math.round((completedTxn?.tax || completedTxn?.taxAmount || tax) / 2))}
+            </span>
           </div>
           <div className="flex justify-between text-xs font-bold border-t border-black pt-1 text-black">
             <span>GRAND TOTAL (INCL. GST)</span>
-            <span className="text-sm">{fmtINR(completedTxn?.total || completedTxn?.totalAmount || grandTotal)}</span>
+            <span className="text-sm">
+              {fmtINR(completedTxn?.total || completedTxn?.totalAmount || grandTotal)}
+            </span>
           </div>
         </div>
 
         <div className="pt-3 text-center text-[9px] text-zinc-600 space-y-0.5">
           <p className="font-semibold text-black">*** THANK YOU FOR SHOPPING WITH US ***</p>
           <p>Goods once sold can be exchanged within 7 days against this receipt.</p>
-          <p className="text-[8px] text-zinc-400 pt-1">Automated GST POS generated via Bizora AI Retail OS</p>
+          <p className="text-[8px] text-zinc-400 pt-1">
+            Automated GST POS generated via Bizora AI Retail OS
+          </p>
         </div>
       </div>
 

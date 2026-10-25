@@ -46,26 +46,423 @@ const SCENARIOS = [
 
 // 25 default sample transactions from user's demo data for instant 1-click loading if database is blank
 const DEMO_TRANSACTIONS = [
-  { id: "TXN001", date: "2026-10-01", time: "10:15", customerId: "CUST001", customerName: "Aarav Shah", subtotal: 788, tax: 39, discount: 0, total: 788, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 2, price: 265, cost: 238 }, { productId: "PROD003", name: "Fortune Sunflower Oil 1L", quantity: 1, price: 160, cost: 130 }, { productId: "PROD008", name: "Tata Salt 1kg", quantity: 1, price: 28, cost: 22 }] },
-  { id: "TXN002", date: "2026-10-02", time: "11:30", customerId: "CUST002", customerName: "Pooja Patel", subtotal: 520, tax: 26, discount: 0, total: 520, payment: "Card" as const, status: "Completed" as const, items: [{ productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 }, { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 3, price: 45, cost: 35 }] },
-  { id: "TXN003", date: "2026-10-03", time: "14:20", customerId: "CUST003", customerName: "Vikram Mehta", subtotal: 890, tax: 44, discount: 0, total: 890, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD002", name: "India Gate Basmati Rice 5kg", quantity: 1, price: 650, cost: 520 }, { productId: "PROD010", name: "Haldiram Bhujia 400g", quantity: 2, price: 120, cost: 95 }] },
-  { id: "TXN004", date: "2026-10-04", time: "16:00", customerId: "CUST004", customerName: "Sneha Kulkarni", subtotal: 230, tax: 11, discount: 0, total: 230, payment: "Cash" as const, status: "Completed" as const, items: [{ productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 }] },
-  { id: "TXN005", date: "2026-10-05", time: "18:45", customerId: "CUST005", customerName: "Rohan Deshmukh", subtotal: 410, tax: 20, discount: 0, total: 410, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 2, price: 70, cost: 55 }, { productId: "PROD007", name: "Surf Excel Detergent 1kg", quantity: 2, price: 135, cost: 110 }] },
-  { id: "TXN006", date: "2026-10-06", time: "12:10", customerId: "CUST006", customerName: "Ananya Iyer", subtotal: 650, tax: 32, discount: 0, total: 650, payment: "Card" as const, status: "Completed" as const, items: [{ productId: "PROD002", name: "India Gate Basmati Rice 5kg", quantity: 1, price: 650, cost: 520 }] },
-  { id: "TXN007", date: "2026-10-07", time: "19:30", customerId: "CUST007", customerName: "Karan Joshi", subtotal: 1100, tax: 55, discount: 0, total: 1100, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 2, price: 265, cost: 238 }, { productId: "PROD003", name: "Fortune Sunflower Oil 1L", quantity: 2, price: 160, cost: 130 }, { productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 }] },
-  { id: "TXN008", date: "2026-10-08", time: "11:00", customerId: "CUST008", customerName: "Neha Nair", subtotal: 340, tax: 17, discount: 0, total: 340, payment: "Cash" as const, status: "Completed" as const, items: [{ productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 }, { productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 1, price: 70, cost: 55 }] },
-  { id: "TXN009", date: "2026-10-09", time: "15:15", customerId: "CUST009", customerName: "Aditya Verma", subtotal: 490, tax: 24, discount: 0, total: 490, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD007", name: "Surf Excel Detergent 1kg", quantity: 2, price: 135, cost: 110 }, { productId: "PROD010", name: "Haldiram Bhujia 400g", quantity: 1, price: 120, cost: 95 }] },
-  { id: "TXN010", date: "2026-10-10", time: "17:40", customerId: "CUST010", customerName: "Priyanka Rao", subtotal: 780, tax: 39, discount: 0, total: 780, payment: "Card" as const, status: "Completed" as const, items: [{ productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 1, price: 265, cost: 238 }, { productId: "PROD003", name: "Fortune Sunflower Oil 1L", quantity: 2, price: 160, cost: 130 }, { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 4, price: 45, cost: 35 }] },
-  { id: "TXN011", date: "2026-10-11", time: "10:50", customerId: "CUST011", customerName: "Rajesh Gupta", subtotal: 290, tax: 14, discount: 0, total: 290, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 }] },
-  { id: "TXN012", date: "2026-10-12", time: "13:25", customerId: "CUST012", customerName: "Divya Pillai", subtotal: 450, tax: 22, discount: 0, total: 450, payment: "Cash" as const, status: "Completed" as const, items: [{ productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 }, { productId: "PROD010", name: "Haldiram Bhujia 400g", quantity: 1, price: 120, cost: 95 }] },
-  { id: "TXN013", date: "2026-10-13", time: "16:40", customerId: "CUST013", customerName: "Siddharth Jain", subtotal: 820, tax: 41, discount: 0, total: 820, payment: "Card" as const, status: "Completed" as const, items: [{ productId: "PROD002", name: "India Gate Basmati Rice 5kg", quantity: 1, price: 650, cost: 520 }, { productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 2, price: 70, cost: 55 }] },
-  { id: "TXN014", date: "2026-10-14", time: "11:15", customerId: "CUST014", customerName: "Tanvi Sharma", subtotal: 190, tax: 9, discount: 0, total: 190, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD008", name: "Tata Salt 1kg", quantity: 2, price: 28, cost: 22 }, { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 3, price: 45, cost: 35 }] },
-  { id: "TXN015", date: "2026-10-15", time: "18:10", customerId: "CUST015", customerName: "Manish Reddy", subtotal: 610, tax: 30, discount: 0, total: 610, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 1, price: 265, cost: 238 }, { productId: "PROD007", name: "Surf Excel Detergent 1kg", quantity: 2, price: 135, cost: 110 }] },
-  { id: "TXN016", date: "2026-10-16", time: "12:45", customerId: "CUST001", customerName: "Aarav Shah", subtotal: 950, tax: 47, discount: 0, total: 950, payment: "Card" as const, status: "Completed" as const, items: [{ productId: "PROD002", name: "India Gate Basmati Rice 5kg", quantity: 1, price: 650, cost: 520 }, { productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 }] },
-  { id: "TXN017", date: "2026-10-17", time: "15:30", customerId: "CUST003", customerName: "Vikram Mehta", subtotal: 310, tax: 15, discount: 0, total: 310, payment: "Cash" as const, status: "Completed" as const, items: [{ productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 2, price: 70, cost: 55 }, { productId: "PROD008", name: "Tata Salt 1kg", quantity: 1, price: 28, cost: 22 }] },
-  { id: "TXN018", date: "2026-10-18", time: "17:15", customerId: "CUST005", customerName: "Rohan Deshmukh", subtotal: 480, tax: 24, discount: 0, total: 480, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD003", name: "Fortune Sunflower Oil 1L", quantity: 2, price: 160, cost: 130 }, { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 2, price: 45, cost: 35 }] },
-  { id: "TXN019", date: "2026-10-19", time: "19:00", customerId: "CUST007", customerName: "Karan Joshi", subtotal: 720, tax: 36, discount: 0, total: 720, payment: "Card" as const, status: "Completed" as const, items: [{ productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 2, price: 265, cost: 238 }, { productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 }] },
-  { id: "TXN020", date: "2026-10-20", time: "20:20", customerId: "CUST002", customerName: "Pooja Patel", subtotal: 1299, tax: 65, discount: 0, total: 1299, payment: "UPI" as const, status: "Completed" as const, items: [{ productId: "PROD002", name: "India Gate Basmati Rice 5kg", quantity: 1, price: 650, cost: 520 }, { productId: "PROD003", name: "Fortune Sunflower Oil 1L", quantity: 2, price: 160, cost: 130 }, { productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 }] },
+  {
+    id: "TXN001",
+    date: "2026-10-01",
+    time: "10:15",
+    customerId: "CUST001",
+    customerName: "Aarav Shah",
+    subtotal: 788,
+    tax: 39,
+    discount: 0,
+    total: 788,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 2, price: 265, cost: 238 },
+      {
+        productId: "PROD003",
+        name: "Fortune Sunflower Oil 1L",
+        quantity: 1,
+        price: 160,
+        cost: 130,
+      },
+      { productId: "PROD008", name: "Tata Salt 1kg", quantity: 1, price: 28, cost: 22 },
+    ],
+  },
+  {
+    id: "TXN002",
+    date: "2026-10-02",
+    time: "11:30",
+    customerId: "CUST002",
+    customerName: "Pooja Patel",
+    subtotal: 520,
+    tax: 26,
+    discount: 0,
+    total: 520,
+    payment: "Card" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 },
+      { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 3, price: 45, cost: 35 },
+    ],
+  },
+  {
+    id: "TXN003",
+    date: "2026-10-03",
+    time: "14:20",
+    customerId: "CUST003",
+    customerName: "Vikram Mehta",
+    subtotal: 890,
+    tax: 44,
+    discount: 0,
+    total: 890,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      {
+        productId: "PROD002",
+        name: "India Gate Basmati Rice 5kg",
+        quantity: 1,
+        price: 650,
+        cost: 520,
+      },
+      { productId: "PROD010", name: "Haldiram Bhujia 400g", quantity: 2, price: 120, cost: 95 },
+    ],
+  },
+  {
+    id: "TXN004",
+    date: "2026-10-04",
+    time: "16:00",
+    customerId: "CUST004",
+    customerName: "Sneha Kulkarni",
+    subtotal: 230,
+    tax: 11,
+    discount: 0,
+    total: 230,
+    payment: "Cash" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 },
+    ],
+  },
+  {
+    id: "TXN005",
+    date: "2026-10-05",
+    time: "18:45",
+    customerId: "CUST005",
+    customerName: "Rohan Deshmukh",
+    subtotal: 410,
+    tax: 20,
+    discount: 0,
+    total: 410,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 2, price: 70, cost: 55 },
+      {
+        productId: "PROD007",
+        name: "Surf Excel Detergent 1kg",
+        quantity: 2,
+        price: 135,
+        cost: 110,
+      },
+    ],
+  },
+  {
+    id: "TXN006",
+    date: "2026-10-06",
+    time: "12:10",
+    customerId: "CUST006",
+    customerName: "Ananya Iyer",
+    subtotal: 650,
+    tax: 32,
+    discount: 0,
+    total: 650,
+    payment: "Card" as const,
+    status: "Completed" as const,
+    items: [
+      {
+        productId: "PROD002",
+        name: "India Gate Basmati Rice 5kg",
+        quantity: 1,
+        price: 650,
+        cost: 520,
+      },
+    ],
+  },
+  {
+    id: "TXN007",
+    date: "2026-10-07",
+    time: "19:30",
+    customerId: "CUST007",
+    customerName: "Karan Joshi",
+    subtotal: 1100,
+    tax: 55,
+    discount: 0,
+    total: 1100,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 2, price: 265, cost: 238 },
+      {
+        productId: "PROD003",
+        name: "Fortune Sunflower Oil 1L",
+        quantity: 2,
+        price: 160,
+        cost: 130,
+      },
+      { productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 },
+    ],
+  },
+  {
+    id: "TXN008",
+    date: "2026-10-08",
+    time: "11:00",
+    customerId: "CUST008",
+    customerName: "Neha Nair",
+    subtotal: 340,
+    tax: 17,
+    discount: 0,
+    total: 340,
+    payment: "Cash" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 },
+      { productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 1, price: 70, cost: 55 },
+    ],
+  },
+  {
+    id: "TXN009",
+    date: "2026-10-09",
+    time: "15:15",
+    customerId: "CUST009",
+    customerName: "Aditya Verma",
+    subtotal: 490,
+    tax: 24,
+    discount: 0,
+    total: 490,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      {
+        productId: "PROD007",
+        name: "Surf Excel Detergent 1kg",
+        quantity: 2,
+        price: 135,
+        cost: 110,
+      },
+      { productId: "PROD010", name: "Haldiram Bhujia 400g", quantity: 1, price: 120, cost: 95 },
+    ],
+  },
+  {
+    id: "TXN010",
+    date: "2026-10-10",
+    time: "17:40",
+    customerId: "CUST010",
+    customerName: "Priyanka Rao",
+    subtotal: 780,
+    tax: 39,
+    discount: 0,
+    total: 780,
+    payment: "Card" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 1, price: 265, cost: 238 },
+      {
+        productId: "PROD003",
+        name: "Fortune Sunflower Oil 1L",
+        quantity: 2,
+        price: 160,
+        cost: 130,
+      },
+      { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 4, price: 45, cost: 35 },
+    ],
+  },
+  {
+    id: "TXN011",
+    date: "2026-10-11",
+    time: "10:50",
+    customerId: "CUST011",
+    customerName: "Rajesh Gupta",
+    subtotal: 290,
+    tax: 14,
+    discount: 0,
+    total: 290,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [{ productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 }],
+  },
+  {
+    id: "TXN012",
+    date: "2026-10-12",
+    time: "13:25",
+    customerId: "CUST012",
+    customerName: "Divya Pillai",
+    subtotal: 450,
+    tax: 22,
+    discount: 0,
+    total: 450,
+    payment: "Cash" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 },
+      { productId: "PROD010", name: "Haldiram Bhujia 400g", quantity: 1, price: 120, cost: 95 },
+    ],
+  },
+  {
+    id: "TXN013",
+    date: "2026-10-13",
+    time: "16:40",
+    customerId: "CUST013",
+    customerName: "Siddharth Jain",
+    subtotal: 820,
+    tax: 41,
+    discount: 0,
+    total: 820,
+    payment: "Card" as const,
+    status: "Completed" as const,
+    items: [
+      {
+        productId: "PROD002",
+        name: "India Gate Basmati Rice 5kg",
+        quantity: 1,
+        price: 650,
+        cost: 520,
+      },
+      { productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 2, price: 70, cost: 55 },
+    ],
+  },
+  {
+    id: "TXN014",
+    date: "2026-10-14",
+    time: "11:15",
+    customerId: "CUST014",
+    customerName: "Tanvi Sharma",
+    subtotal: 190,
+    tax: 9,
+    discount: 0,
+    total: 190,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD008", name: "Tata Salt 1kg", quantity: 2, price: 28, cost: 22 },
+      { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 3, price: 45, cost: 35 },
+    ],
+  },
+  {
+    id: "TXN015",
+    date: "2026-10-15",
+    time: "18:10",
+    customerId: "CUST015",
+    customerName: "Manish Reddy",
+    subtotal: 610,
+    tax: 30,
+    discount: 0,
+    total: 610,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 1, price: 265, cost: 238 },
+      {
+        productId: "PROD007",
+        name: "Surf Excel Detergent 1kg",
+        quantity: 2,
+        price: 135,
+        cost: 110,
+      },
+    ],
+  },
+  {
+    id: "TXN016",
+    date: "2026-10-16",
+    time: "12:45",
+    customerId: "CUST001",
+    customerName: "Aarav Shah",
+    subtotal: 950,
+    tax: 47,
+    discount: 0,
+    total: 950,
+    payment: "Card" as const,
+    status: "Completed" as const,
+    items: [
+      {
+        productId: "PROD002",
+        name: "India Gate Basmati Rice 5kg",
+        quantity: 1,
+        price: 650,
+        cost: 520,
+      },
+      { productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 },
+    ],
+  },
+  {
+    id: "TXN017",
+    date: "2026-10-17",
+    time: "15:30",
+    customerId: "CUST003",
+    customerName: "Vikram Mehta",
+    subtotal: 310,
+    tax: 15,
+    discount: 0,
+    total: 310,
+    payment: "Cash" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD005", name: "Maggi Noodles 4-Pack", quantity: 2, price: 70, cost: 55 },
+      { productId: "PROD008", name: "Tata Salt 1kg", quantity: 1, price: 28, cost: 22 },
+    ],
+  },
+  {
+    id: "TXN018",
+    date: "2026-10-18",
+    time: "17:15",
+    customerId: "CUST005",
+    customerName: "Rohan Deshmukh",
+    subtotal: 480,
+    tax: 24,
+    discount: 0,
+    total: 480,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      {
+        productId: "PROD003",
+        name: "Fortune Sunflower Oil 1L",
+        quantity: 2,
+        price: 160,
+        cost: 130,
+      },
+      { productId: "PROD009", name: "Good Day Cookies 200g", quantity: 2, price: 45, cost: 35 },
+    ],
+  },
+  {
+    id: "TXN019",
+    date: "2026-10-19",
+    time: "19:00",
+    customerId: "CUST007",
+    customerName: "Karan Joshi",
+    subtotal: 720,
+    tax: 36,
+    discount: 0,
+    total: 720,
+    payment: "Card" as const,
+    status: "Completed" as const,
+    items: [
+      { productId: "PROD001", name: "Aashirvaad Atta 5kg", quantity: 2, price: 265, cost: 238 },
+      { productId: "PROD006", name: "Tata Tea Gold 500g", quantity: 1, price: 230, cost: 195 },
+    ],
+  },
+  {
+    id: "TXN020",
+    date: "2026-10-20",
+    time: "20:20",
+    customerId: "CUST002",
+    customerName: "Pooja Patel",
+    subtotal: 1299,
+    tax: 65,
+    discount: 0,
+    total: 1299,
+    payment: "UPI" as const,
+    status: "Completed" as const,
+    items: [
+      {
+        productId: "PROD002",
+        name: "India Gate Basmati Rice 5kg",
+        quantity: 1,
+        price: 650,
+        cost: 520,
+      },
+      {
+        productId: "PROD003",
+        name: "Fortune Sunflower Oil 1L",
+        quantity: 2,
+        price: 160,
+        cost: 130,
+      },
+      { productId: "PROD004", name: "Amul Butter 500g", quantity: 1, price: 285, cost: 250 },
+    ],
+  },
 ];
 
 function Forecasting() {
@@ -106,14 +503,18 @@ function Forecasting() {
 
   // Combine BusinessContext transactions with direct db transactions for resilience
   const allTxns = useMemo(() => {
-    const isCleared = typeof window !== "undefined" && window.localStorage.getItem("omnimind_db_cleared") === "true";
+    const isCleared =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("omnimind_db_cleared") === "true";
     if (isCleared) return [];
 
     let txs = transactions || [];
     if (txs.length === 0) {
       try {
         txs = db.getTransactions() || [];
-      } catch (e) {}
+      } catch (e) {
+        /* ignore fallback lookup error */
+      }
     }
     return txs;
   }, [transactions]);
@@ -520,18 +921,22 @@ function Forecasting() {
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
             <span>
-              Connected to <strong>{allTxns.length} transactions</strong> ({fmtINR(totalTxnsAmount)} total recorded sales).
+              Connected to <strong>{allTxns.length} transactions</strong> ({fmtINR(totalTxnsAmount)}{" "}
+              total recorded sales).
             </span>
           </div>
           <span className="text-muted-foreground text-[11px]">
-            Historical data spans across {forecastData.filter((p) => p.actual !== null).length} active store days
+            Historical data spans across {forecastData.filter((p) => p.actual !== null).length}{" "}
+            active store days
           </span>
         </div>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Horizon:</span>
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            Horizon:
+          </span>
           <div className="flex items-center gap-1 rounded-md border border-hairline bg-surface p-0.5 text-[11px]">
             {["7d", "30d", "90d"].map((h) => (
               <button
@@ -539,7 +944,9 @@ function Forecasting() {
                 onClick={() => setHorizon(h)}
                 className={cn(
                   "rounded-sm px-2.5 py-1 font-medium transition-colors",
-                  horizon === h ? "bg-primary/20 text-foreground" : "text-muted-foreground hover:text-foreground",
+                  horizon === h
+                    ? "bg-primary/20 text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 Next {h}
@@ -549,7 +956,9 @@ function Forecasting() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Scenario:</span>
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            Scenario:
+          </span>
           <div className="flex flex-wrap items-center gap-1 rounded-md border border-hairline bg-surface p-0.5 text-[11px]">
             {SCENARIOS.map((s) => (
               <button
@@ -581,14 +990,22 @@ function Forecasting() {
           ) : forecastData.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-xs text-muted-foreground gap-3">
               <p>No historical database records available to project revenue forecast chart.</p>
-              <Button size="sm" onClick={handleLoadDemoSales} className="gap-1.5 gradient-primary text-xs">
+              <Button
+                size="sm"
+                onClick={handleLoadDemoSales}
+                className="gap-1.5 gradient-primary text-xs"
+              >
                 <Sparkles className="h-3.5 w-3.5" /> Load Sample 25 Transactions
               </Button>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={forecastData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                <CartesianGrid stroke="var(--color-hairline)" vertical={false} strokeDasharray="3 3" />
+                <CartesianGrid
+                  stroke="var(--color-hairline)"
+                  vertical={false}
+                  strokeDasharray="3 3"
+                />
                 <XAxis
                   dataKey="day"
                   tickLine={false}
@@ -632,7 +1049,8 @@ function Forecasting() {
                         {forecast !== null && forecast !== undefined && (
                           <div className="flex items-center justify-between gap-4 py-0.5">
                             <span className="flex items-center gap-1.5 text-primary font-medium">
-                              <span className="h-2 w-2 rounded-full bg-primary" /> Forecast ({scenario})
+                              <span className="h-2 w-2 rounded-full bg-primary" /> Forecast (
+                              {scenario})
                             </span>
                             <span className="font-mono font-bold text-foreground">
                               {fmtINR(Number(forecast))}
@@ -694,9 +1112,10 @@ function Forecasting() {
           <p className="mt-1 text-foreground/90">
             Next period projected revenue is calculated at{" "}
             <span className="font-semibold text-foreground">{summary.range}</span>. Under the{" "}
-            <span className="font-semibold text-primary">{scenario}</span> scenario, expect Fashion contribution
-            to shift by <span className="font-semibold">{summary.fashionShift}</span> and Grocery
-            baseline to hold <span className="font-semibold">{summary.groceryBaseline}</span>.
+            <span className="font-semibold text-primary">{scenario}</span> scenario, expect Fashion
+            contribution to shift by <span className="font-semibold">{summary.fashionShift}</span>{" "}
+            and Grocery baseline to hold{" "}
+            <span className="font-semibold">{summary.groceryBaseline}</span>.
           </p>
         </div>
       </SectionCard>

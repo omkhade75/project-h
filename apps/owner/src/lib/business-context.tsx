@@ -232,7 +232,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           sold: (p as any).sold || 0,
           revenue: (p as any).revenue || 0,
           margin: (p as any).margin || 25,
-          status: ((p.stock <= (p.reorderLevel ?? 15)) ? "low" : "ok") as any,
+          status: (p.stock <= (p.reorderLevel ?? 15) ? "low" : "ok") as any,
         }));
 
         const mappedTransactions: Transaction[] = safeTxns.map((t) => ({
@@ -252,7 +252,10 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }));
 
         const mappedCustomers: Customer[] = safeCusts.map((c) => {
-          const fullName = (c.name && c.name.trim()) || `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() || "Customer";
+          const fullName =
+            (c.name && c.name.trim()) ||
+            `${(c as any).firstName || ""} ${(c as any).lastName || ""}`.trim() ||
+            "Customer";
           return {
             id: c.id,
             name: fullName,
@@ -266,10 +269,14 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
             joined: (c as any).joined || (c as any).lastPurchaseDate || "2026-01-01",
             visits: (c as any).visits || (c as any).ordersCount || 1,
             spend: (c as any).spend || (c as any).totalSpend || 0,
-            aov: (c as any).aov || Math.round(((c as any).totalSpend || 0) / ((c as any).ordersCount || 1)),
+            aov:
+              (c as any).aov ||
+              Math.round(((c as any).totalSpend || 0) / ((c as any).ordersCount || 1)),
             favDept: c.favDept || "General",
             lastVisit: (c as any).lastPurchaseDate || "2026-01-01",
-            segment: (((c as any).tier === "Platinum" || (c as any).tier === "Gold") ? "VIP" : "Loyal") as any,
+            segment: ((c as any).tier === "Platinum" || (c as any).tier === "Gold"
+              ? "VIP"
+              : "Loyal") as any,
             churn: (c as any).churnRiskScore || 5,
           };
         });
@@ -358,45 +365,56 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         const currentSchema = db.schema;
 
-        const isExplicitlyCleared = typeof window !== "undefined" && (
-          window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-          (user?.workspaceId && window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true")
-        );
+        const isExplicitlyCleared =
+          typeof window !== "undefined" &&
+          (window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+            (user?.workspaceId &&
+              window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true"));
 
         // Preserve locally imported items if NOT explicitly cleared
-        const existingProducts = isExplicitlyCleared ? [] : (currentSchema.products || []);
+        const existingProducts = isExplicitlyCleared ? [] : currentSchema.products || [];
         const customLocalProducts = existingProducts.filter(
-          (p) => !mappedProducts.some((mp) => mp.id === p.id)
+          (p) => !mappedProducts.some((mp) => mp.id === p.id),
         );
         const mergedProducts = [...mappedProducts, ...customLocalProducts];
 
-        const existingTransactions = isExplicitlyCleared ? [] : (currentSchema.transactions || []);
+        const existingTransactions = isExplicitlyCleared ? [] : currentSchema.transactions || [];
         const customLocalTransactions = existingTransactions.filter(
-          (t) => !mappedTransactions.some((mt) => mt.id === t.id)
+          (t) => !mappedTransactions.some((mt) => mt.id === t.id),
         );
         const mergedTransactions = [...mappedTransactions, ...customLocalTransactions];
 
-        const existingCustomers = isExplicitlyCleared ? [] : (currentSchema.customers || []);
+        const existingCustomers = isExplicitlyCleared ? [] : currentSchema.customers || [];
         const customLocalCustomers = existingCustomers.filter(
-          (c) => !mappedCustomers.some((mc) => mc.id === c.id)
+          (c) => !mappedCustomers.some((mc) => mc.id === c.id),
         );
         const mergedCustomers = [...mappedCustomers, ...customLocalCustomers];
 
-        const existingExpenses = isExplicitlyCleared ? [] : (currentSchema.expenses || []);
+        const existingExpenses = isExplicitlyCleared ? [] : currentSchema.expenses || [];
         const customLocalExpenses = existingExpenses.filter(
-          (e) => !mappedExpenses.some((me) => me.id === e.id)
+          (e) => !mappedExpenses.some((me) => me.id === e.id),
         );
-        const mergedExpenses = mappedExpenses.length > 0
-          ? [...mappedExpenses, ...customLocalExpenses]
-          : (isExplicitlyCleared ? [] : (existingExpenses.length > 0 ? existingExpenses : []));
+        const mergedExpenses =
+          mappedExpenses.length > 0
+            ? [...mappedExpenses, ...customLocalExpenses]
+            : isExplicitlyCleared
+              ? []
+              : existingExpenses.length > 0
+                ? existingExpenses
+                : [];
 
-        const existingSuppliers = isExplicitlyCleared ? [] : (currentSchema.suppliers || []);
+        const existingSuppliers = isExplicitlyCleared ? [] : currentSchema.suppliers || [];
         const customLocalSuppliers = existingSuppliers.filter(
-          (s) => !mappedSuppliers.some((ms) => ms.id === s.id)
+          (s) => !mappedSuppliers.some((ms) => ms.id === s.id),
         );
-        const mergedSuppliers = mappedSuppliers.length > 0
-          ? [...mappedSuppliers, ...customLocalSuppliers]
-          : (isExplicitlyCleared ? [] : (existingSuppliers.length > 0 ? existingSuppliers : []));
+        const mergedSuppliers =
+          mappedSuppliers.length > 0
+            ? [...mappedSuppliers, ...customLocalSuppliers]
+            : isExplicitlyCleared
+              ? []
+              : existingSuppliers.length > 0
+                ? existingSuppliers
+                : [];
 
         db.save({
           ...currentSchema,
@@ -405,10 +423,16 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           customers: mergedCustomers,
           suppliers: mergedSuppliers,
           expenses: mergedExpenses,
-          purchaseOrders: mappedPurchaseOrders.length > 0 ? mappedPurchaseOrders : (currentSchema.purchaseOrders || []),
-          recommendations: mappedRecommendations.length > 0 ? mappedRecommendations : (currentSchema.recommendations || []),
-          anomalies: mappedAnomalies.length > 0 ? mappedAnomalies : (currentSchema.anomalies || []),
-          utilities: mappedUtilities.length > 0 ? mappedUtilities : (currentSchema.utilities || []),
+          purchaseOrders:
+            mappedPurchaseOrders.length > 0
+              ? mappedPurchaseOrders
+              : currentSchema.purchaseOrders || [],
+          recommendations:
+            mappedRecommendations.length > 0
+              ? mappedRecommendations
+              : currentSchema.recommendations || [],
+          anomalies: mappedAnomalies.length > 0 ? mappedAnomalies : currentSchema.anomalies || [],
+          utilities: mappedUtilities.length > 0 ? mappedUtilities : currentSchema.utilities || [],
         });
         forceRefresh();
 
@@ -502,7 +526,7 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const filterByTimeRange = <T extends { date: string }>(items: T[]): T[] => {
     if (!Array.isArray(items) || items.length === 0) return [];
-    
+
     const activeDateClean = (activeDate || new Date().toISOString().split("T")[0]).split("T")[0];
     const activeDateObjClean = new Date(activeDateClean);
 
@@ -553,12 +577,12 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return filtered;
   };
 
-  let scopedTransactions = filterByTimeRange(transactions);
-  let scopedProducts = products;
-  let scopedCustomers = customers;
-  let scopedExpenses = filterByTimeRange(expenses);
-  let scopedRecommendations = recommendations;
-  let scopedAnomalies = anomalies.filter((a) => new Date(a.date) <= activeDateObj);
+  const scopedTransactions = filterByTimeRange(transactions);
+  const scopedProducts = products;
+  const scopedCustomers = customers;
+  const scopedExpenses = filterByTimeRange(expenses);
+  const scopedRecommendations = recommendations;
+  const scopedAnomalies = anomalies.filter((a) => new Date(a.date) <= activeDateObj);
 
   // Derived Metrics
   const totalRevenue = scopedTransactions.reduce(
@@ -574,14 +598,44 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const inventoryValue = products.reduce((sum, p) => sum + p.stock * p.cost, 0);
 
   const kpis: KpiItem[] = [
-    { key: "revenue", label: "Gross Revenue", value: totalRevenue, delta: totalRevenue > 0 ? 8.4 : 0 },
+    {
+      key: "revenue",
+      label: "Gross Revenue",
+      value: totalRevenue,
+      delta: totalRevenue > 0 ? 8.4 : 0,
+    },
     { key: "profit", label: "Net Profit", value: netProfitVal, delta: netProfitVal > 0 ? 4.1 : 0 },
     { key: "orders", label: "Total Orders", value: totalOrders, delta: totalOrders > 0 ? 6.2 : 0 },
-    { key: "footfall", label: "Total Footfall", value: Math.round(totalFootfall), delta: totalFootfall > 0 ? 12.7 : 0 },
-    { key: "newCustomers", label: "New Customers", value: newCustomersCount, delta: newCustomersCount > 0 ? 3.5 : 0 },
-    { key: "aov", label: "Average Order Value", value: averageOrderValue, delta: averageOrderValue > 0 ? 1.8 : 0 },
-    { key: "inventory", label: "Inventory Value", value: inventoryValue, delta: inventoryValue > 0 ? 2.1 : 0 },
-    { key: "expenses", label: "Total Expenses", value: totalExpenses, delta: totalExpenses > 0 ? 5.4 : 0 },
+    {
+      key: "footfall",
+      label: "Total Footfall",
+      value: Math.round(totalFootfall),
+      delta: totalFootfall > 0 ? 12.7 : 0,
+    },
+    {
+      key: "newCustomers",
+      label: "New Customers",
+      value: newCustomersCount,
+      delta: newCustomersCount > 0 ? 3.5 : 0,
+    },
+    {
+      key: "aov",
+      label: "Average Order Value",
+      value: averageOrderValue,
+      delta: averageOrderValue > 0 ? 1.8 : 0,
+    },
+    {
+      key: "inventory",
+      label: "Inventory Value",
+      value: inventoryValue,
+      delta: inventoryValue > 0 ? 2.1 : 0,
+    },
+    {
+      key: "expenses",
+      label: "Total Expenses",
+      value: totalExpenses,
+      delta: totalExpenses > 0 ? 5.4 : 0,
+    },
   ];
 
   const datesInRange = (() => {
@@ -661,7 +715,8 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
         ],
       }
     : {
-        summary: "No transaction data or business activity recorded for the selected period in the database.",
+        summary:
+          "No transaction data or business activity recorded for the selected period in the database.",
         positives: ["0 sales transactions recorded", "0 new customer acquisitions"],
         risks: ["0 expenses recorded", "0 stockout anomalies detected"],
         opportunities: ["No pending AI optimization actions"],
