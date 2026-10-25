@@ -328,23 +328,28 @@ TRAINED SPEECH & VOICE CLARITY GUIDELINES:
         body: JSON.stringify(vapiPayload),
       });
 
-      const resData: any = await vapiResponse.json();
+      const resData: any = await vapiResponse.json().catch(() => ({}));
+      const isSuccess = vapiResponse.ok;
+      const errorMsg = !isSuccess
+        ? resData.message || resData.error || (Array.isArray(resData.errors) ? resData.errors.join(", ") : null) || `Vapi API returned HTTP ${vapiResponse.status} (${vapiResponse.statusText})`
+        : undefined;
 
       if (logId) {
         await this.prisma.messageLog.update({
           where: { id: logId },
           data: {
-            status: vapiResponse.ok ? "SENT" : "FAILED",
+            status: isSuccess ? "SENT" : "FAILED",
             providerId: resData.id || "vapi-call-" + Date.now(),
           },
         });
       }
 
       return {
-        success: vapiResponse.ok,
+        success: isSuccess,
+        error: errorMsg,
         data: {
           callId: resData.id || "vapi-call-" + Date.now(),
-          status: resData.status || (vapiResponse.ok ? "queued" : "failed"),
+          status: resData.status || (isSuccess ? "queued" : "failed"),
           firstMessage: contextMsg,
           details: resData,
         },
@@ -362,7 +367,7 @@ TRAINED SPEECH & VOICE CLARITY GUIDELINES:
 
       return {
         success: false,
-        error: err?.message || "Failed to dispatch Vapi AI voice call",
+        error: err?.message || "Failed to reach Vapi AI voice calling API",
       };
     }
   }

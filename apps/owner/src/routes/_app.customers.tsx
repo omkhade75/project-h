@@ -124,18 +124,24 @@ export function CustomersPage() {
 
   // Vapi Voice Call Modal State
   const [vapiModalOpen, setVapiModalOpen] = useState(false);
+  const [vapiCallMode, setVapiCallMode] = useState<"browser" | "cellular">("browser");
+  const [vapiErrorDetails, setVapiErrorDetails] = useState<string | null>(null);
   const [vapiName, setVapiName] = useState("Om Khade");
   const [vapiPhone, setVapiPhone] = useState("+91 75880 21256");
   const [vapiScript, setVapiScript] = useState("Namaste Om Khade! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.");
   const [vapiDialing, setVapiDialing] = useState(false);
-  const [vapiCallStatus, setVapiCallStatus] = useState<"idle" | "connecting" | "active" | "ended">("idle");
+  const [vapiCallStatus, setVapiCallStatus] = useState<"idle" | "connecting" | "active" | "ended" | "failed">("idle");
   const [vapiCallDuration, setVapiCallDuration] = useState(0);
+  const [userSpeechHeard, setUserSpeechHeard] = useState("");
   const vapiRef = useRef<any>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Cleanup Vapi on unmount
   useEffect(() => {
     return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
       if (vapiRef.current) {
         try { vapiRef.current.stop(); } catch (e) {}
       }
@@ -144,6 +150,9 @@ export function CustomersPage() {
   }, []);
 
   const stopVapiCall = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     if (vapiRef.current) {
       try { vapiRef.current.stop(); } catch (e) {}
       vapiRef.current = null;
@@ -155,8 +164,72 @@ export function CustomersPage() {
     setVapiCallStatus("ended");
     setVapiDialing(false);
     toast.info("📞 Voice call ended.");
-    setTimeout(() => setVapiCallStatus("idle"), 3000);
+    setTimeout(() => {
+      setVapiCallStatus("idle");
+      setUserSpeechHeard("");
+    }, 2500);
   }, []);
+
+  const startBrowserVoiceCall = (textToSpeak: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      toast.error("Browser speech synthesis is not supported on this browser.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    setVapiCallStatus("active");
+    setVapiCallDuration(0);
+    setUserSpeechHeard("");
+
+    if (callTimerRef.current) clearInterval(callTimerRef.current);
+    callTimerRef.current = setInterval(() => {
+      setVapiCallDuration((prev) => prev + 1);
+    }, 1000);
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = "hi-IN";
+    utterance.rate = 0.92;
+    utterance.pitch = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(
+      (v) => v.lang.includes("hi") || v.lang.includes("en-IN") || v.name.toLowerCase().includes("india")
+    );
+    if (voice) utterance.voice = voice;
+
+    utterance.onend = () => {
+      // Listen for user speech reply via microphone if supported
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = "hi-IN";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = (event: any) => {
+          const heard = event.results?.[0]?.[0]?.transcript || "";
+          if (heard) {
+            setUserSpeechHeard(heard);
+            toast.success(`Heard you: "${heard}"`);
+            setTimeout(() => {
+              const reply = new SpeechSynthesisUtterance("Dhanyavaad! GrandSquare Supermart mein aapka swagat hai.");
+              reply.lang = "hi-IN";
+              reply.rate = 0.92;
+              reply.onend = () => stopVapiCall();
+              window.speechSynthesis.speak(reply);
+            }, 600);
+          }
+        };
+
+        recognition.start();
+      } catch (e) {}
+    };
+
+    window.speechSynthesis.speak(utterance);
+    toast.success("🟢 In-Browser AI Voice Call active! Listening to your audio...");
+  };
 
   // Form state
   const [formFirstName, setFormFirstName] = useState("");
@@ -379,7 +452,7 @@ export function CustomersPage() {
     }
   };
 
-  // Initiate REAL voice call — hits backend Vapi API for real outbound call + tel: protocol fallback + Web Speech AI
+  // Initiate Voice Call — handles both In-Browser Web Speech AI (100% Free) and Cellular Outbound Call
   const handleInitiateVapiCall = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = vapiPhone.trim().replace(/\s+/g, "");
@@ -388,14 +461,18 @@ export function CustomersPage() {
       return;
     }
 
+    if (vapiCallMode === "browser") {
+      startBrowserVoiceCall(vapiScript);
+      return;
+    }
+
+    // Cellular Outbound Call Mode
     setVapiDialing(true);
     setVapiCallStatus("connecting");
+    setVapiErrorDetails(null);
 
-    // 1. Dispatch Vapi AI Outbound Call via Backend REST API (This rings the actual phone!)
     try {
-      // Use dynamic import for backend API call to avoid any caching issues
       const backendApi = await import("@/lib/api-vapi");
-      
       const response = await backendApi.initiateVapiCallServer({
         data: {
           phoneNumber: cleanPhone,
@@ -406,30 +483,29 @@ export function CustomersPage() {
 
       console.log("Vapi Call Backend Response:", response);
 
-      toast.success(`📞 OUTBOUND AI CALL DISPATCHED!`, {
-        description: `AI Voice Agent is calling ${cleanPhone} (${vapiName}) now. Check your phone!`,
-        duration: 8000,
-      });
-
-      // Close modal cleanly after call is dispatched
-      setVapiCallStatus("idle");
-      setVapiModalOpen(false);
-      if (callTimerRef.current) clearInterval(callTimerRef.current);
-
+      if (response && response.success) {
+        toast.success(`📞 OUTBOUND CELLULAR CALL DISPATCHED!`, {
+          description: `AI Voice Agent is ringing ${cleanPhone} (${vapiName}) now. Check your phone!`,
+          duration: 8000,
+        });
+        setVapiCallStatus("idle");
+        setVapiModalOpen(false);
+      } else {
+        const errMsg =
+          response?.error ||
+          "Vapi.ai outbound telephony credentials are not configured or account credits are inactive.";
+        setVapiCallStatus("failed");
+        setVapiErrorDetails(errMsg);
+        toast.error(`⚠️ Cellular Outbound Dispatch Notice: ${errMsg}`, {
+          duration: 8000,
+        });
+      }
     } catch (err: any) {
       console.error("Failed to dispatch Vapi backend call:", err);
-      toast.error(`⚠️ Backend call dispatch failed, but opening native dialer for ${cleanPhone}...`, {
-        duration: 6000,
-      });
-      setVapiCallStatus("ended");
-      setTimeout(() => setVapiCallStatus("idle"), 3000);
-
-      const telLink = document.createElement("a");
-      telLink.href = `tel:${cleanPhone}`;
-      telLink.style.display = "none";
-      document.body.appendChild(telLink);
-      telLink.click();
-      document.body.removeChild(telLink);
+      const errMsg = err?.message || "Failed to reach voice gateway.";
+      setVapiCallStatus("failed");
+      setVapiErrorDetails(errMsg);
+      toast.error(`⚠️ Call Failed: ${errMsg}`);
     } finally {
       setVapiDialing(false);
     }
@@ -968,15 +1044,180 @@ export function CustomersPage() {
 
       {/* Vapi Outbound AI Phone Call Modal */}
       <Dialog open={vapiModalOpen} onOpenChange={(open) => { if (!open && vapiCallStatus === "active") return; setVapiModalOpen(open); }}>
-        <DialogContent className="sm:max-w-[460px]">
+        <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
-              <PhoneCall className="h-5 w-5 text-[#007AFF]" />
-              {vapiCallStatus === "active" ? "🟢 Live AI Voice Call" : vapiCallStatus === "connecting" ? "Connecting..." : "Initiate Phone Call"}
+              <PhoneCall className="h-5 w-5 text-primary" />
+              {vapiCallStatus === "active"
+                ? "🟢 Live AI Voice Agent (In-Call)"
+                : vapiCallStatus === "connecting"
+                ? "Connecting..."
+                : vapiCallStatus === "failed"
+                ? "⚠️ Call Gateway Notice"
+                : "AI Voice Agent Call Center"}
             </DialogTitle>
           </DialogHeader>
 
-            <form onSubmit={handleInitiateVapiCall} className="space-y-4 py-2 text-xs">
+          {/* ACTIVE CALL STATE */}
+          {vapiCallStatus === "active" ? (
+            <div className="py-6 flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="relative">
+                <div className="grid h-20 w-20 place-items-center rounded-full bg-emerald-500/20 text-emerald-600 animate-pulse">
+                  <Phone className="h-10 w-10 text-emerald-600" />
+                </div>
+                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs font-bold shadow">
+                  🎙️
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-foreground">
+                  Speaking with {vapiName}
+                </h3>
+                <p className="font-mono text-xs text-muted-foreground mt-0.5">
+                  {vapiPhone} · Duration: {Math.floor(vapiCallDuration / 60)}:{(vapiCallDuration % 60).toString().padStart(2, "0")}
+                </p>
+              </div>
+
+              <div className="p-3 bg-surface rounded-xl border border-hairline max-w-sm text-left space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                  Agent Speaking (Hindi / Natural Voice):
+                </p>
+                <p className="text-xs text-foreground italic leading-relaxed">
+                  &ldquo;{vapiScript}&rdquo;
+                </p>
+              </div>
+
+              {userSpeechHeard && (
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
+                  <span className="font-bold">Heard from Mic:</span> &ldquo;{userSpeechHeard}&rdquo;
+                </div>
+              )}
+
+              <Button
+                variant="destructive"
+                onClick={stopVapiCall}
+                className="w-full gap-2 font-bold h-10 mt-2"
+              >
+                <PhoneOff className="h-4 w-4" /> End Call
+              </Button>
+            </div>
+          ) : vapiCallStatus === "failed" ? (
+            /* FAILED CALL WITH ACTIONABLE OPTIONS */
+            <div className="py-2 space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 space-y-2">
+                <div className="flex items-center gap-2 text-destructive font-bold text-sm">
+                  <PhoneOff className="h-4 w-4 shrink-0" />
+                  <span>Cellular Outbound Call Notice</span>
+                </div>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Direct PSTN cellular phone dialing to <strong>{vapiPhone}</strong> requires active Vapi.ai Telephony credentials & Twilio SIP trunk credits.
+                </p>
+                {vapiErrorDetails && (
+                  <p className="font-mono text-[10px] bg-background/80 p-2 rounded border border-hairline text-destructive">
+                    Reason: {vapiErrorDetails}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Instant Working Alternatives
+                </p>
+
+                <Button
+                  onClick={() => {
+                    setVapiCallStatus("idle");
+                    startBrowserVoiceCall(vapiScript);
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-2 h-10"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Test In-Browser Voice Call (100% Free Demo)</span>
+                </Button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const telLink = document.createElement("a");
+                      telLink.href = `tel:${vapiPhone.replace(/\s+/g, "")}`;
+                      telLink.click();
+                    }}
+                    className="text-xs font-semibold gap-1.5 h-9"
+                  >
+                    <Phone className="h-3.5 w-3.5 text-primary" />
+                    <span>Open Phone Dialer</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setVapiModalOpen(false);
+                      handleOpenWaModal();
+                    }}
+                    className="text-xs font-semibold gap-1.5 h-9 text-[#25D366] hover:text-[#25D366]"
+                  >
+                    <WhatsappIcon className="h-3.5 w-3.5" />
+                    <span>Send on WhatsApp</span>
+                  </Button>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setVapiModalOpen(false);
+                    navigate({ to: "/settings" });
+                  }}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground h-8"
+                >
+                  Configure Vapi.ai API Keys in Settings →
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* IDLE FORM: Choose Mode (Browser vs Cellular) */
+            <form onSubmit={handleInitiateVapiCall} className="space-y-3.5 py-2 text-xs">
+              {/* Call Mode Switcher */}
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">Select Call Execution Mode</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setVapiCallMode("browser")}
+                    className={cn(
+                      "p-2.5 rounded-xl border text-left transition-all",
+                      vapiCallMode === "browser"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
+                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">🎙️</span>
+                      <span className="text-xs">Browser Voice Call</span>
+                    </div>
+                    <p className="text-[10px] opacity-80 mt-0.5">Zero setup · Audio via speakers/mic</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVapiCallMode("cellular")}
+                    className={cn(
+                      "p-2.5 rounded-xl border text-left transition-all",
+                      vapiCallMode === "cellular"
+                        ? "border-primary bg-primary/10 text-primary font-bold"
+                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">📱</span>
+                      <span className="text-xs">Cellular Outbound</span>
+                    </div>
+                    <p className="text-[10px] opacity-80 mt-0.5">Dials phone number via Vapi</p>
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="vapi-name">Customer Name</Label>
                 <Input
@@ -988,8 +1229,9 @@ export function CustomersPage() {
                   required
                 />
               </div>
+
               <div className="space-y-1.5">
-                <Label htmlFor="vapi-phone">Target Phone Number (Mobile)</Label>
+                <Label htmlFor="vapi-phone">Target Phone Number</Label>
                 <Input
                   id="vapi-phone"
                   className="bg-surface border-hairline font-mono font-bold text-sm"
@@ -998,8 +1240,13 @@ export function CustomersPage() {
                   placeholder="+91 98765 43210"
                   required
                 />
-                <p className="text-[10px] text-muted-foreground">Outbound AI call will be placed directly to this phone number.</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {vapiCallMode === "browser"
+                    ? "Interactive in-browser voice demo with natural Hindi voice."
+                    : "Outbound carrier call will be dispatched to this mobile phone."}
+                </p>
               </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="vapi-script">AI Voice Agent Script & Offer</Label>
                 <Textarea
@@ -1010,19 +1257,36 @@ export function CustomersPage() {
                   onChange={(e) => setVapiScript(e.target.value)}
                 />
               </div>
+
               <DialogFooter className="pt-2 flex-col gap-2 sm:flex-col">
                 <Button
                   type="submit"
                   disabled={vapiDialing}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold flex items-center justify-center gap-2 h-11"
+                  className={cn(
+                    "w-full text-white font-bold flex items-center justify-center gap-2 h-11",
+                    vapiCallMode === "browser"
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : "bg-[#007AFF] hover:bg-[#0066CC]"
+                  )}
                 >
-                  {vapiDialing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-5 w-5" />}
-                  {vapiDialing ? "Dispatching Call..." : `📞 CALL ${vapiName.toUpperCase()} NOW`}
+                  {vapiDialing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : vapiCallMode === "browser" ? (
+                    <Sparkles className="h-5 w-5" />
+                  ) : (
+                    <Phone className="h-5 w-5" />
+                  )}
+                  {vapiDialing
+                    ? "Connecting Call..."
+                    : vapiCallMode === "browser"
+                    ? `🎙️ START IN-BROWSER VOICE CALL WITH ${vapiName.toUpperCase()}`
+                    : `📞 DIAL ${vapiName.toUpperCase()} VIA CELLULAR`}
                 </Button>
               </DialogFooter>
             </form>
-          </DialogContent>
-        </Dialog>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* WhatsApp Outbound Message Modal */}
       <Dialog open={waModalOpen} onOpenChange={setWaModalOpen}>
