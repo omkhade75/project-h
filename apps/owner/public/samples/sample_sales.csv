@@ -1,0 +1,21 @@
+Invoice No,Date,Customer Name,Customer Phone,Product Name,SKU,Quantity,Price,Total Amount,Payment Mode
+INV-1001,2026-10-21,Rahul Sharma,+91 98201 12345,Amul Butter 500g,SKU-1001,2,280,560,UPI
+INV-1002,2026-10-21,Rahul Sharma,+91 98201 12345,Tata Tea Gold 500g,SKU-1002,1,350,350,UPI
+INV-1003,2026-10-21,Pooja Deshmukh,+91 98192 34567,Aashirvaad Shudh Chakki Atta 5kg,SKU-1005,1,265,265,Card
+INV-1004,2026-10-22,Vikram Patel,+91 98765 43210,Fortune Sunlite Sunflower Oil 1L,SKU-1003,2,145,290,Cash
+INV-1005,2026-10-22,Sneha Kulkarni,+91 97654 89012,Maggi 2-Minute Masala Noodles 70g,SKU-1004,6,14,84,UPI
+INV-1006,2026-10-22,Sneha Kulkarni,+91 97654 89012,Cadbury Dairy Milk Silk 60g,SKU-1015,2,90,180,UPI
+INV-1007,2026-10-23,Amit Verma,+91 91234 56789,Dettol Original Bathing Soap 125g,SKU-1006,3,65,195,Cash
+INV-1008,2026-10-23,Neha Joshi,+91 99887 76655,Surf Excel Easy Wash Detergent 1kg,SKU-1007,1,140,140,UPI
+INV-1009,2026-10-23,Neha Joshi,+91 99887 76655,Haldiram's Nagpur Aloo Bhujia 400g,SKU-1009,2,120,240,UPI
+INV-1010,2026-10-23,Karan Malhotra,+91 98223 34455,Parle-G Gold Biscuits 1kg,SKU-1011,1,95,95,Cash
+INV-1011,2026-10-24,Ananya Sen,+91 98334 55667,Saffola Gold Pro Healthy Oil 1L,SKU-1014,3,175,525,Card
+INV-1012,2026-10-24,Ananya Sen,+91 98334 55667,Brooke Bond Red Label Tea 500g,SKU-1013,1,290,290,Card
+INV-1013,2026-10-24,Rohan Gupta,+91 98112 23344,Colgate MaxFresh Spicy Fresh 150g,SKU-1010,2,110,220,UPI
+INV-1014,2026-10-24,Meera Iyer,+91 97445 66778,Britannia Good Day Butter Cookies 200g,SKU-1008,4,40,160,UPI
+INV-1015,2026-10-24,Meera Iyer,+91 97445 66778,Nestle Everyday Dairy Whitener 400g,SKU-1012,1,240,240,UPI
+INV-1016,2026-10-25,Suresh Nair,+91 98210 99887,Fortune Sunlite Sunflower Oil 1L,SKU-1003,1,145,145,Cash
+INV-1017,2026-10-25,Suresh Nair,+91 98210 99887,Amul Butter 500g,SKU-1001,1,280,280,Cash
+INV-1018,2026-10-25,Deepak Rao,+91 98901 22334,Maggi 2-Minute Masala Noodles 70g,SKU-1004,10,14,140,UPI
+INV-1019,2026-10-25,Rahul Sharma,+91 98201 12345,Haldiram's Nagpur Aloo Bhujia 400g,SKU-1009,1,120,120,UPI
+INV-1020,2026-10-25,Pooja Deshmukh,+91 98192 34567,Tata Tea Gold 500g,SKU-1002,2,350,700,Card

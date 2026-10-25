@@ -63,28 +63,62 @@ export function DataImportPage() {
 
     if (type === "products") {
       csvContent =
-        "Product Name,SKU,Category,Brand,Selling Price,Cost Price,Stock,Supplier\r\n" +
-        "Amul Butter 500g,SKU-1001,Dairy,Amul,280,250,50,Amul Distributor\r\n" +
-        "Tata Tea Gold 500g,SKU-1002,Beverages,Tata,350,310,75,Tata Consumer\r\n" +
-        "Fortune Sunlite Oil 1L,SKU-1003,Cooking Oil,Fortune,145,128,100,Adani Wilmar\r\n" +
-        "Maggi 2-Minute Noodles 70g,SKU-1004,Instant Food,Nestle,14,11.5,200,Nestle India\r\n" +
-        "Aashirvaad Shudh Chakki Atta 5kg,SKU-1005,Grocery,Aashirvaad,265,240,40,ITC Limited\r\n";
+        "Product Name,SKU,Category,Brand,Selling Price,Cost Price,Stock,Supplier,Barcode\r\n" +
+        "Amul Butter 500g,SKU-1001,Dairy,Amul,280,250,60,Amul Distributor,890126201001\r\n" +
+        "Tata Tea Gold 500g,SKU-1002,Beverages,Tata,350,310,80,Tata Consumer,890126201002\r\n" +
+        "Fortune Sunlite Sunflower Oil 1L,SKU-1003,Cooking Oil,Fortune,145,128,120,Adani Wilmar,890126201003\r\n" +
+        "Maggi 2-Minute Masala Noodles 70g,SKU-1004,Instant Food,Nestle,14,11.5,250,Nestle India,890126201004\r\n" +
+        "Aashirvaad Shudh Chakki Atta 5kg,SKU-1005,Staples & Grocery,Aashirvaad,265,240,45,ITC Limited,890126201005\r\n" +
+        "Dettol Original Bathing Soap 125g,SKU-1006,Personal Care,Dettol,65,52,100,Reckitt Benckiser,890126201006\r\n" +
+        "Surf Excel Easy Wash Detergent 1kg,SKU-1007,Household,Surf Excel,140,118,70,Hindustan Unilever,890126201007\r\n" +
+        "Britannia Good Day Butter Cookies 200g,SKU-1008,Snacks & Bakery,Britannia,40,32,150,Britannia Industries,890126201008\r\n" +
+        "Haldiram's Nagpur Aloo Bhujia 400g,SKU-1009,Snacks,Haldirams,120,95,90,Haldiram Foods,890126201009\r\n" +
+        "Colgate MaxFresh Spicy Fresh 150g,SKU-1010,Oral Care,Colgate,110,88,85,Colgate-Palmolive,890126201010\r\n" +
+        "Parle-G Gold Biscuits 1kg,SKU-1011,Snacks & Bakery,Parle,95,80,110,Parle Products,890126201011\r\n" +
+        "Nestle Everyday Dairy Whitener 400g,SKU-1012,Dairy,Nestle,240,210,50,Nestle India,890126201012\r\n" +
+        "Brooke Bond Red Label Tea 500g,SKU-1013,Beverages,Red Label,290,255,65,Hindustan Unilever,890126201013\r\n" +
+        "Saffola Gold Pro Healthy Oil 1L,SKU-1014,Cooking Oil,Saffola,175,152,95,Marico Limited,890126201014\r\n" +
+        "Cadbury Dairy Milk Silk 60g,SKU-1015,Chocolates,Cadbury,90,74,130,Mondelez India,890126201015\r\n";
       filename = "bizora_sample_products.csv";
     } else if (type === "customers") {
       csvContent =
-        "Customer Name,Phone Number,Email,Membership Tier,Total Spend\r\n" +
-        "Rahul Sharma,+91 98201 12345,rahul.sharma@example.com,VIP,15400\r\n" +
-        "Pooja Deshmukh,+91 98192 34567,pooja.d@example.com,Loyal,8200\r\n" +
-        "Vikram Patel,+91 98765 43210,vikram.patel@example.com,Regular,3400\r\n" +
-        "Sneha Kulkarni,+91 97654 89012,sneha.k@example.com,Frequent,6100\r\n" +
-        "Amit Verma,+91 91234 56789,amit.verma@example.com,New,1200\r\n";
+        "Customer Name,Phone Number,Email,Membership Tier,Total Spend,Favorite Department\r\n" +
+        "Rahul Sharma,+91 98201 12345,rahul.sharma@example.com,VIP,24500,Grocery\r\n" +
+        "Pooja Deshmukh,+91 98192 34567,pooja.deshmukh@example.com,Loyal,14200,Dairy\r\n" +
+        "Vikram Patel,+91 98765 43210,vikram.patel@example.com,Regular,6400,Snacks\r\n" +
+        "Sneha Kulkarni,+91 97654 89012,sneha.kulkarni@example.com,VIP,18900,Beverages\r\n" +
+        "Amit Verma,+91 91234 56789,amit.verma@example.com,New,1850,Personal Care\r\n" +
+        "Neha Joshi,+91 99887 76655,neha.joshi@example.com,Loyal,11200,Cooking Oil\r\n" +
+        "Karan Malhotra,+91 98223 34455,karan.m@example.com,Regular,4300,Instant Food\r\n" +
+        "Ananya Sen,+91 98334 55667,ananya.sen@example.com,VIP,31000,Household\r\n" +
+        "Rohan Gupta,+91 98112 23344,rohan.gupta@example.com,Loyal,9800,Dairy\r\n" +
+        "Meera Iyer,+91 97445 66778,meera.iyer@example.com,Frequent,7650,Grocery\r\n" +
+        "Suresh Nair,+91 98210 99887,suresh.nair@example.com,Regular,5100,Beverages\r\n" +
+        "Deepak Rao,+91 98901 22334,deepak.rao@example.com,New,950,Snacks\r\n";
       filename = "bizora_sample_customers.csv";
     } else {
       csvContent =
-        "Invoice No,Date,Customer Name,Product Name,Quantity,Price,Total Amount,Payment Mode\r\n" +
-        "INV-5001,2026-10-24,Rahul Sharma,Amul Butter 500g,2,280,560,UPI\r\n" +
-        "INV-5002,2026-10-24,Pooja Deshmukh,Tata Tea Gold 500g,1,350,350,Card\r\n" +
-        "INV-5003,2026-10-24,Vikram Patel,Fortune Sunlite Oil 1L,3,145,435,Cash\r\n";
+        "Invoice No,Date,Customer Name,Customer Phone,Product Name,SKU,Quantity,Price,Total Amount,Payment Mode\r\n" +
+        "INV-1001,2026-10-21,Rahul Sharma,+91 98201 12345,Amul Butter 500g,SKU-1001,2,280,560,UPI\r\n" +
+        "INV-1002,2026-10-21,Rahul Sharma,+91 98201 12345,Tata Tea Gold 500g,SKU-1002,1,350,350,UPI\r\n" +
+        "INV-1003,2026-10-21,Pooja Deshmukh,+91 98192 34567,Aashirvaad Shudh Chakki Atta 5kg,SKU-1005,1,265,265,Card\r\n" +
+        "INV-1004,2026-10-22,Vikram Patel,+91 98765 43210,Fortune Sunlite Sunflower Oil 1L,SKU-1003,2,145,290,Cash\r\n" +
+        "INV-1005,2026-10-22,Sneha Kulkarni,+91 97654 89012,Maggi 2-Minute Masala Noodles 70g,SKU-1004,6,14,84,UPI\r\n" +
+        "INV-1006,2026-10-22,Sneha Kulkarni,+91 97654 89012,Cadbury Dairy Milk Silk 60g,SKU-1015,2,90,180,UPI\r\n" +
+        "INV-1007,2026-10-23,Amit Verma,+91 91234 56789,Dettol Original Bathing Soap 125g,SKU-1006,3,65,195,Cash\r\n" +
+        "INV-1008,2026-10-23,Neha Joshi,+91 99887 76655,Surf Excel Easy Wash Detergent 1kg,SKU-1007,1,140,140,UPI\r\n" +
+        "INV-1009,2026-10-23,Neha Joshi,+91 99887 76655,Haldiram's Nagpur Aloo Bhujia 400g,SKU-1009,2,120,240,UPI\r\n" +
+        "INV-1010,2026-10-23,Karan Malhotra,+91 98223 34455,Parle-G Gold Biscuits 1kg,SKU-1011,1,95,95,Cash\r\n" +
+        "INV-1011,2026-10-24,Ananya Sen,+91 98334 55667,Saffola Gold Pro Healthy Oil 1L,SKU-1014,3,175,525,Card\r\n" +
+        "INV-1012,2026-10-24,Ananya Sen,+91 98334 55667,Brooke Bond Red Label Tea 500g,SKU-1013,1,290,290,Card\r\n" +
+        "INV-1013,2026-10-24,Rohan Gupta,+91 98112 23344,Colgate MaxFresh Spicy Fresh 150g,SKU-1010,2,110,220,UPI\r\n" +
+        "INV-1014,2026-10-24,Meera Iyer,+91 97445 66778,Britannia Good Day Butter Cookies 200g,SKU-1008,4,40,160,UPI\r\n" +
+        "INV-1015,2026-10-24,Meera Iyer,+91 97445 66778,Nestle Everyday Dairy Whitener 400g,SKU-1012,1,240,240,UPI\r\n" +
+        "INV-1016,2026-10-25,Suresh Nair,+91 98210 99887,Fortune Sunlite Sunflower Oil 1L,SKU-1003,1,145,145,Cash\r\n" +
+        "INV-1017,2026-10-25,Suresh Nair,+91 98210 99887,Amul Butter 500g,SKU-1001,1,280,280,Cash\r\n" +
+        "INV-1018,2026-10-25,Deepak Rao,+91 98901 22334,Maggi 2-Minute Masala Noodles 70g,SKU-1004,10,14,140,UPI\r\n" +
+        "INV-1019,2026-10-25,Rahul Sharma,+91 98201 12345,Haldiram's Nagpur Aloo Bhujia 400g,SKU-1009,1,120,120,UPI\r\n" +
+        "INV-1020,2026-10-25,Pooja Deshmukh,+91 98192 34567,Tata Tea Gold 500g,SKU-1002,2,350,700,Card\r\n";
       filename = "bizora_sample_sales.csv";
     }
 
@@ -477,6 +511,15 @@ export function DataImportPage() {
             className="text-xs h-9 font-semibold gap-1.5"
           >
             <Download className="h-3.5 w-3.5" /> Sample Customers CSV
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => downloadSampleTemplate("sales")}
+            className="text-xs h-9 font-semibold gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" /> Sample Sales CSV
           </Button>
           <Button
             type="button"
