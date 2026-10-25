@@ -32,7 +32,7 @@ export class CommsService {
 
   private memoryVapiConfigCache: VapiConfig = {
     vapiPhoneId: process.env.VAPI_PHONE_ID || "027dfd39-b626-43cf-859f-6583a33f580b",
-    vapiAgentId: process.env.VAPI_AGENT_ID || "88b76de6-b66b-46f0-a536-8182804fab8a",
+    vapiAgentId: process.env.VAPI_AGENT_ID || "338bb628-cfaf-418c-9341-6f8889a28189",
     vapiPublicKey: process.env.VAPI_PUBLIC_KEY || "e3322c27-c9ac-45cb-9c58-e49c8f423a1f",
     vapiPrivateKey: process.env.VAPI_PRIVATE_KEY || "581c84cb-6185-4714-98d1-bdd823189ea0",
   };
