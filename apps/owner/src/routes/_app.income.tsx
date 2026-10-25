@@ -182,8 +182,7 @@ function RouteComponent() {
     .filter((p) => p.accountCode === "4200" && (p.date || "").startsWith(activeYearMonth))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const isCleared =
-    typeof window !== "undefined" && window.localStorage.getItem("omnimind_db_cleared") === "true";
+  const isCleared = db.isCleared();
   const totalRent = isCleared ? 0 : rentLedgerSum > 0 ? rentLedgerSum : 0;
   const totalOther = isCleared ? 0 : otherLedgerSum > 0 ? otherLedgerSum : 0;
 

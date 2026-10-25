@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, SectionCard } from "@/components/page-header";
 import { useBusinessData } from "@/lib/business-context";
+import { useAuth } from "@/lib/auth-context";
 import { useState, useRef } from "react";
 import {
   Upload,
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/_app/data-import")({
 
 export function DataImportPage() {
   const { transactions, products, customers, forceRefresh } = useBusinessData();
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [ingestionLogs, setIngestionLogs] = useState<
     Array<{
@@ -148,6 +150,9 @@ export function DataImportPage() {
     try {
       const dbModule = await import("@/lib/db");
       const dbInstance = dbModule.db;
+      if (user?.workspaceId) {
+        dbInstance.setWorkspace(user.workspaceId);
+      }
 
       let recordCount = 0;
       let fileTypeLabel = `${extension.toUpperCase()} Spreadsheet`;
@@ -534,6 +539,9 @@ export function DataImportPage() {
                 return;
               try {
                 const dbModule = await import("@/lib/db");
+                if (user?.workspaceId) {
+                  dbModule.db.setWorkspace(user.workspaceId);
+                }
                 dbModule.db.clearAllData();
                 setIngestionLogs([]);
 

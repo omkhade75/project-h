@@ -591,6 +591,18 @@ export class TransactionsService {
       await this.db.payment.deleteMany({ where: { workspaceId } });
       await this.db.inventoryMovement.deleteMany({ where: { workspaceId } });
       await this.db.transaction.deleteMany({ where: { workspaceId } });
+      try {
+        await this.db.productBatch.deleteMany({ where: { workspaceId } });
+      } catch (_) {}
+      try {
+        await this.db.inventoryStock.deleteMany({ where: { workspaceId } });
+      } catch (_) {}
+      try {
+        await this.db.customer.deleteMany({ where: { workspaceId } });
+      } catch (_) {}
+      try {
+        await this.db.product.deleteMany({ where: { workspaceId } });
+      } catch (_) {}
       return { success: true };
     } catch (err: any) {
       console.warn("[TransactionsService] clearTransactions error:", err);

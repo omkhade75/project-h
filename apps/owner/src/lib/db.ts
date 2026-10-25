@@ -1141,6 +1141,19 @@ export function seedDatabase(): Schema {
   };
 }
 
+export function resolveActiveWorkspaceId(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const stored = window.localStorage.getItem("bizora_user_session");
+    if (stored) {
+      const u = JSON.parse(stored);
+      if (u?.workspaceId) return String(u.workspaceId).trim();
+      if (u?.companyId) return String(u.companyId).trim();
+    }
+  } catch (_) {}
+  return "";
+}
+
 export function emptyDatabase(): Schema {
   return {
     products: [],
@@ -1161,49 +1174,64 @@ class SeededDatabase {
   private workspaceId: string = "";
 
   constructor() {
-    this.schema = emptyDatabase();
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem("omnimind_db_cleared");
+        window.localStorage.removeItem("omnimind_db");
+      } catch (_) {}
+      this.workspaceId = resolveActiveWorkspaceId();
+    }
+    this.schema = this.loadFromStorage();
   }
 
   public getWorkspaceId(): string {
-    return this.workspaceId;
+    return this.workspaceId || resolveActiveWorkspaceId();
   }
 
   public setWorkspace(workspaceId: string) {
     const cleanId = (workspaceId || "").trim();
+    if (!cleanId) return;
     if (this.workspaceId !== cleanId || !this.schema) {
       this.workspaceId = cleanId;
       this.schema = this.loadFromStorage();
     }
   }
 
+  public isCleared(): boolean {
+    if (typeof window === "undefined") return false;
+    const ws = this.workspaceId || resolveActiveWorkspaceId();
+    if (!ws) return false;
+    return window.localStorage.getItem(`omnimind_db_${ws}_cleared`) === "true";
+  }
+
   private loadFromStorage(): Schema {
     if (typeof window !== "undefined") {
-      const isCleared =
-        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-        (this.workspaceId &&
-          window.localStorage.getItem(`omnimind_db_${this.workspaceId}_cleared`) === "true");
+      const ws = this.workspaceId || resolveActiveWorkspaceId();
+      if (!ws) {
+        return emptyDatabase();
+      }
 
+      const isCleared = window.localStorage.getItem(`omnimind_db_${ws}_cleared`) === "true";
       if (isCleared) {
         return emptyDatabase();
       }
 
-      const keysToTry = [
-        this.workspaceId ? `omnimind_db_${this.workspaceId}` : "",
-        "omnimind_db",
-      ].filter(Boolean);
-
-      for (const k of keysToTry) {
-        const stored = window.localStorage.getItem(k);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (parsed) {
-              return parsed;
-            }
-          } catch (e) {
-            console.error("Failed to parse database from localStorage", e);
+      const key = `omnimind_db_${ws}`;
+      const stored = window.localStorage.getItem(key);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === "object") {
+            return parsed;
           }
+        } catch (e) {
+          console.error("Failed to parse database from localStorage", e);
         }
+      }
+
+      // Default demo seed data ONLY for the built-in demo mall
+      if (ws === "grandsquare-mall") {
+        return seedDatabase();
       }
     }
     return emptyDatabase();
@@ -1212,10 +1240,11 @@ class SeededDatabase {
   public save(schema: Schema) {
     this.schema = schema;
     if (typeof window !== "undefined") {
-      if (this.workspaceId) {
-        window.localStorage.setItem(`omnimind_db_${this.workspaceId}`, JSON.stringify(schema));
+      const ws = this.workspaceId || resolveActiveWorkspaceId();
+      if (ws) {
+        window.localStorage.setItem(`omnimind_db_${ws}`, JSON.stringify(schema));
+        window.localStorage.removeItem(`omnimind_db_${ws}_cleared`);
       }
-      window.localStorage.setItem("omnimind_db", JSON.stringify(schema));
     }
   }
 
@@ -1245,20 +1274,17 @@ class SeededDatabase {
 
   public getSuppliers(): Supplier[] {
     if (typeof window !== "undefined") {
-      const isCleared =
-        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-        (this.workspaceId &&
-          window.localStorage.getItem(`omnimind_db_${this.workspaceId}_cleared`) === "true");
+      const ws = this.workspaceId || resolveActiveWorkspaceId();
+      const isCleared = ws && window.localStorage.getItem(`omnimind_db_${ws}_cleared`) === "true";
       if (isCleared) return [];
     }
     const memory = this.schema.suppliers || [];
     let custom: Supplier[] = [];
     if (typeof window !== "undefined") {
       try {
-        const key = this.workspaceId
-          ? `bizora_custom_suppliers_${this.workspaceId}`
-          : "bizora_custom_suppliers";
-        const stored = window.localStorage.getItem(key);
+        const ws = this.workspaceId || resolveActiveWorkspaceId();
+        const key = ws ? `bizora_custom_suppliers_${ws}` : "";
+        const stored = key ? window.localStorage.getItem(key) : null;
         if (stored) custom = JSON.parse(stored);
       } catch (e) {
         /* ignore storage access error */
@@ -1285,14 +1311,15 @@ class SeededDatabase {
     }
     if (typeof window !== "undefined") {
       try {
-        const key = this.workspaceId
-          ? `bizora_custom_suppliers_${this.workspaceId}`
-          : "bizora_custom_suppliers";
-        const stored = window.localStorage.getItem(key);
-        const list: Supplier[] = stored ? JSON.parse(stored) : [];
-        if (!list.some((x) => x.id === s.id || (x.email && x.email === s.email))) {
-          list.unshift(s);
-          window.localStorage.setItem(key, JSON.stringify(list));
+        const ws = this.workspaceId || resolveActiveWorkspaceId();
+        if (ws) {
+          const key = `bizora_custom_suppliers_${ws}`;
+          const stored = window.localStorage.getItem(key);
+          const list: Supplier[] = stored ? JSON.parse(stored) : [];
+          if (!list.some((x) => x.id === s.id || (x.email && x.email === s.email))) {
+            list.unshift(s);
+            window.localStorage.setItem(key, JSON.stringify(list));
+          }
         }
       } catch (e) {
         /* ignore storage access error */
@@ -1314,19 +1341,20 @@ class SeededDatabase {
     }
     if (typeof window !== "undefined") {
       try {
-        const key = this.workspaceId
-          ? `bizora_custom_suppliers_${this.workspaceId}`
-          : "bizora_custom_suppliers";
-        const stored = window.localStorage.getItem(key);
-        if (stored) {
-          const list: Supplier[] = JSON.parse(stored);
-          const filtered = list.filter(
-            (x) =>
-              (!x.id || x.id.toLowerCase().trim() !== target) &&
-              (!x.email || x.email.toLowerCase().trim() !== target) &&
-              (!x.name || x.name.toLowerCase().trim() !== target),
-          );
-          window.localStorage.setItem(key, JSON.stringify(filtered));
+        const ws = this.workspaceId || resolveActiveWorkspaceId();
+        if (ws) {
+          const key = `bizora_custom_suppliers_${ws}`;
+          const stored = window.localStorage.getItem(key);
+          if (stored) {
+            const list: Supplier[] = JSON.parse(stored);
+            const filtered = list.filter(
+              (x) =>
+                (!x.id || x.id.toLowerCase().trim() !== target) &&
+                (!x.email || x.email.toLowerCase().trim() !== target) &&
+                (!x.name || x.name.toLowerCase().trim() !== target),
+            );
+            window.localStorage.setItem(key, JSON.stringify(filtered));
+          }
         }
       } catch (e) {
         /* ignore storage access error */
@@ -1378,9 +1406,9 @@ class SeededDatabase {
 
   public importProducts(newProds: Product[]) {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("omnimind_db_cleared");
-      if (this.workspaceId) {
-        window.localStorage.removeItem(`omnimind_db_${this.workspaceId}_cleared`);
+      const ws = this.workspaceId || resolveActiveWorkspaceId();
+      if (ws) {
+        window.localStorage.removeItem(`omnimind_db_${ws}_cleared`);
       }
     }
     const existing = this.schema.products || [];
@@ -1392,9 +1420,9 @@ class SeededDatabase {
 
   public importTransactions(newTxns: Transaction[]) {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("omnimind_db_cleared");
-      if (this.workspaceId) {
-        window.localStorage.removeItem(`omnimind_db_${this.workspaceId}_cleared`);
+      const ws = this.workspaceId || resolveActiveWorkspaceId();
+      if (ws) {
+        window.localStorage.removeItem(`omnimind_db_${ws}_cleared`);
       }
     }
     const updated = [...newTxns, ...this.schema.transactions];
@@ -1403,9 +1431,9 @@ class SeededDatabase {
 
   public importCustomers(newCusts: Customer[]) {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("omnimind_db_cleared");
-      if (this.workspaceId) {
-        window.localStorage.removeItem(`omnimind_db_${this.workspaceId}_cleared`);
+      const ws = this.workspaceId || resolveActiveWorkspaceId();
+      if (ws) {
+        window.localStorage.removeItem(`omnimind_db_${ws}_cleared`);
       }
     }
     const existing = this.schema.customers || [];
@@ -1416,43 +1444,25 @@ class SeededDatabase {
   }
 
   public resetCustomers() {
-    this.save({ ...this.schema, customers: [...BASE_CUSTOMERS] });
+    const ws = this.workspaceId || resolveActiveWorkspaceId();
+    if (ws === "grandsquare-mall") {
+      this.save({ ...this.schema, customers: [...BASE_CUSTOMERS] });
+    } else {
+      this.save({ ...this.schema, customers: [] });
+    }
   }
 
   public clearAllData() {
     this.schema = emptyDatabase();
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("omnimind_db_cleared", "true");
-      window.localStorage.setItem("omnimind_db", JSON.stringify(emptyDatabase()));
-      window.localStorage.setItem("omnimind_db_grandsquare-mall", JSON.stringify(emptyDatabase()));
-      window.localStorage.setItem("omnimind_db_grandsquare-mall_cleared", "true");
-      window.localStorage.setItem(
-        "omnimind_db_ws_owner_gmail_com",
-        JSON.stringify(emptyDatabase()),
-      );
-      window.localStorage.setItem("omnimind_db_ws_owner_gmail_com_cleared", "true");
-
-      if (this.workspaceId) {
+      const ws = this.workspaceId || resolveActiveWorkspaceId();
+      if (ws) {
         window.localStorage.setItem(
-          `omnimind_db_${this.workspaceId}`,
+          `omnimind_db_${ws}`,
           JSON.stringify(emptyDatabase()),
         );
-        window.localStorage.setItem(`omnimind_db_${this.workspaceId}_cleared`, "true");
-      }
-
-      try {
-        const allKeys = Object.keys(window.localStorage);
-        for (const k of allKeys) {
-          if (k.startsWith("omnimind_db") && !k.endsWith("_cleared")) {
-            window.localStorage.setItem(k, JSON.stringify(emptyDatabase()));
-            window.localStorage.setItem(`${k}_cleared`, "true");
-          }
-          if (k.startsWith("bizora_custom_")) {
-            window.localStorage.removeItem(k);
-          }
-        }
-      } catch (_) {
-        /* ignore storage access error */
+        window.localStorage.setItem(`omnimind_db_${ws}_cleared`, "true");
+        window.localStorage.removeItem(`bizora_custom_suppliers_${ws}`);
       }
     }
   }
@@ -1493,8 +1503,13 @@ class SeededDatabase {
   }
 
   public reset() {
-    const seedData = seedDatabase();
-    this.save(seedData);
+    const ws = this.workspaceId || resolveActiveWorkspaceId();
+    if (ws === "grandsquare-mall") {
+      const seedData = seedDatabase();
+      this.save(seedData);
+    } else {
+      this.save(emptyDatabase());
+    }
   }
 
   // Aggregate daily statistics for the Time Machine & AI Reasoning

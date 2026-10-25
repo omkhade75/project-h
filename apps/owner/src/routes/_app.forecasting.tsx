@@ -503,9 +503,7 @@ function Forecasting() {
 
   // Combine BusinessContext transactions with direct db transactions for resilience
   const allTxns = useMemo(() => {
-    const isCleared =
-      typeof window !== "undefined" &&
-      window.localStorage.getItem("omnimind_db_cleared") === "true";
+    const isCleared = db.isCleared();
     if (isCleared) return [];
 
     let txs = transactions || [];

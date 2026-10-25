@@ -39,7 +39,8 @@ export class TransactionsController {
 
   @Delete()
   async clearTransactions(@Req() req: any) {
-    const data = await this.transactionsService.clearTransactions(req.user.workspaceId);
+    const wsId = req.user?.workspaceId || req.user?.companyId;
+    const data = await this.transactionsService.clearTransactions(wsId);
     return ResponseUtil.success(data, "All transactions cleared successfully");
   }
 }

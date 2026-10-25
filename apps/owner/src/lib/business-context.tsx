@@ -365,11 +365,11 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         const currentSchema = db.schema;
 
+        const ws = user?.workspaceId || db.getWorkspaceId();
         const isExplicitlyCleared =
           typeof window !== "undefined" &&
-          (window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-            (user?.workspaceId &&
-              window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true"));
+          !!ws &&
+          window.localStorage.getItem(`omnimind_db_${ws}_cleared`) === "true";
 
         // Preserve locally imported items if NOT explicitly cleared
         const existingProducts = isExplicitlyCleared ? [] : currentSchema.products || [];

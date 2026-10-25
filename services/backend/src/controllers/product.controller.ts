@@ -14,7 +14,8 @@ export class ProductController {
   @Roles('ADMIN', 'OWNER', 'MANAGER', 'CASHIER', 'EMPLOYEE', 'CUSTOMER', 'SUPPLIER')
   async listProducts(@Query() query: any, @Req() req: any) {
     try {
-      const result = await this.productService.listProducts(query, req.user?.companyId);
+      const companyId = req.user?.companyId || req.user?.workspaceId;
+      const result = await this.productService.listProducts(query, companyId);
       return ResponseUtil.success(result.data || [], 'Products retrieved successfully', result.meta);
     } catch (e) {
       return ResponseUtil.success([], 'Products retrieved successfully', { total: 0, page: 1, limit: 10, totalPages: 1 });
@@ -32,7 +33,8 @@ export class ProductController {
   @Roles('ADMIN', 'OWNER', 'MANAGER')
   async createProduct(@Body() body: any, @Req() req: any) {
     const validated = CreateProductSchema.parse(body);
-    const product = await this.productService.createProduct(validated, req.user?.companyId);
+    const companyId = req.user?.companyId || req.user?.workspaceId;
+    const product = await this.productService.createProduct(validated, companyId);
     return ResponseUtil.success(product, 'Product created successfully');
   }
 

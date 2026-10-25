@@ -135,11 +135,7 @@ function RouteComponent() {
           : [];
       const apiTxIds = new Set(apiTxs.map((t) => t.id || t.transactionNumber));
 
-      const isCleared =
-        typeof window !== "undefined" &&
-        (window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-          (user?.workspaceId &&
-            window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true"));
+      const isCleared = db.isCleared();
 
       // ARCHITECTURE NOTE: Resilient 3-Source Telemetry Merging
       // 1. Backend Ledger (apiTxs): Cloud database records for historical reporting.
@@ -247,11 +243,7 @@ function RouteComponent() {
       }
     } catch (e) {
       console.warn("Failed to load sales database records fallback:", e);
-      const isCleared =
-        typeof window !== "undefined" &&
-        (window.localStorage.getItem("omnimind_db_cleared") === "true" ||
-          (user?.workspaceId &&
-            window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true"));
+      const isCleared = db.isCleared();
       const localTxs = isCleared ? [] : db.getTransactions() || [];
       setTransactions(localTxs as any);
       setProducts(isCleared ? [] : ((db.getProducts() || []) as any));

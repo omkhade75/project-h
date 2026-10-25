@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentSessionServer, loginServer, loginWithGoogleServer, logoutServer, type AuthUser } from "./server-auth";
+import { db } from "./db";
 import type { ReactNode } from "react";
 
 export type Role = "owner" | "admin" | "manager" | "staff" | "security";
@@ -63,7 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getCurrentSessionServer()
       .then((res) => {
         if (res && res.user) {
-          setUser(mapAuthUserToUser(res.user));
+          const mapped = mapAuthUserToUser(res.user);
+          setUser(mapped);
+          if (mapped.workspaceId) {
+            db.setWorkspace(mapped.workspaceId);
+          }
         }
         setLoading(false);
       })
@@ -77,6 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.success && res.user) {
       const mapped = mapAuthUserToUser(res.user);
       setUser(mapped);
+      if (mapped.workspaceId) {
+        db.setWorkspace(mapped.workspaceId);
+      }
       return mapped;
     }
   };
@@ -86,6 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.success && res.user) {
       const mapped = mapAuthUserToUser(res.user);
       setUser(mapped);
+      if (mapped.workspaceId) {
+        db.setWorkspace(mapped.workspaceId);
+      }
       return mapped;
     }
   };
@@ -93,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await logoutServer();
     setUser(null);
+    db.setWorkspace("");
   };
 
   return (

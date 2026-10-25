@@ -79,9 +79,7 @@ function Expenses() {
   }, [effectiveExpenses]);
 
   const totalRevenue = useMemo(() => {
-    const isCleared =
-      typeof window !== "undefined" &&
-      window.localStorage.getItem("omnimind_db_cleared") === "true";
+    const isCleared = db.isCleared();
     if (isCleared) return 0;
     const list =
       scopedTransactions && scopedTransactions.length > 0
