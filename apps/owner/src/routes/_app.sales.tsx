@@ -124,12 +124,16 @@ function RouteComponent() {
       const apiTxs: any[] = Array.isArray(txs) ? txs : Array.isArray((txs as any)?.data) ? (txs as any).data : [];
       const apiTxIds = new Set(apiTxs.map((t) => t.id || t.transactionNumber));
 
+      const isCleared = typeof window !== "undefined" && (
+        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+        (user?.workspaceId && window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true")
+      );
+
       // ARCHITECTURE NOTE: Resilient 3-Source Telemetry Merging
       // 1. Backend Ledger (apiTxs): Cloud database records for historical reporting.
       // 2. Local Storage (db.getTransactions()): Offline-first buffer stored in browser.
       // 3. React Context (ctxTransactions): Realtime state from active cashier checkout.
-      // Merging with deduplication guarantees zero blank/₹0 dashboards even before cloud sync completes.
-      const rawLocalTxs = [...(db.getTransactions() || []), ...(ctxTransactions || [])];
+      const rawLocalTxs = isCleared ? [] : [...(db.getTransactions() || []), ...(ctxTransactions || [])];
       const seenTxIds = new Set<string>();
       const localTxs: TransactionListItem[] = [];
 
@@ -165,12 +169,12 @@ function RouteComponent() {
         });
       }
 
-      const mergedTxs = [...apiTxs, ...localTxs];
+      const mergedTxs = isCleared && apiTxs.length === 0 ? [] : [...apiTxs, ...localTxs];
 
       // Merge products
       const apiProds: ProductListItem[] = Array.isArray(prods) ? prods : Array.isArray((prods as any)?.data) ? (prods as any).data : [];
       const apiProdIds = new Set(apiProds.map((p) => p.id || p.sku));
-      const rawLocalProds = [...(db.getProducts() || []), ...(ctxProducts || [])];
+      const rawLocalProds = isCleared ? [] : [...(db.getProducts() || []), ...(ctxProducts || [])];
       const seenProdIds = new Set<string>();
       const localProds: ProductListItem[] = [];
 
@@ -219,9 +223,13 @@ function RouteComponent() {
       }
     } catch (e) {
       console.warn("Failed to load sales database records fallback:", e);
-      const localTxs = db.getTransactions() || [];
+      const isCleared = typeof window !== "undefined" && (
+        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+        (user?.workspaceId && window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true")
+      );
+      const localTxs = isCleared ? [] : (db.getTransactions() || []);
       setTransactions(localTxs as any);
-      setProducts((db.getProducts() || []) as any);
+      setProducts(isCleared ? [] : ((db.getProducts() || []) as any));
     } finally {
       setLoading(false);
     }
@@ -454,10 +462,10 @@ function RouteComponent() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiCard label="Gross Revenue" value={totalRevenue} delta={8.4} format="inr-compact" />
-        <KpiCard label="Net Profit Est." value={totalProfit} delta={5.2} format="inr-compact" />
-        <KpiCard label="Total Orders" value={totalOrders} delta={12.6} format="num" />
-        <KpiCard label="Average Order Value" value={avgOrderVal} delta={3.1} format="inr-compact" />
+        <KpiCard label="Gross Revenue" value={totalRevenue} delta={totalOrders > 0 ? 8.4 : 0} format="inr-compact" />
+        <KpiCard label="Net Profit Est." value={totalProfit} delta={totalOrders > 0 ? 5.2 : 0} format="inr-compact" />
+        <KpiCard label="Total Orders" value={totalOrders} delta={totalOrders > 0 ? 12.6 : 0} format="num" />
+        <KpiCard label="Average Order Value" value={avgOrderVal} delta={totalOrders > 0 ? 3.1 : 0} format="inr-compact" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">

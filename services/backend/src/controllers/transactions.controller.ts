@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, UseGuards, Req } from '@nestjs/common';
 import { TransactionsService } from '../services/transactions.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ResponseUtil } from '../utils/response.util';
@@ -31,5 +31,11 @@ export class TransactionsController {
       body
     );
     return ResponseUtil.success(data, 'Transaction created successfully');
+  }
+
+  @Delete()
+  async clearTransactions(@Req() req: any) {
+    const data = await this.transactionsService.clearTransactions(req.user.workspaceId);
+    return ResponseUtil.success(data, 'All transactions cleared successfully');
   }
 }

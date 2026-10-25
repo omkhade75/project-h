@@ -276,12 +276,25 @@ export function DataImportPage() {
             variant="destructive"
             size="sm"
             onClick={async () => {
-              if (!confirm("Are you sure you want to clear all existing products, transactions, and customers to start fresh?")) return;
-              const dbModule = await import("@/lib/db");
-              dbModule.db.clearAllData();
-              setIngestionLogs([]);
-              forceRefresh();
-              toast.success("🗑️ All records cleared! Database is clean and ready for new imports.");
+              if (!confirm("Are you sure you want to clear all existing products, transactions, and customers to start fresh with zero data?")) return;
+              try {
+                const dbModule = await import("@/lib/db");
+                dbModule.db.clearAllData();
+                setIngestionLogs([]);
+
+                try {
+                  const { fetchApi } = await import("@/lib/api-client");
+                  await fetchApi("/api/transactions", { method: "DELETE" }).catch(() => {});
+                } catch (_) {}
+
+                forceRefresh();
+                toast.success("🗑️ All records cleared! Database is 100% clean with zero data.");
+                setTimeout(() => {
+                  window.location.reload();
+                }, 500);
+              } catch (e: any) {
+                toast.error("Failed to clear database.");
+              }
             }}
             className="shrink-0 font-bold gap-1.5 text-xs h-9"
           >

@@ -358,40 +358,45 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         const currentSchema = db.schema;
 
-        // Preserve locally imported OCR items that are not yet on backend server
-        const existingProducts = currentSchema.products || [];
+        const isExplicitlyCleared = typeof window !== "undefined" && (
+          window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+          (user?.workspaceId && window.localStorage.getItem(`omnimind_db_${user.workspaceId}_cleared`) === "true")
+        );
+
+        // Preserve locally imported items if NOT explicitly cleared
+        const existingProducts = isExplicitlyCleared ? [] : (currentSchema.products || []);
         const customLocalProducts = existingProducts.filter(
           (p) => !mappedProducts.some((mp) => mp.id === p.id)
         );
         const mergedProducts = [...mappedProducts, ...customLocalProducts];
 
-        const existingTransactions = currentSchema.transactions || [];
+        const existingTransactions = isExplicitlyCleared ? [] : (currentSchema.transactions || []);
         const customLocalTransactions = existingTransactions.filter(
           (t) => !mappedTransactions.some((mt) => mt.id === t.id)
         );
         const mergedTransactions = [...mappedTransactions, ...customLocalTransactions];
 
-        const existingCustomers = currentSchema.customers || [];
+        const existingCustomers = isExplicitlyCleared ? [] : (currentSchema.customers || []);
         const customLocalCustomers = existingCustomers.filter(
           (c) => !mappedCustomers.some((mc) => mc.id === c.id)
         );
         const mergedCustomers = [...mappedCustomers, ...customLocalCustomers];
 
-        const existingExpenses = currentSchema.expenses || [];
+        const existingExpenses = isExplicitlyCleared ? [] : (currentSchema.expenses || []);
         const customLocalExpenses = existingExpenses.filter(
           (e) => !mappedExpenses.some((me) => me.id === e.id)
         );
         const mergedExpenses = mappedExpenses.length > 0
           ? [...mappedExpenses, ...customLocalExpenses]
-          : (existingExpenses.length > 0 ? existingExpenses : db.getExpenses());
+          : (isExplicitlyCleared ? [] : (existingExpenses.length > 0 ? existingExpenses : []));
 
-        const existingSuppliers = currentSchema.suppliers || [];
+        const existingSuppliers = isExplicitlyCleared ? [] : (currentSchema.suppliers || []);
         const customLocalSuppliers = existingSuppliers.filter(
           (s) => !mappedSuppliers.some((ms) => ms.id === s.id)
         );
         const mergedSuppliers = mappedSuppliers.length > 0
           ? [...mappedSuppliers, ...customLocalSuppliers]
-          : (existingSuppliers.length > 0 ? existingSuppliers : db.getSuppliers());
+          : (isExplicitlyCleared ? [] : (existingSuppliers.length > 0 ? existingSuppliers : []));
 
         db.save({
           ...currentSchema,

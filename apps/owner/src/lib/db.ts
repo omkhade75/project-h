@@ -1170,7 +1170,7 @@ class SeededDatabase {
 
   public setWorkspace(workspaceId: string) {
     const cleanId = (workspaceId || "").trim();
-    if (this.workspaceId !== cleanId || !this.schema || (this.schema.products.length === 0 && cleanId === "grandsquare-mall")) {
+    if (this.workspaceId !== cleanId || !this.schema) {
       this.workspaceId = cleanId;
       this.schema = this.loadFromStorage();
     }
@@ -1178,10 +1178,16 @@ class SeededDatabase {
 
   private loadFromStorage(): Schema {
     if (typeof window !== "undefined") {
+      const isCleared =
+        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+        (this.workspaceId && window.localStorage.getItem(`omnimind_db_${this.workspaceId}_cleared`) === "true");
+
+      if (isCleared) {
+        return emptyDatabase();
+      }
+
       const keysToTry = [
         this.workspaceId ? `omnimind_db_${this.workspaceId}` : "",
-        "omnimind_db_grandsquare-mall",
-        "omnimind_db_ws_owner_gmail_com",
         "omnimind_db",
       ].filter(Boolean);
 
@@ -1190,12 +1196,7 @@ class SeededDatabase {
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            if (parsed && (parsed.products?.length > 0 || parsed.customers?.length > 0)) {
-              if (!parsed.transactions || parsed.transactions.length === 0) {
-                const seed = seedDatabase();
-                parsed.transactions = seed.transactions;
-                parsed.expenses = (parsed.expenses && parsed.expenses.length > 0) ? parsed.expenses : seed.expenses;
-              }
+            if (parsed) {
               return parsed;
             }
           } catch (e) {
@@ -1204,10 +1205,7 @@ class SeededDatabase {
         }
       }
     }
-    const isDemoWorkspace = !this.workspaceId || this.workspaceId === "grandsquare-mall" || this.workspaceId === "ws_owner_gmail_com";
-    const initialData = isDemoWorkspace ? seedDatabase() : emptyDatabase();
-    this.save(initialData);
-    return initialData;
+    return emptyDatabase();
   }
 
   public save(schema: Schema) {
@@ -1359,6 +1357,12 @@ class SeededDatabase {
   }
 
   public importProducts(newProds: Product[]) {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("omnimind_db_cleared");
+      if (this.workspaceId) {
+        window.localStorage.removeItem(`omnimind_db_${this.workspaceId}_cleared`);
+      }
+    }
     const existing = this.schema.products || [];
     const newIds = new Set(newProds.map((p) => p.id));
     const filteredExisting = existing.filter((p) => !newIds.has(p.id));
@@ -1367,11 +1371,23 @@ class SeededDatabase {
   }
 
   public importTransactions(newTxns: Transaction[]) {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("omnimind_db_cleared");
+      if (this.workspaceId) {
+        window.localStorage.removeItem(`omnimind_db_${this.workspaceId}_cleared`);
+      }
+    }
     const updated = [...newTxns, ...this.schema.transactions];
     this.save({ ...this.schema, transactions: updated });
   }
 
   public importCustomers(newCusts: Customer[]) {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("omnimind_db_cleared");
+      if (this.workspaceId) {
+        window.localStorage.removeItem(`omnimind_db_${this.workspaceId}_cleared`);
+      }
+    }
     const existing = this.schema.customers || [];
     const newIds = new Set(newCusts.map((c) => c.id));
     const filteredExisting = existing.filter((c) => !newIds.has(c.id));
@@ -1384,12 +1400,30 @@ class SeededDatabase {
   }
 
   public clearAllData() {
-    this.save({
-      ...this.schema,
-      products: [],
-      transactions: [],
-      customers: [],
-    });
+    this.schema = emptyDatabase();
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("omnimind_db_cleared", "true");
+      window.localStorage.setItem("omnimind_db", JSON.stringify(emptyDatabase()));
+      window.localStorage.setItem("omnimind_db_grandsquare-mall", JSON.stringify(emptyDatabase()));
+      window.localStorage.setItem("omnimind_db_grandsquare-mall_cleared", "true");
+      window.localStorage.setItem("omnimind_db_ws_owner_gmail_com", JSON.stringify(emptyDatabase()));
+      window.localStorage.setItem("omnimind_db_ws_owner_gmail_com_cleared", "true");
+
+      if (this.workspaceId) {
+        window.localStorage.setItem(`omnimind_db_${this.workspaceId}`, JSON.stringify(emptyDatabase()));
+        window.localStorage.setItem(`omnimind_db_${this.workspaceId}_cleared`, "true");
+      }
+
+      try {
+        const allKeys = Object.keys(window.localStorage);
+        for (const k of allKeys) {
+          if (k.startsWith("omnimind_db") && !k.endsWith("_cleared")) {
+            window.localStorage.setItem(k, JSON.stringify(emptyDatabase()));
+            window.localStorage.setItem(`${k}_cleared`, "true");
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   public updateProductStock(id: string, newStock: number) {

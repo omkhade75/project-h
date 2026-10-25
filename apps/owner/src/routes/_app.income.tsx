@@ -178,14 +178,9 @@ function RouteComponent() {
     .filter((p) => p.accountCode === "4200" && (p.date || "").startsWith(activeYearMonth))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const totalRent = rentLedgerSum > 0 ? rentLedgerSum : 185000;
-
-  // 3. Other ancillary revenue
-  const otherLedgerSum = payments
-    .filter((p) => p.accountCode === "4300" && (p.date || "").startsWith(activeYearMonth))
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const totalOther = otherLedgerSum > 0 ? otherLedgerSum : 42500;
+  const isCleared = typeof window !== "undefined" && window.localStorage.getItem("omnimind_db_cleared") === "true";
+  const totalRent = isCleared ? 0 : (rentLedgerSum > 0 ? rentLedgerSum : 0);
+  const totalOther = isCleared ? 0 : (otherLedgerSum > 0 ? otherLedgerSum : 0);
 
   const totalIncome = netSales + totalRent + totalOther;
 
