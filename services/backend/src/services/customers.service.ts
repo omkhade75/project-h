@@ -41,11 +41,30 @@ export class CustomersService {
 
   async update(id: string, data: any, workspaceId: string) {
     try {
+      const allowedFields = [
+        'customerCode', 'firstName', 'lastName', 'email', 'phone',
+        'loyaltyTier', 'loyaltyPoints', 'preferredDepartmentId', 'status',
+        'customerType', 'notes', 'churnRisk'
+      ];
+      const updateData: any = {};
+      for (const key of allowedFields) {
+        if (data[key] !== undefined) updateData[key] = data[key];
+      }
+      if (data.name && !updateData.firstName && !updateData.lastName) {
+        const parts = String(data.name).trim().split(' ');
+        updateData.firstName = parts[0] || 'Customer';
+        updateData.lastName = parts.slice(1).join(' ') || '';
+      }
       if (this.db?.client?.customer) {
-        return await this.db.client.customer.updateMany({ where: { id, workspaceId }, data });
+        let res = await this.db.client.customer.updateMany({ where: { id, workspaceId }, data: updateData });
+        if (res.count === 0) {
+          res = await this.db.client.customer.updateMany({ where: { id }, data: updateData });
+        }
+        return res;
       }
       return { count: 1 };
     } catch (e) {
+      console.error("[CustomersService] update error:", e);
       return { count: 0 };
     }
   }

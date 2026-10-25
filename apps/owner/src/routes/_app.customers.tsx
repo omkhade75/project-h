@@ -247,34 +247,33 @@ export function CustomersPage() {
     let fn = ((c as any).firstName && String((c as any).firstName).trim()) || "";
     let ln = ((c as any).lastName && String((c as any).lastName).trim()) || "";
 
-    // 1. If firstName and lastName are valid human names and not code identifiers:
-    if (fn && !isCodeOrId(fn)) {
+    // 1. If explicit human firstName is provided:
+    if (fn && !isCodeOrId(fn) && !fn.startsWith("Customer #")) {
       name = `${fn} ${ln}`.trim();
-    } else if (!name || isCodeOrId(name)) {
-      // 2. If name is a code like "CUST001" or empty, try deriving from email
-      if (c.email && c.email.includes("@")) {
-        const local = c.email.split("@")[0].replace(/[0-9._-]+/g, " ").trim();
-        if (local.length >= 2 && !local.toLowerCase().startsWith("client") && !local.toLowerCase().startsWith("user")) {
-          name = local.replace(/\b\w/g, (char: string) => char.toUpperCase());
-          const p = name.split(" ");
-          fn = p[0] || name;
-          ln = p.slice(1).join(" ");
-        } else {
-          const cleanId = String(c.id || c.customerCode || "").replace(/^CUST-?/i, "");
-          name = cleanId ? `Customer #${cleanId}` : "Customer";
-          fn = name;
-          ln = "";
-        }
-      } else {
-        const cleanId = String(c.id || c.customerCode || "").replace(/^CUST-?/i, "");
-        name = cleanId ? `Customer #${cleanId}` : "Customer";
-        fn = name;
-        ln = "";
-      }
-    } else {
+    } else if (name && !isCodeOrId(name) && !name.startsWith("Customer #")) {
+      // 2. If name is a real human name:
       const p = name.split(" ");
       fn = fn || p[0] || name;
       ln = ln || p.slice(1).join(" ") || "";
+    } else if (c.email && c.email.includes("@")) {
+      // 3. Try deriving from email if email is a human name
+      const local = c.email.split("@")[0].replace(/[0-9._-]+/g, " ").trim();
+      if (local.length >= 2 && !local.toLowerCase().startsWith("client") && !local.toLowerCase().startsWith("user")) {
+        name = local.replace(/\b\w/g, (char: string) => char.toUpperCase());
+        const p = name.split(" ");
+        fn = p[0] || name;
+        ln = p.slice(1).join(" ");
+      } else {
+        const cleanId = String(c.id || c.customerCode || "").replace(/^CUST-?/i, "");
+        name = name || (cleanId ? `Customer #${cleanId}` : "Customer");
+        fn = fn || name;
+        ln = ln || "";
+      }
+    } else {
+      const cleanId = String(c.id || c.customerCode || "").replace(/^CUST-?/i, "");
+      name = name || (cleanId ? `Customer #${cleanId}` : "Customer");
+      fn = fn || name;
+      ln = ln || "";
     }
 
     const visits = c.visits || c.ordersCount || 0;
@@ -358,34 +357,44 @@ export function CustomersPage() {
   // Handle Add Customer
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formFirstName || !formLastName || !formEmail || !formPhone) {
-      toast.error("Please fill in all required fields.");
+    const cleanFn = formFirstName.trim();
+    const cleanLn = formLastName.trim();
+    const cleanEmail = formEmail.trim();
+    const cleanPhone = formPhone.trim();
+
+    if (!cleanFn && !cleanLn) {
+      toast.error("Please enter a customer name.");
+      return;
+    }
+    if (!cleanPhone) {
+      toast.error("Please enter a valid phone number.");
       return;
     }
     setSaving(true);
     try {
+      const fullName = `${cleanFn} ${cleanLn}`.trim() || cleanFn || "Customer";
+
       await addCustomerServer({
         data: {
-          firstName: formFirstName,
-          lastName: formLastName,
-          email: formEmail,
-          phone: formPhone,
+          firstName: cleanFn,
+          lastName: cleanLn,
+          name: fullName,
+          email: cleanEmail,
+          phone: cleanPhone,
           loyaltyTier: formLoyaltyTier,
           preferredDepartmentId: formPrefDept || null,
           notes: formNotes,
-          role: user?.role || "owner",
-          emailUser: user?.email || "",
         },
       });
 
       const newCust: CustomerListItem = {
         id: `cust-${Date.now()}`,
         customerCode: `CUST-${Date.now().toString().slice(-4)}`,
-        name: `${formFirstName} ${formLastName}`.trim() || "Customer",
-        firstName: formFirstName,
-        lastName: formLastName,
-        email: formEmail,
-        phone: formPhone,
+        name: fullName,
+        firstName: cleanFn,
+        lastName: cleanLn,
+        email: cleanEmail,
+        phone: cleanPhone,
         joined: new Date().toISOString().split("T")[0],
         customerType: formLoyaltyTier || "Regular",
         visits: 1,
@@ -400,13 +409,16 @@ export function CustomersPage() {
         ordersCount: 1,
       };
 
-      setCustomers((prev) => [newCust, ...prev.filter(c => c.id !== "cust-001")]);
+      // Persist to local storage database
+      db.importCustomers([newCust as any]);
+
+      setCustomers((prev) => [newCust, ...prev]);
       setSelectedCust(newCust);
-      toast.success(`Successfully registered customer ${formFirstName} ${formLastName} (${formPhone}).`);
+      toast.success(`Successfully registered customer ${fullName} (${cleanPhone}).`);
       setAddOpen(false);
       resetForm();
     } catch (e: any) {
-      toast.error(e.message || "Failed to create customer.");
+      toast.error(e?.message || "Failed to create customer.");
     } finally {
       setSaving(false);
     }
@@ -415,38 +427,102 @@ export function CustomersPage() {
   const handleEditCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCust) return;
-    if (!formFirstName || !formLastName || !formEmail || !formPhone) {
-      toast.error("Please fill in all required fields.");
+    const cleanFn = formFirstName.trim();
+    const cleanLn = formLastName.trim();
+    const cleanPhone = formPhone.trim();
+    const cleanEmail = formEmail.trim();
+
+    if (!cleanFn && !cleanLn) {
+      toast.error("Please enter a customer name.");
+      return;
+    }
+    if (!cleanPhone) {
+      toast.error("Please enter a valid phone number.");
       return;
     }
     setSaving(true);
     try {
+      const fullName = `${cleanFn} ${cleanLn}`.trim() || cleanFn || "Customer";
+
+      // 1. Update backend server / database
       await editCustomerServer({
         data: {
           id: selectedCust.id,
-          firstName: formFirstName,
-          lastName: formLastName,
-          email: formEmail,
-          phone: formPhone,
+          firstName: cleanFn,
+          lastName: cleanLn,
+          name: fullName,
+          email: cleanEmail,
+          phone: cleanPhone,
           loyaltyTier: formLoyaltyTier,
           preferredDepartmentId: formPrefDept || null,
           notes: formNotes,
-          role: user?.role || "owner",
-          emailUser: user?.email || "",
         },
       });
 
-      setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === selectedCust.id
-            ? { ...c, firstName: formFirstName, lastName: formLastName, email: formEmail, phone: formPhone, loyaltyTier: formLoyaltyTier }
-            : c
-        )
+      // 2. Persist directly to local database & localStorage so changes survive refreshes
+      const allLocalCusts = db.getCustomers();
+      const existingIdx = allLocalCusts.findIndex(
+        (c) => c.id === selectedCust.id || c.name === selectedCust.name || (c.email && c.email === selectedCust.email)
       );
-      toast.success("Successfully updated customer details.");
+      if (existingIdx >= 0) {
+        allLocalCusts[existingIdx] = {
+          ...allLocalCusts[existingIdx],
+          name: fullName,
+          firstName: cleanFn,
+          lastName: cleanLn,
+          phone: cleanPhone,
+          email: cleanEmail,
+          loyaltyTier: formLoyaltyTier,
+        } as any;
+        db.save({ ...db.getSchema(), customers: allLocalCusts });
+      } else {
+        db.importCustomers([
+          {
+            id: selectedCust.id,
+            name: fullName,
+            joined: selectedCust.joined || new Date().toISOString().split("T")[0],
+            visits: selectedCust.visits || 1,
+            spend: selectedCust.spend || 0,
+            aov: selectedCust.aov || 0,
+            favDept: formPrefDept || "General",
+            lastVisit: new Date().toISOString().split("T")[0],
+            segment: selectedCust.segment || "Regular",
+            churn: selectedCust.churn || 5,
+            phone: cleanPhone,
+            email: cleanEmail,
+            firstName: cleanFn,
+            lastName: cleanLn,
+          } as any,
+        ]);
+      }
+
+      // 3. Update React state immediately
+      const updatedCustomer: CustomerListItem = {
+        ...selectedCust,
+        name: fullName,
+        firstName: cleanFn,
+        lastName: cleanLn,
+        email: cleanEmail,
+        phone: cleanPhone,
+        loyaltyTier: formLoyaltyTier,
+      };
+
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === selectedCust.id ? updatedCustomer : c))
+      );
+      setSelectedCust(updatedCustomer);
+
+      // 4. Update Vapi Voice & WhatsApp target state immediately
+      setVapiName(fullName);
+      setVapiPhone(cleanPhone);
+      setVapiScript(`Namaste ${fullName}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`);
+      setWaName(fullName);
+      setWaPhone(cleanPhone);
+
+      toast.success(`Successfully saved: ${fullName} (${cleanPhone}).`);
       setEditOpen(false);
     } catch (e: any) {
-      toast.error("Failed to edit customer.");
+      toast.error(e?.message || "Failed to edit customer.");
     } finally {
       setSaving(false);
     }
@@ -523,7 +599,7 @@ export function CustomersPage() {
 
   const handleOpenWaModal = (c?: CustomerListItem) => {
     const targetCust = c || activeSelectedCust || defaultRegisteredCustomer;
-    const name = `${targetCust.firstName} ${targetCust.lastName}`;
+    const name = (targetCust.name || `${targetCust.firstName || ""} ${targetCust.lastName || ""}`).trim() || "Customer";
     setWaName(name);
     setWaPhone(targetCust.phone);
     setWaMessage(
@@ -644,13 +720,15 @@ export function CustomersPage() {
   };
 
   const handleOpenVapiModal = () => {
-    if (selectedCust) {
-      setVapiName(`${activeSelectedCust.firstName} ${activeSelectedCust.lastName}`);
-      setVapiPhone(activeSelectedCust.phone);
-    } else {
-      setVapiName("Om Khade");
-      setVapiPhone("+91 75880 21256");
-    }
+    const cust = activeSelectedCust || selectedCust;
+    const name = (cust?.name || `${cust?.firstName || ""} ${cust?.lastName || ""}`).trim() || "Om Khade";
+    const phone = cust?.phone || "+91 75880 21256";
+    setVapiName(name);
+    setVapiPhone(phone);
+    setVapiScript(`Namaste ${name}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`);
+    setVapiCallMode("cellular");
+    setVapiCallStatus("idle");
+    setVapiErrorDetails(null);
     setVapiModalOpen(true);
   };
 
@@ -667,10 +745,12 @@ export function CustomersPage() {
       await archiveCustomerServer({
         data: {
           id,
-          role: user?.role || "owner",
-          email: user?.email || "",
         },
       });
+      // Also remove from local db
+      const allLocalCusts = db.getCustomers().filter((c) => c.id !== id);
+      db.save({ ...db.getSchema(), customers: allLocalCusts });
+
       toast.success("Customer archived successfully.");
       setCustomers((prev) => prev.filter((c) => c.id !== id));
       if (selectedCust?.id === id) setSelectedCust(null);
@@ -692,10 +772,17 @@ export function CustomersPage() {
 
   const openEdit = (c: CustomerListItem) => {
     setSelectedCust(c);
-    setFormFirstName(c.firstName);
-    setFormLastName(c.lastName);
-    setFormEmail(c.email);
-    setFormPhone(c.phone);
+    let fn = c.firstName || "";
+    let ln = c.lastName || "";
+    if (!fn && c.name && !c.name.startsWith("Customer #")) {
+      const parts = c.name.split(" ");
+      fn = parts[0] || "";
+      ln = parts.slice(1).join(" ") || "";
+    }
+    setFormFirstName(fn);
+    setFormLastName(ln);
+    setFormEmail(c.email || "");
+    setFormPhone(c.phone || "");
     setFormLoyaltyTier(c.loyaltyTier || "Regular");
     setFormNotes("");
     setEditOpen(true);
@@ -1048,10 +1135,10 @@ export function CustomersPage() {
 
       {/* Vapi Outbound AI Phone Call Modal */}
       <Dialog open={vapiModalOpen} onOpenChange={(open) => { if (!open && vapiCallStatus === "active") return; setVapiModalOpen(open); }}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[480px] p-4 sm:p-6 overflow-x-hidden box-border">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <PhoneCall className="h-5 w-5 text-primary" />
+            <DialogTitle className="flex items-center gap-2 text-foreground text-sm sm:text-base">
+              <PhoneCall className="h-5 w-5 text-primary shrink-0" />
               {vapiCallStatus === "active"
                 ? "🟢 Live AI Voice Agent (In-Call)"
                 : vapiCallStatus === "connecting"
@@ -1064,22 +1151,22 @@ export function CustomersPage() {
 
           {/* ACTIVE CALL STATE */}
           {vapiCallStatus === "active" ? (
-            <div className="py-6 flex flex-col items-center justify-center space-y-4 text-center">
+            <div className="py-4 sm:py-6 flex flex-col items-center justify-center space-y-4 text-center max-w-full overflow-hidden">
               <div className="relative">
-                <div className="grid h-20 w-20 place-items-center rounded-full bg-emerald-500/20 text-emerald-600 animate-pulse">
-                  <Phone className="h-10 w-10 text-emerald-600" />
+                <div className="grid h-16 w-16 sm:h-20 sm:w-20 place-items-center rounded-full bg-emerald-500/20 text-emerald-600 animate-pulse">
+                  <Phone className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-600" />
                 </div>
                 <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs font-bold shadow">
                   {vapiCallMode === "cellular" ? "📱" : "🎙️"}
                 </span>
               </div>
 
-              <div>
-                <h3 className="text-base font-bold text-foreground">
-                  {vapiCallMode === "cellular" ? `Calling ${vapiName}'s Mobile Phone...` : `Speaking with ${vapiName}`}
+              <div className="max-w-full overflow-hidden px-1">
+                <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
+                  {vapiCallMode === "cellular" ? `Calling ${vapiName}'s Mobile...` : `Speaking with ${vapiName}`}
                 </h3>
-                <p className="font-mono text-xs text-muted-foreground mt-0.5">
-                  {vapiPhone} · {vapiCallMode === "cellular" ? "Twilio PSTN Gateway · " : ""}Duration: {Math.floor(vapiCallDuration / 60)}:{(vapiCallDuration % 60).toString().padStart(2, "0")}
+                <p className="font-mono text-xs text-muted-foreground mt-0.5 break-all">
+                  {vapiPhone} · {vapiCallMode === "cellular" ? "Twilio PSTN · " : ""}Duration: {Math.floor(vapiCallDuration / 60)}:{(vapiCallDuration % 60).toString().padStart(2, "0")}
                 </p>
                 {vapiCallMode === "cellular" && (
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 animate-pulse">
@@ -1088,17 +1175,17 @@ export function CustomersPage() {
                 )}
               </div>
 
-              <div className="p-3 bg-surface rounded-xl border border-hairline max-w-sm text-left space-y-1">
+              <div className="p-3 bg-surface rounded-xl border border-hairline w-full max-w-sm text-left space-y-1 overflow-hidden">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
                   Agent Speaking (Hindi / Natural Voice):
                 </p>
-                <p className="text-xs text-foreground italic leading-relaxed">
+                <p className="text-xs text-foreground italic leading-relaxed break-words">
                   &ldquo;{vapiScript}&rdquo;
                 </p>
               </div>
 
               {vapiCallMode === "browser" && userSpeechHeard && (
-                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-800 dark:text-emerald-300 w-full break-words">
                   <span className="font-bold">Heard from Mic:</span> &ldquo;{userSpeechHeard}&rdquo;
                 </div>
               )}
@@ -1113,23 +1200,23 @@ export function CustomersPage() {
             </div>
           ) : vapiCallStatus === "failed" ? (
             /* FAILED CALL WITH ACTIONABLE OPTIONS */
-            <div className="py-2 space-y-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 space-y-2">
-                <div className="flex items-center gap-2 text-destructive font-bold text-sm">
+            <div className="py-2 space-y-3.5 text-xs max-w-full overflow-hidden">
+              <div className="p-3 sm:p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 space-y-2 max-w-full overflow-hidden">
+                <div className="flex items-center gap-2 text-destructive font-bold text-xs sm:text-sm">
                   <PhoneOff className="h-4 w-4 shrink-0" />
                   <span>Cellular Outbound Call Notice</span>
                 </div>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                <p className="text-muted-foreground text-[11px] leading-relaxed break-words">
                   Direct PSTN cellular phone dialing to <strong>{vapiPhone}</strong> requires active Vapi.ai Telephony credentials & Twilio SIP trunk credits.
                 </p>
                 {vapiErrorDetails && (
-                  <p className="font-mono text-[10px] bg-background/80 p-2 rounded border border-hairline text-destructive">
+                  <p className="font-mono text-[10px] bg-background/80 p-2 rounded border border-hairline text-destructive break-all break-words max-w-full overflow-hidden">
                     Reason: {vapiErrorDetails}
                   </p>
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 max-w-full overflow-hidden">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   Instant Working Alternatives
                 </p>
@@ -1139,13 +1226,13 @@ export function CustomersPage() {
                     setVapiCallStatus("idle");
                     startBrowserVoiceCall(vapiScript);
                   }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-2 h-10"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-2 h-auto py-2.5 px-3 text-xs whitespace-normal text-center leading-snug break-words max-w-full"
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4 shrink-0" />
                   <span>Test In-Browser Voice Call (100% Free Demo)</span>
                 </Button>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -1153,9 +1240,9 @@ export function CustomersPage() {
                       telLink.href = `tel:${vapiPhone.replace(/\s+/g, "")}`;
                       telLink.click();
                     }}
-                    className="text-xs font-semibold gap-1.5 h-9"
+                    className="text-xs font-semibold gap-1.5 h-9 w-full"
                   >
-                    <Phone className="h-3.5 w-3.5 text-primary" />
+                    <Phone className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span>Open Phone Dialer</span>
                   </Button>
 
@@ -1165,9 +1252,9 @@ export function CustomersPage() {
                       setVapiModalOpen(false);
                       handleOpenWaModal();
                     }}
-                    className="text-xs font-semibold gap-1.5 h-9 text-[#25D366] hover:text-[#25D366]"
+                    className="text-xs font-semibold gap-1.5 h-9 text-[#25D366] hover:text-[#25D366] w-full"
                   >
-                    <WhatsappIcon className="h-3.5 w-3.5" />
+                    <WhatsappIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Send on WhatsApp</span>
                   </Button>
                 </div>
@@ -1178,51 +1265,51 @@ export function CustomersPage() {
                     setVapiModalOpen(false);
                     navigate({ to: "/settings" });
                   }}
-                  className="w-full text-xs text-muted-foreground hover:text-foreground h-8"
+                  className="w-full text-xs text-muted-foreground hover:text-foreground h-8 truncate"
                 >
                   Configure Vapi.ai API Keys in Settings →
                 </Button>
               </div>
             </div>
           ) : (
-            /* IDLE FORM: Choose Mode (Browser vs Cellular) */
-            <form onSubmit={handleInitiateVapiCall} className="space-y-3.5 py-2 text-xs">
+            /* IDLE FORM: Choose Mode (Cellular vs Browser) */
+            <form onSubmit={handleInitiateVapiCall} className="space-y-3.5 py-2 text-xs max-w-full overflow-hidden">
               {/* Call Mode Switcher */}
               <div className="space-y-1">
                 <Label className="text-[11px] text-muted-foreground">Select Call Execution Mode</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setVapiCallMode("browser")}
-                    className={cn(
-                      "p-2.5 rounded-xl border text-left transition-all",
-                      vapiCallMode === "browser"
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
-                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
-                    )}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm">🎙️</span>
-                      <span className="text-xs">Browser Voice Call</span>
-                    </div>
-                    <p className="text-[10px] opacity-80 mt-0.5">Zero setup · Audio via speakers/mic</p>
-                  </button>
-
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setVapiCallMode("cellular")}
                     className={cn(
-                      "p-2.5 rounded-xl border text-left transition-all",
+                      "p-2.5 rounded-xl border text-left transition-all w-full",
                       vapiCallMode === "cellular"
                         ? "border-primary bg-primary/10 text-primary font-bold"
                         : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
                     )}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm">📱</span>
-                      <span className="text-xs">Cellular Outbound</span>
+                      <span className="text-sm shrink-0">📱</span>
+                      <span className="text-xs font-bold">Cellular Outbound</span>
                     </div>
-                    <p className="text-[10px] opacity-80 mt-0.5">Dials phone number via Vapi</p>
+                    <p className="text-[10px] opacity-80 mt-0.5 break-words">Dials mobile via Twilio PSTN</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVapiCallMode("browser")}
+                    className={cn(
+                      "p-2.5 rounded-xl border text-left transition-all w-full",
+                      vapiCallMode === "browser"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
+                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm shrink-0">🎙️</span>
+                      <span className="text-xs">Browser Voice Call</span>
+                    </div>
+                    <p className="text-[10px] opacity-80 mt-0.5 break-words">Zero setup · Speakers & mic</p>
                   </button>
                 </div>
               </div>
@@ -1231,7 +1318,7 @@ export function CustomersPage() {
                 <Label htmlFor="vapi-name">Customer Name</Label>
                 <Input
                   id="vapi-name"
-                  className="bg-surface border-hairline"
+                  className="bg-surface border-hairline w-full"
                   value={vapiName}
                   onChange={(e) => setVapiName(e.target.value)}
                   placeholder="e.g. Om Khade"
@@ -1243,16 +1330,16 @@ export function CustomersPage() {
                 <Label htmlFor="vapi-phone">Target Phone Number</Label>
                 <Input
                   id="vapi-phone"
-                  className="bg-surface border-hairline font-mono font-bold text-sm"
+                  className="bg-surface border-hairline font-mono font-bold text-sm w-full"
                   value={vapiPhone}
                   onChange={(e) => setVapiPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 75880 21256"
                   required
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground break-words">
                   {vapiCallMode === "browser"
                     ? "Interactive in-browser voice demo with natural Hindi voice."
-                    : "Outbound carrier call will be dispatched to this mobile phone."}
+                    : "Outbound carrier call will be dispatched directly to this mobile phone."}
                 </p>
               </div>
 
@@ -1260,7 +1347,7 @@ export function CustomersPage() {
                 <Label htmlFor="vapi-script">AI Voice Agent Script & Offer</Label>
                 <Textarea
                   id="vapi-script"
-                  className="bg-surface border-hairline text-xs"
+                  className="bg-surface border-hairline text-xs w-full"
                   rows={3}
                   value={vapiScript}
                   onChange={(e) => setVapiScript(e.target.value)}
@@ -1272,24 +1359,26 @@ export function CustomersPage() {
                   type="submit"
                   disabled={vapiDialing}
                   className={cn(
-                    "w-full text-white font-bold flex items-center justify-center gap-2 h-11",
+                    "w-full text-white font-bold flex items-center justify-center gap-2 h-auto min-h-[44px] py-2.5 px-3 text-xs sm:text-sm whitespace-normal text-center leading-snug break-words max-w-full",
                     vapiCallMode === "browser"
                       ? "bg-emerald-600 hover:bg-emerald-700"
                       : "bg-[#007AFF] hover:bg-[#0066CC]"
                   )}
                 >
                   {vapiDialing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin shrink-0" />
                   ) : vapiCallMode === "browser" ? (
-                    <Sparkles className="h-5 w-5" />
+                    <Sparkles className="h-5 w-5 shrink-0" />
                   ) : (
-                    <Phone className="h-5 w-5" />
+                    <Phone className="h-5 w-5 shrink-0" />
                   )}
-                  {vapiDialing
-                    ? "Connecting Call..."
-                    : vapiCallMode === "browser"
-                    ? `🎙️ START IN-BROWSER VOICE CALL WITH ${vapiName.toUpperCase()}`
-                    : `📞 DIAL ${vapiName.toUpperCase()} VIA CELLULAR`}
+                  <span>
+                    {vapiDialing
+                      ? "Connecting Call..."
+                      : vapiCallMode === "browser"
+                      ? `🎙️ START IN-BROWSER VOICE CALL WITH ${vapiName.toUpperCase()}`
+                      : `📞 DIAL ${vapiName.toUpperCase()} VIA CELLULAR`}
+                  </span>
                 </Button>
               </DialogFooter>
             </form>
@@ -1299,11 +1388,11 @@ export function CustomersPage() {
 
       {/* WhatsApp Outbound Message Modal */}
       <Dialog open={waModalOpen} onOpenChange={setWaModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[480px] p-4 sm:p-6 overflow-x-hidden box-border">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <WhatsappIcon className="h-5 w-5 text-[#25D366]" />
-              {isBroadcastMode ? "📢 WhatsApp Multi-Customer Campaign Broadcast" : "WhatsApp Message Dispatcher"}
+            <DialogTitle className="flex items-center gap-2 text-foreground text-sm sm:text-base">
+              <WhatsappIcon className="h-5 w-5 text-[#25D366] shrink-0" />
+              {isBroadcastMode ? "📢 WhatsApp Campaign Broadcast" : "WhatsApp Message Dispatcher"}
             </DialogTitle>
           </DialogHeader>
 
@@ -1434,12 +1523,12 @@ export function CustomersPage() {
 
       {/* Add Customer Modal */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[500px] p-4 sm:p-6 overflow-x-hidden box-border">
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddCustomer} className="space-y-4 py-2 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="add-fn">First Name</Label>
                 <Input
@@ -1464,7 +1553,7 @@ export function CustomersPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="add-email">Email Address</Label>
                 <Input
@@ -1474,7 +1563,6 @@ export function CustomersPage() {
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   placeholder="khade8915@gmail.com"
-                  required
                 />
               </div>
               <div className="space-y-1.5">
@@ -1484,13 +1572,13 @@ export function CustomersPage() {
                   className="bg-surface border-hairline font-mono"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 75880 21256"
                   required
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Loyalty Tier</Label>
                 <Select value={formLoyaltyTier} onValueChange={setFormLoyaltyTier}>
@@ -1552,12 +1640,12 @@ export function CustomersPage() {
 
       {/* Edit Customer Modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[500px] p-4 sm:p-6 overflow-x-hidden box-border">
           <DialogHeader>
             <DialogTitle>Edit Customer Profile</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditCustomer} className="space-y-4 py-2 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="edit-fn">First Name</Label>
                 <Input
@@ -1565,6 +1653,7 @@ export function CustomersPage() {
                   className="bg-surface border-hairline"
                   value={formFirstName}
                   onChange={(e) => setFormFirstName(e.target.value)}
+                  placeholder="First name"
                   required
                 />
               </div>
@@ -1575,12 +1664,12 @@ export function CustomersPage() {
                   className="bg-surface border-hairline"
                   value={formLastName}
                   onChange={(e) => setFormLastName(e.target.value)}
-                  required
+                  placeholder="Last name"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="edit-email">Email Address</Label>
                 <Input
@@ -1589,16 +1678,17 @@ export function CustomersPage() {
                   className="bg-surface border-hairline"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  required
+                  placeholder="Email"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="edit-phone">Mobile Phone</Label>
                 <Input
                   id="edit-phone"
-                  className="bg-surface border-hairline font-mono"
+                  className="bg-surface border-hairline font-mono font-bold"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
+                  placeholder="+91 75880 21256"
                   required
                 />
               </div>
