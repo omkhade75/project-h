@@ -196,7 +196,7 @@ function CustomerTransactions() {
             </div>
             <h3 className="font-bold text-base text-slate-900">No orders found</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              You don&apos;t have any orders under this filter. Browse Bizora Fresh to get groceries delivered in 10 minutes.
+              You don&apos;t have any orders under this filter. Browse the storefront to get items delivered in 10 minutes.
             </p>
             <Button
               size="sm"

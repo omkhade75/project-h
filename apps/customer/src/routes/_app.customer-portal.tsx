@@ -41,6 +41,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { useBusinessData } from "@/lib/business-context";
+import { BizoraLogoIcon } from "@/components/bizora-logo";
 import { GoogleMapsPicker } from "@/components/google-maps-picker";
 import {
   getCustomerOrders,
@@ -55,7 +56,7 @@ export { getDeliveryOtp };
 export const Route = createFileRoute("/_app/customer-portal")({
   head: () => ({
     meta: [
-      { title: "Bizora Fresh — 10-Minute Hyperlocal Express Storefront" },
+      { title: "Bizora Customer | Express Storefront" },
       {
         name: "description",
         content: "Live 10-minute neighborhood grocery and daily essentials from your nearest verified store.",
@@ -351,25 +352,27 @@ export function CustomerPortal() {
 
   return (
     <div className="-mx-4 -mt-4 min-h-screen bg-[#f8fafc] text-slate-900 pb-32 sm:pb-24">
-      {/* 1. Bizora Fresh Top Navigation Bar */}
+      {/* 1. Bizora Customer Top Navigation Bar */}
       <header className="bg-[#0f172a] text-white sticky top-0 z-40 shadow-sm border-b border-slate-800">
         {/* Mobile & Desktop Header Top Bar */}
         <div className="mx-auto flex flex-col sm:flex-row sm:items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 gap-2 sm:gap-4 max-w-7xl">
           <div className="flex items-center justify-between w-full sm:w-auto">
-            {/* Bizora Fresh Brand Logo */}
+            {/* Bizora Master Brand Logo */}
             <div
-              className="flex items-center gap-2 cursor-pointer select-none"
+              className="flex items-center gap-2.5 cursor-pointer select-none"
               onClick={() => setActiveTab("STORE")}
             >
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-500 text-slate-950 font-black shadow-sm">
-                ⚡
+              <div className="h-8 w-8 shrink-0 drop-shadow-sm">
+                <BizoraLogoIcon />
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-black tracking-tight text-white">bizora</span>
-                <span className="text-base font-extrabold text-emerald-400">fresh</span>
+                <span className="text-xl font-display font-black tracking-tight text-white">Bizora</span>
+                <span className="text-xl font-display font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">
+                  AI
+                </span>
               </div>
-              <span className="text-[10px] bg-emerald-400 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline">
-                10-Min Express
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline">
+                Customer Storefront
               </span>
             </div>
 
@@ -816,8 +819,10 @@ export function CustomerPortal() {
           <div className="w-full max-w-lg rounded-t-3xl sm:rounded-2xl bg-white p-5 sm:p-6 shadow-2xl space-y-4 text-slate-900 my-0 sm:my-8 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">⚡</span>
-                <h3 className="font-bold text-base text-slate-900">Bizora Fresh 10-Min Checkout</h3>
+                <div className="h-5 w-5 shrink-0">
+                  <BizoraLogoIcon />
+                </div>
+                <h3 className="font-bold text-base text-slate-900">Bizora Express Checkout</h3>
               </div>
               <button
                 onClick={() => setIsCheckoutOpen(false)}

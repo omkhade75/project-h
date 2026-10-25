@@ -77,7 +77,7 @@ const NAV: NavSection[] = [
   {
     section: "My Account",
     items: [
-      { to: "/customer-portal", label: "Bizora Fresh Storefront", icon: Store },
+      { to: "/customer-portal", label: "Storefront", icon: Store },
       { to: "/transactions", label: "My Orders & Digital Receipts", icon: Receipt },
     ],
   },
@@ -142,16 +142,14 @@ function AppShell() {
       <div className="space-y-4">
         {/* Logo Header */}
         <div className="flex items-center justify-between px-2 py-1">
-          {!collapsed && (
+          {!collapsed ? (
             <Link to="/customer-portal" className="flex items-center gap-2">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-500/10 text-emerald-400 font-bold">
-                <Store className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-display text-sm font-bold tracking-tight text-foreground">
-                  Bizora Customer
-                </p>
-                <p className="text-[9px] text-muted-foreground">Hyperlocal 10-Min Shopping</p>
+              <BizoraLogo size="sm" variant="customer" />
+            </Link>
+          ) : (
+            <Link to="/customer-portal" className="flex items-center justify-center w-full">
+              <div className="h-7 w-7 shrink-0">
+                <BizoraLogoIcon />
               </div>
             </Link>
           )}
