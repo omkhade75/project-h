@@ -250,8 +250,11 @@ export class CommsService {
       else phone = "+" + phone;
     }
 
-    const recipientName = data.recipientName || "Aapka Business Partner";
-    const contextMsg = data.messageContext || data.script || "Bizora AI se aap ke liye important update hai.";
+    let recipientName = (data.recipientName || "").trim();
+    if (!recipientName || recipientName.toLowerCase().startsWith("customer #") || recipientName.toLowerCase().startsWith("cust")) {
+      recipientName = "Aap";
+    }
+    const contextMsg = data.messageContext || data.script || "GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.";
 
     let logId = "";
     try {
@@ -269,6 +272,21 @@ export class CommsService {
       logId = log.id;
     } catch (dbErr) {}
 
+    // Query actual products from database if available to give real store knowledge
+    let productCatalogSummary = "Fresh Organic Fruits (Apples, Bananas, Alphonso Mangoes), Dairy (Amul Taaza Milk, Butter, Fresh Paneer), Groceries (Fortune Sunflower Oil, India Gate Basmati Rice, Aashirvaad Shudh Chakki Atta, Toor Dal), Snacks (Haldiram Bhujia, Biscuits, Chocolates) aur Daily Household Items";
+    try {
+      if (this.prisma?.product) {
+        const topProducts: any[] = await (this.prisma.product as any).findMany({
+          where: { workspaceId },
+          take: 8,
+          select: { name: true, sellingPrice: true },
+        });
+        if (topProducts && topProducts.length > 0) {
+          productCatalogSummary = topProducts.map((p) => `${p.name} (₹${p.sellingPrice || 100})`).join(", ");
+        }
+      }
+    } catch (e) {}
+
     // Dispatch real outbound phone call via Vapi REST API with verified schema
     try {
       const vapiPayload: any = {
@@ -279,27 +297,40 @@ export class CommsService {
         },
         assistant: {
           name: "Bizora AI Voice Agent",
-          firstMessage: `Namaste ${recipientName} ji! Main GrandSquare Supermart se Bizora AI assistant bol rahi hoon. ${contextMsg}`,
+          firstMessage: `Namaste ${recipientName} ji! Main GrandSquare Supermart se Priya bol rahi hoon. Aapke liye hamara special 15 percent discount offer tayyar hai. Kya aap offer ke baare mein jaanna chahenge?`,
           transcriber: {
             provider: "deepgram",
             model: "nova-2",
             language: "hi",
+            endpointing: 200,
           },
           model: {
             provider: "openai",
             model: "gpt-4o-mini",
-            temperature: 0.3,
+            temperature: 0.5,
             messages: [
               {
                 role: "system",
-                content: `You are a warm, polite, and articulate Hindi-speaking AI Business Assistant for GrandSquare Supermart powered by Bizora AI. You are calling ${recipientName}.
+                content: `You are Priya, a friendly, intelligent, and helpful Hindi & Hinglish speaking AI Business Assistant calling live from GrandSquare Supermart (powered by Bizora).
+You are having an active, two-way cellular phone conversation with ${recipientName}.
 
-TRAINED SPEECH & VOICE CLARITY GUIDELINES:
-1. PRIMARY MESSAGE TO DELIVER: "${contextMsg}".
-2. SPEECH PACING: Speak clearly, calmly, and at a steady, natural human speed (0.9x). Use short, well-punctuated sentences with pauses so your voice sounds 100% natural, clear, and unhurried.
-3. NOISE & DISTURBANCE CONTROL: Do not stutter, rush, or repeat phrases. Eliminate awkward pauses. Keep answers polite and 1-2 sentences maximum.
-4. LANGUAGE: Always speak in respectful Hindi or natural Hinglish (e.g. "Namaste ${recipientName} ji! Main GrandSquare Supermart se Bizora AI assistant bol rahi hoon.").
-5. POLITENESS: Use respectful Indian honorifics ("ji", "Aapka dhanyavaad", "Aapka din shubh ho").`,
+BUSINESS & STORE INFORMATION:
+- Store Name: GrandSquare Supermart.
+- What We Sell: Fresh fruits & vegetables, dairy products (milk, paneer, butter), staple groceries (atta, basmati rice, cooking oil, pulses), snacks, beverages, and daily household items.
+- Top Featured Items: ${productCatalogSummary}.
+- Current Promotional Offer: Flat 15% Discount on total bill above ₹499 with Coupon Code "BIZORA15".
+- Delivery: Express 10-to-20 minute doorstep delivery available, or customer can visit the store directly.
+
+CONVERSATIONAL RULES (STRICT & CRITICAL):
+1. THE GREETING HAS ALREADY BEEN SPOKEN IN THE FIRST MESSAGE. Do NOT greet again. NEVER say "Namaste", "Hello", or introduce yourself again once the conversation has started.
+2. ACTIVELY ANSWER QUESTIONS:
+   - If the customer asks what the offer is or what items are on offer (e.g. "Offer kis par hai?", "Kaun kaun si cheezein hain?", "What is the offer?", "Tell me offer kis par hai?"):
+     Answer directly and specifically: "Sir, hamara flat 15% discount sabhi fresh fruits, sabziyan, groceries aur dairy products par valid hai coupon code BIZORA15 ke saath. Delivery bhi sirf 15 minute mein aapke ghar pahunch jayegi."
+   - If the customer asks about specific products: Mention 2-3 items like fresh fruits (aam, seb), Amul dairy paneer/doodh, Fortune oil, ya Basmati rice.
+   - If the customer asks how to order or get the discount: "Aap hamari store par aa sakte hain ya hum aapke WhatsApp par coupon code aur direct order link bhej sakte hain. Kya main aapke WhatsApp par details bhej doon?"
+3. KEEP RESPONSES SNAPPY & CONVERSATIONAL: Keep each response short (1 to 2 clear sentences maximum). Voice calls must be snappy, polite, and natural. Do NOT give long lectures.
+4. LANGUAGE: Speak in natural, respectful Hindi or conversational Hinglish. Use respectful Indian honorifics like "ji", "sir", "dhanyavaad".
+5. CONCLUDING: If the customer says "theek hai", "nahi chahiye", "bye", or hangs up, reply warmly: "Bahut bahut dhanyavaad ${recipientName} ji! Aapka din shubh ho."`,
               },
             ],
           },
@@ -307,7 +338,7 @@ TRAINED SPEECH & VOICE CLARITY GUIDELINES:
             provider: "azure",
             voiceId: "hi-IN-SwaraNeural",
           },
-          endCallMessage: `Dhanyavaad ${recipientName} ji! Aapka din shubh ho. GrandSquare Supermart mein aapka swagat hai.`,
+          endCallMessage: `Bahut bahut dhanyavaad ${recipientName} ji! Aapka din shubh ho. GrandSquare Supermart mein aapka swagat hai.`,
         },
       };
 
