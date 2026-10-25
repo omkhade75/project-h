@@ -4,7 +4,21 @@ import { useBusinessData } from "@/lib/business-context";
 import { useAuth } from "@/lib/auth-context";
 import { fmtINR } from "@/lib/mock-data";
 import { db } from "@/lib/db";
-import { Sparkles, Truck, Plus, Loader2, Edit, Archive, Trash2, FileText, Phone, Key, Copy, Check, ExternalLink } from "lucide-react";
+import {
+  Sparkles,
+  Truck,
+  Plus,
+  Loader2,
+  Edit,
+  Archive,
+  Trash2,
+  FileText,
+  Phone,
+  Key,
+  Copy,
+  Check,
+  ExternalLink,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -91,7 +105,12 @@ function Suppliers() {
   const [formTerms, setFormTerms] = useState("");
   const [formLead, setFormLead] = useState("");
   const [formPassword, setFormPassword] = useState("123456789");
-  const [createdCredentials, setCreatedCredentials] = useState<{ name: string; email: string; password: string; phone: string } | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    name: string;
+    email: string;
+    password: string;
+    phone: string;
+  } | null>(null);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -99,7 +118,7 @@ function Suppliers() {
       const serverRes = await getSuppliers().catch(() => []);
       const localSuppliers = db.getSuppliers() || [];
 
-      const getKey = (s: any) => (s?.email || s?.name || s?.id || '').toLowerCase().trim();
+      const getKey = (s: any) => (s?.email || s?.name || s?.id || "").toLowerCase().trim();
       const combinedMap = new Map<string, any>();
       if (Array.isArray(serverRes)) {
         serverRes.forEach((s: any) => {
@@ -123,7 +142,12 @@ function Suppliers() {
       if (res.length > 0 && !sel) {
         setSel(res[0]);
       } else if (sel) {
-        const updatedSel = res.find((s) => (s.id && s.id === sel.id) || (s.email && s.email === sel.email) || (s.name && s.name === sel.name));
+        const updatedSel = res.find(
+          (s) =>
+            (s.id && s.id === sel.id) ||
+            (s.email && s.email === sel.email) ||
+            (s.name && s.name === sel.name),
+        );
         if (updatedSel) setSel(updatedSel);
         else setSel(res[0] || null);
       }
@@ -277,7 +301,12 @@ function Suppliers() {
   const handleDelete = async () => {
     if (!user || !sel) return toast.error("Unauthorized");
     const targetIdentifier = sel.id || sel._id || sel.supplierCode || sel.email || sel.name;
-    if (!confirm(`Are you sure you want to PERMANENTLY delete supplier "${sel.name}" (${sel.email || targetIdentifier})?`)) return;
+    if (
+      !confirm(
+        `Are you sure you want to PERMANENTLY delete supplier "${sel.name}" (${sel.email || targetIdentifier})?`,
+      )
+    )
+      return;
     try {
       if (sel.id) db.deleteSupplier(sel.id);
       if (sel.email) db.deleteSupplier(sel.email);
@@ -299,7 +328,10 @@ function Suppliers() {
     }
   };
 
-  const totalPending = suppliers.reduce((sum, s) => sum + (Number(s.pending) || Number(s.pendingPayment) || 0), 0);
+  const totalPending = suppliers.reduce(
+    (sum, s) => sum + (Number(s.pending) || Number(s.pendingPayment) || 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
@@ -326,8 +358,10 @@ function Suppliers() {
           label="Avg Score"
           v={
             suppliers.length
-              ? Math.round(suppliers.reduce((a, b) => a + (Number(b.score) || 98), 0) / suppliers.length).toString()
-              : "98"
+              ? Math.round(
+                  suppliers.reduce((a, b) => a + (Number(b.score) || 0), 0) / suppliers.length,
+                ).toString()
+              : "0"
           }
         />
         <Kpi
@@ -375,10 +409,16 @@ function Suppliers() {
                         <p className="font-medium">{s.name}</p>
                         <p className="text-[10px] text-muted-foreground">{s.contact}</p>
                       </td>
-                      <td className="py-2.5 text-muted-foreground">{s.category || "General Vendor"}</td>
-                      <td className="py-2.5 text-right">{fmtINR(Number(s.spend) || 0, { compact: true })}</td>
+                      <td className="py-2.5 text-muted-foreground">
+                        {s.category || "General Vendor"}
+                      </td>
+                      <td className="py-2.5 text-right">
+                        {fmtINR(Number(s.spend) || 0, { compact: true })}
+                      </td>
                       <td className="py-2.5 text-right text-warning">
-                        {fmtINR(Number(s.pending) || Number(s.pendingPayment) || 0, { compact: true })}
+                        {fmtINR(Number(s.pending) || Number(s.pendingPayment) || 0, {
+                          compact: true,
+                        })}
                       </td>
                       <td className="py-2.5 text-right">{s.onTime ?? s.reliability ?? 95}%</td>
                       <td className="py-2.5 text-right font-semibold">{s.score ?? 98}</td>
@@ -503,7 +543,10 @@ function Suppliers() {
             </div>
 
             <div className="mt-4 space-y-3">
-              <ScoreBar label="Price Competitiveness" v={sel.priceCompetitiveness ?? Math.round(94 - (100 - (sel.score ?? 98)) / 2)} />
+              <ScoreBar
+                label="Price Competitiveness"
+                v={sel.priceCompetitiveness ?? Math.round(94 - (100 - (sel.score ?? 98)) / 2)}
+              />
               <ScoreBar label="Reliability" v={sel.onTime ?? sel.reliability ?? 95} />
               <ScoreBar label="Quality" v={sel.quality ?? 95} />
               <ScoreBar label="Delivery Speed" v={Math.max(40, 100 - (sel.lead || 5) * 6)} />
@@ -621,7 +664,10 @@ function Suppliers() {
                 value={formPassword}
                 onChange={(e) => setFormPassword(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">The supplier can log into the Supplier Portal (bizora-supplier.onrender.com) using their email and this password.</p>
+              <p className="text-[11px] text-muted-foreground">
+                The supplier can log into the Supplier Portal (bizora-supplier.onrender.com) using
+                their email and this password.
+              </p>
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setAddOpen(false)}>
@@ -632,7 +678,8 @@ function Suppliers() {
                 disabled={saving}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
               >
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Supplier & Create Account
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Supplier & Create
+                Account
               </Button>
             </DialogFooter>
           </form>
@@ -650,12 +697,19 @@ function Suppliers() {
           {createdCredentials && (
             <div className="space-y-4 py-2">
               <p className="text-xs text-muted-foreground">
-                Share these login details with <strong>{createdCredentials.name}</strong> so they can access their dedicated Supplier Portal dashboard, accept purchase orders, and track fulfillment.
+                Share these login details with <strong>{createdCredentials.name}</strong> so they
+                can access their dedicated Supplier Portal dashboard, accept purchase orders, and
+                track fulfillment.
               </p>
               <div className="rounded-lg border border-hairline bg-surface/60 p-4 space-y-2.5 font-mono text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Portal URL:</span>
-                  <a href="https://bizora-supplier.onrender.com" target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1 font-semibold">
+                  <a
+                    href="https://bizora-supplier.onrender.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1 font-semibold"
+                  >
                     bizora-supplier.onrender.com <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
@@ -665,7 +719,9 @@ function Suppliers() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Password:</span>
-                  <span className="font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">{createdCredentials.password}</span>
+                  <span className="font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">
+                    {createdCredentials.password}
+                  </span>
                 </div>
               </div>
 
@@ -684,7 +740,9 @@ function Suppliers() {
                 <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
                   onClick={() => {
-                    const phone = (createdCredentials.phone || "+917588021256").replace(/\s+/g, "").replace("+", "");
+                    const phone = (createdCredentials.phone || "+917588021256")
+                      .replace(/\s+/g, "")
+                      .replace("+", "");
                     const msg = `Namaste ${createdCredentials.name}! 🛍️ Aap ke GrandSquare Supermart Supplier Portal login details tayyar hain:\n\n🌐 Portal: https://bizora-supplier.onrender.com\n📧 Email: ${createdCredentials.email}\n🔑 Password: ${createdCredentials.password}\n\nKripaya login karke pending purchase orders check karein. Dhanyawad!`;
                     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
                     toast.success("WhatsApp message window opened!");

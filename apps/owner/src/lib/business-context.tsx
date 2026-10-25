@@ -426,13 +426,27 @@ export const BusinessDataProvider: React.FC<{ children: React.ReactNode }> = ({ 
           purchaseOrders:
             mappedPurchaseOrders.length > 0
               ? mappedPurchaseOrders
-              : currentSchema.purchaseOrders || [],
+              : isExplicitlyCleared
+                ? []
+                : currentSchema.purchaseOrders || [],
           recommendations:
             mappedRecommendations.length > 0
               ? mappedRecommendations
-              : currentSchema.recommendations || [],
-          anomalies: mappedAnomalies.length > 0 ? mappedAnomalies : currentSchema.anomalies || [],
-          utilities: mappedUtilities.length > 0 ? mappedUtilities : currentSchema.utilities || [],
+              : isExplicitlyCleared
+                ? []
+                : currentSchema.recommendations || [],
+          anomalies:
+            mappedAnomalies.length > 0
+              ? mappedAnomalies
+              : isExplicitlyCleared
+                ? []
+                : currentSchema.anomalies || [],
+          utilities:
+            mappedUtilities.length > 0
+              ? mappedUtilities
+              : isExplicitlyCleared
+                ? []
+                : currentSchema.utilities || [],
         });
         forceRefresh();
 

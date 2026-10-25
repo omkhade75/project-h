@@ -524,6 +524,8 @@ function Forecasting() {
 
   // Compute dynamic daily actuals and predictive projections
   const forecastData = useMemo(() => {
+    if (!hasRealData) return [];
+
     // 1. Group existing transactions by date (YYYY-MM-DD)
     const dailyMap: Record<string, number> = {};
     allTxns.forEach((t) => {
@@ -648,7 +650,7 @@ function Forecasting() {
     }
 
     return points;
-  }, [allTxns, horizon, scenario, serverForecast]);
+  }, [allTxns, horizon, scenario, serverForecast, hasRealData]);
 
   // Dynamically calculate the future projected sum over the selected horizon
   const projectedFutureSum = useMemo(() => {
@@ -795,6 +797,29 @@ function Forecasting() {
   const explanation = getScenarioExplanation();
 
   const getForecastStats = () => {
+    if (!hasRealData) {
+      return [
+        {
+          t: "Footfall",
+          v: "0",
+          c: "0%",
+          isNegative: false,
+        },
+        {
+          t: "Orders",
+          v: "0",
+          c: "0%",
+          isNegative: false,
+        },
+        {
+          t: "Inventory Draw",
+          v: "₹0",
+          c: "0%",
+          isNegative: false,
+        },
+      ];
+    }
+
     const baseDailyTxns = Math.max(1, allTxns.length / 20);
     const horizonDays = horizon === "90d" ? 90 : horizon === "30d" ? 30 : 7;
 

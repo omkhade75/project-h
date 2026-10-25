@@ -1244,6 +1244,13 @@ class SeededDatabase {
   }
 
   public getSuppliers(): Supplier[] {
+    if (typeof window !== "undefined") {
+      const isCleared =
+        window.localStorage.getItem("omnimind_db_cleared") === "true" ||
+        (this.workspaceId &&
+          window.localStorage.getItem(`omnimind_db_${this.workspaceId}_cleared`) === "true");
+      if (isCleared) return [];
+    }
     const memory = this.schema.suppliers || [];
     let custom: Supplier[] = [];
     if (typeof window !== "undefined") {
@@ -1439,6 +1446,9 @@ class SeededDatabase {
           if (k.startsWith("omnimind_db") && !k.endsWith("_cleared")) {
             window.localStorage.setItem(k, JSON.stringify(emptyDatabase()));
             window.localStorage.setItem(`${k}_cleared`, "true");
+          }
+          if (k.startsWith("bizora_custom_")) {
+            window.localStorage.removeItem(k);
           }
         }
       } catch (_) {
