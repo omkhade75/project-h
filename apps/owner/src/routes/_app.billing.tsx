@@ -105,6 +105,14 @@ function RouteComponent() {
 
   // Invoice state
   const [completedTxn, setCompletedTxn] = useState<any>(null);
+  const [invoicePhone, setInvoicePhone] = useState("");
+  const [sendingWhatsAppBill, setSendingWhatsAppBill] = useState(false);
+
+  useEffect(() => {
+    if (completedTxn) {
+      setInvoicePhone(completedTxn.customerPhone || "");
+    }
+  }, [completedTxn]);
 
   // Quick Customer Registration States
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
@@ -395,7 +403,8 @@ function RouteComponent() {
         setFormDepartmentId(safeDepts[0].id);
       }
       if (mergedProds.length > 0 && (!selectedItemSku || selectedItemSku === "custom")) {
-        setSelectedItemSku(mergedProds[0].id);
+        const inStockProd = mergedProds.find((p) => (p.stock || 0) > 0) || mergedProds[0];
+        setSelectedItemSku(inStockProd.id);
       }
     } catch (e) {
       console.warn("Billing page data load fallback triggered:", e);
@@ -453,7 +462,10 @@ function RouteComponent() {
         { id: "dept-general", name: "General Retail", code: "GENERAL" },
       ]);
       setFormDepartmentId("dept-grocery");
-      if (localProds.length > 0) setSelectedItemSku(localProds[0].id);
+      if (localProds.length > 0) {
+        const inStockProd = localProds.find((p) => (p.stock || 0) > 0) || localProds[0];
+        setSelectedItemSku(inStockProd.id);
+      }
     } finally {
       setLoading(false);
     }
@@ -1031,6 +1043,102 @@ function RouteComponent() {
       setWalkinPhone("");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const formatItemizedWhatsAppBill = (txn: any, storeName = "GrandSquare Supermart") => {
+    const custName = txn.customerName || "Valued Customer";
+    const dateStr = txn.date || new Date().toISOString().split("T")[0];
+    const items = Array.isArray(txn.items) ? txn.items : [];
+
+    let msg = `🧾 *TAX INVOICE / DIGITAL RECEIPT*\n`;
+    msg += `🏪 *${storeName}*\n`;
+    msg += `📍 Near Central Mall, Pune · GSTIN: 27AABCG1234F1Z5\n`;
+    msg += `📞 Support: +91 75880 21256\n`;
+    msg += `--------------------------------\n`;
+    msg += `📄 *Invoice #:* ${txn.id || "INV-" + Date.now().toString().slice(-6)}\n`;
+    msg += `📅 *Date:* ${dateStr}\n`;
+    msg += `👤 *Customer:* ${custName}\n`;
+    if (txn.customerPhone || invoicePhone) {
+      msg += `📱 *Phone:* ${invoicePhone || txn.customerPhone}\n`;
+    }
+    msg += `💳 *Payment Mode:* ${txn.paymentMethod || "UPI"} (PAID)\n`;
+    msg += `--------------------------------\n`;
+    msg += `🛒 *PURCHASED ITEMS:*\n`;
+
+    items.forEach((item: any, idx: number) => {
+      const name = item.productName || item.name || item.productId || `Item #${idx + 1}`;
+      const qty = item.quantity || 1;
+      const rate = item.price || item.unitPrice || 0;
+      const itemTotal = item.total || qty * rate;
+      msg += `${idx + 1}. *${name}*\n   ${qty} x ₹${rate} = *₹${itemTotal}*\n`;
+    });
+
+    const subtotal = txn.subtotal || txn.subTotal || 0;
+    const tax = txn.tax || txn.taxAmount || 0;
+    const grandTotal = txn.total || txn.totalAmount || 0;
+
+    msg += `--------------------------------\n`;
+    msg += `Subtotal (Excl. Tax): ₹${subtotal}\n`;
+    msg += `GST Tax: ₹${tax}\n`;
+    msg += `*TOTAL AMOUNT PAID: ₹${grandTotal}*\n`;
+    msg += `--------------------------------\n`;
+    msg += `✅ *STATUS: CONFIRMED & RECEIVED*\n\n`;
+    msg += `✨ Thank you for shopping with ${storeName}!\n`;
+    msg += `Goods exchangeable within 7 days against this digital invoice.\n`;
+    msg += `_Generated via Bizora Retail OS · 100% Paperless_`;
+
+    return msg;
+  };
+
+  const handleSendWhatsAppBill = async () => {
+    if (!completedTxn) return;
+    const rawPhone = invoicePhone || completedTxn.customerPhone || "";
+    let cleanPhone = rawPhone.replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length < 10) {
+      toast.error("Please enter a valid 10-digit customer mobile number for WhatsApp.");
+      return;
+    }
+    if (cleanPhone.length === 10) {
+      cleanPhone = "91" + cleanPhone;
+    }
+
+    setSendingWhatsAppBill(true);
+    const billMsg = formatItemizedWhatsAppBill(completedTxn);
+
+    // 1. Direct WhatsApp dispatch link
+    try {
+      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(billMsg)}`;
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(billMsg)}`, "_blank");
+    }
+
+    // 2. Concurrently log to backend MessageLog for Communication Hub Ledger
+    try {
+      const { sendWhatsAppMessageServer } = await import("@/lib/api-whatsapp-config");
+      await sendWhatsAppMessageServer({
+        recipientPhone: cleanPhone,
+        recipientName: completedTxn.customerName || "Customer",
+        message: billMsg,
+        messageType: "BILL",
+        isDirect: true,
+        status: "SENT",
+      });
+      toast.success(`🧾 WhatsApp Bill dispatched to +${cleanPhone}!`, {
+        description: "Logged to Communication Hub Ledger as BILL (SENT).",
+      });
+    } catch (err) {
+      console.warn("Could not log bill to backend ledger:", err);
+      toast.success(`🧾 WhatsApp chat opened for +${cleanPhone}!`);
+    } finally {
+      setSendingWhatsAppBill(false);
     }
   };
 
@@ -1726,37 +1834,56 @@ function RouteComponent() {
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            {completedTxn?.customerPhone && (
+          {/* WhatsApp Digital Bill Card */}
+          <div className="rounded-lg border border-[#25D366]/40 bg-[#25D366]/5 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#25D366] flex items-center gap-1.5">
+                <WhatsappIcon className="h-4 w-4" /> Send Itemized WhatsApp Bill
+              </span>
+              <span className="text-[10px] text-muted-foreground font-semibold">1-Click Paperless</span>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Customer WhatsApp (+91 or 10-digit mobile)"
+                value={invoicePhone}
+                onChange={(e) => setInvoicePhone(e.target.value)}
+                className="h-8 text-xs bg-background border-hairline font-mono"
+              />
               <Button
                 type="button"
-                variant="outline"
-                onClick={() => {
-                  const phone = (completedTxn.customerPhone || "").replace(/\D/g, "");
-                  const cleanPhone = phone.length === 10 ? "91" + phone : phone;
-                  const billMsg = `Namaste ${completedTxn.customerName || "Customer"}! 🧾 GrandSquare Supermart se aapka digital bill:\n\nInvoice: #${completedTxn.id}\nDate: ${completedTxn.date}\nTotal Amount: ₹${completedTxn.total || completedTxn.totalAmount}\nPayment: ${completedTxn.paymentMethod || "PAID"}\n\nDhanyavaad! Phir zaroor aayein.`;
-                  window.open(
-                    `https://wa.me/${cleanPhone}?text=${encodeURIComponent(billMsg)}`,
-                    "_blank",
-                  );
-                }}
-                className="w-full sm:w-auto border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 font-bold"
+                onClick={handleSendWhatsAppBill}
+                disabled={sendingWhatsAppBill}
+                className="bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs h-8 px-3 shrink-0 flex items-center gap-1.5 shadow-sm"
               >
-                <WhatsappIcon className="h-4 w-4 mr-2 text-[#25D366]" /> Send WhatsApp Bill
+                {sendingWhatsAppBill ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <WhatsappIcon className="h-3.5 w-3.5" />
+                )}
+                Send Bill
               </Button>
-            )}
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Sends itemized GST tax invoice directly to customer's WhatsApp & logs to Communication Hub Ledger.
+            </p>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-1">
             <Button
               type="button"
               variant="outline"
               onClick={() => window.print()}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto text-xs"
             >
               <FileText className="h-4 w-4 mr-2" /> Print Receipt
             </Button>
             <Button
               type="button"
-              onClick={() => setCompletedTxn(null)}
-              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
+              onClick={() => {
+                setCompletedTxn(null);
+                setInvoicePhone("");
+              }}
+              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold"
             >
               Start New POS Sale
             </Button>

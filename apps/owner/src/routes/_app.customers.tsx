@@ -86,6 +86,68 @@ function WhatsappIcon({ className }: { className?: string }) {
   );
 }
 
+export interface SmartOfferTemplate {
+  id: string;
+  title: string;
+  tag: string;
+  discount: string;
+  generateText: (custName: string, storeName: string, extra?: { dueAmount?: number; phone?: string }) => string;
+  generateVoiceScript: (custName: string, storeName: string, extra?: { dueAmount?: number }) => string;
+}
+
+export const SMART_OFFER_TEMPLATES: SmartOfferTemplate[] = [
+  {
+    id: "welcome-15",
+    title: "🎁 15% Welcome Discount",
+    tag: "New & First-Time Buyers",
+    discount: "15% OFF",
+    generateText: (name, store) =>
+      `Namaste ${name}! 🛍️ Aapka swagat hai ${store} par! Aapke next order par paayein flat 15% discount coupon code: *BIZORA15*. Valid on fresh groceries, dairy & FMCG. Free express 10-min delivery available today!`,
+    generateVoiceScript: (name, store) =>
+      `Namaste ${name}! ${store} se aap ke liye special 15% discount offer tayyar hai coupon code BIZORA15 ke saath. Aaj hi store visit karein ya order place karein. Dhanyavaad!`,
+  },
+  {
+    id: "vip-loyalty-20",
+    title: "👑 20% VIP Loyalty Reward",
+    tag: "High-LTV & Platinum Members",
+    discount: "20% OFF",
+    generateText: (name, store) =>
+      `Namaste ${name}! 👑 Aap hamare sabse valued VIP customer hain. ${store} ki taraf se aapko milta hai exclusive 20% flat loyalty cashback coupon code: *VIP20*. Valid till this Sunday. Dhanyavaad aapke continuous support ke liye!`,
+    generateVoiceScript: (name, store) =>
+      `Namaste ${name}! ${store} se aapke liye vishesh 20% flat VIP loyalty discount tayyar hai. Aap hamare sabse pasandeeda customer hain, coupon VIP20 use karke instant discount paayein.`,
+  },
+  {
+    id: "weekend-bogo",
+    title: "🛒 Weekend BOGO & Fresh Arrivals",
+    tag: "Weekend Footfall Surge",
+    discount: "BUY 1 GET 1",
+    generateText: (name, store) =>
+      `Namaste ${name}! 🛒 ${store} par is weekend dhamaka offers shuru hain! Fresh fruits, dairy aur organic groceries par BUY 1 GET 1 FREE offers live hain. Aaj hi shop karein aur maximum bachat karein!`,
+    generateVoiceScript: (name, store) =>
+      `Namaste ${name}! ${store} par weekend grocery dhamaka shuru ho chuka hai. Fresh fruits aur daily essentials par Buy 1 Get 1 free offer uplabdh hai. Zaroor visit karein!`,
+  },
+  {
+    id: "khata-reminder",
+    title: "💳 Khata Due Payment Reminder",
+    tag: "Accounts & Credit Recovery",
+    discount: "ZERO DUES",
+    generateText: (name, store, extra) =>
+      `Namaste ${name}! 💳 ${store} se humble reminder: Aapke store khata account mein ₹${extra?.dueAmount || 450} ka pending balance remaining hai. Kripya UPI ya cash se clear kar dein. UPI Pay: upi://pay?pa=store.bizora@okaxis&pn=${encodeURIComponent(store)}&am=${extra?.dueAmount || 450}. Dhanyavaad!`,
+    generateVoiceScript: (name, store, extra) =>
+      `Namaste ${name}! ${store} se humble payment reminder. Aapke account mein ₹${extra?.dueAmount || 450} ka khata balance baaki hai. Kripya samay par clear kar dein. Aapka din shubh rahe!`,
+  },
+  {
+    id: "custom-offer",
+    title: "✍️ Custom Personalized Offer",
+    tag: "Custom Promotional Broadcast",
+    discount: "CUSTOM",
+    generateText: (name, store) =>
+      `Namaste ${name}! 🌟 ${store} se aap ke liye vishesh updates aur offers live hain. Visit our store today!`,
+    generateVoiceScript: (name, store) =>
+      `Namaste ${name}! ${store} se aap ke liye vishesh update hai. Hum se judne ke liye dhanyavaad!`,
+  },
+];
+
 const defaultRegisteredCustomer: CustomerListItem = {
   id: "cust-001",
   customerCode: "CUST-001",
@@ -129,11 +191,10 @@ export function CustomersPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [waModalOpen, setWaModalOpen] = useState(false);
-  const [waName, setWaName] = useState("Om Khade");
-  const [waPhone, setWaPhone] = useState("+91 75880 21256");
-  const [waMessage, setWaMessage] = useState(
-    "Namaste Om Khade! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!",
-  );
+  const [selectedOfferId, setSelectedOfferId] = useState<string>("welcome-15");
+  const [waName, setWaName] = useState("");
+  const [waPhone, setWaPhone] = useState("");
+  const [waMessage, setWaMessage] = useState("");
   const [waSending, setWaSending] = useState(false);
   const [isBroadcastMode, setIsBroadcastMode] = useState(false);
   const [broadcastAudience, setBroadcastAudience] = useState<"all" | "vip" | "loyal">("all");
@@ -143,11 +204,9 @@ export function CustomersPage() {
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [voiceCallMode, setVoiceCallMode] = useState<"browser" | "cellular">("browser");
   const [voiceErrorDetails, setVoiceErrorDetails] = useState<string | null>(null);
-  const [voiceName, setVoiceName] = useState("Om Khade");
-  const [voicePhone, setVoicePhone] = useState("+91 75880 21256");
-  const [voiceScript, setVoiceScript] = useState(
-    "Namaste Om Khade! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.",
-  );
+  const [voiceName, setVoiceName] = useState("");
+  const [voicePhone, setVoicePhone] = useState("");
+  const [voiceScript, setVoiceScript] = useState("");
   const [cellularDialing, setCellularDialing] = useState(false);
   const [cellularCallStatus, setCellularCallStatus] = useState<
     "idle" | "connecting" | "active" | "failed"
@@ -468,11 +527,11 @@ export function CustomersPage() {
       // 4. Update Autonomous Voice & WhatsApp target state immediately
       setVoiceName(fullName);
       setVoicePhone(cleanPhone);
-      setVoiceScript(
-        `Namaste ${fullName}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`,
-      );
       setWaName(fullName);
       setWaPhone(cleanPhone);
+      const tmpl = SMART_OFFER_TEMPLATES.find((t) => t.id === selectedOfferId) || SMART_OFFER_TEMPLATES[0];
+      setVoiceScript(tmpl.generateVoiceScript(fullName, "GrandSquare Supermart"));
+      setWaMessage(tmpl.generateText(fullName, "GrandSquare Supermart"));
 
       toast.success(`Successfully saved: ${fullName} (${cleanPhone}).`);
       setEditOpen(false);
@@ -553,35 +612,87 @@ export function CustomersPage() {
     return clean;
   };
 
+  const handleSelectOfferTemplate = (templateId: string, customCustName?: string, customStore?: string) => {
+    setSelectedOfferId(templateId);
+    const tmpl = SMART_OFFER_TEMPLATES.find((t) => t.id === templateId) || SMART_OFFER_TEMPLATES[0];
+    const targetName = customCustName ?? (waName || activeSelectedCust?.name || "Customer");
+    const store = customStore || "GrandSquare Supermart";
+    const dueAmount = (activeSelectedCust as any)?.khataBalance || 450;
+    const generated = tmpl.generateText(targetName, store, { dueAmount });
+    setWaMessage(generated);
+    setVoiceScript(tmpl.generateVoiceScript(targetName, store, { dueAmount }));
+  };
+
   const handleOpenWaModal = (c?: CustomerListItem) => {
-    const targetCust = c || activeSelectedCust || defaultRegisteredCustomer;
+    const targetCust = c || activeSelectedCust || selectedCust || customers[0];
     const name =
-      (targetCust.name || `${targetCust.firstName || ""} ${targetCust.lastName || ""}`).trim() ||
+      (targetCust?.name || `${targetCust?.firstName || ""} ${targetCust?.lastName || ""}`).trim() ||
       "Customer";
+    const phone = targetCust?.phone || "";
     setWaName(name);
-    setWaPhone(targetCust.phone);
-    setWaMessage(
-      `Namaste ${name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`,
-    );
+    setWaPhone(phone);
+
+    // Auto-select smart template based on customer segment
+    let initialOfferId = "welcome-15";
+    if (
+      targetCust?.segment === "VIP Champions" ||
+      targetCust?.loyaltyTier === "Platinum" ||
+      (targetCust?.spend || 0) > 10000
+    ) {
+      initialOfferId = "vip-loyalty-20";
+    } else if ((targetCust as any)?.khataBalance > 0) {
+      initialOfferId = "khata-reminder";
+    }
+    setSelectedOfferId(initialOfferId);
+
+    const tmpl = SMART_OFFER_TEMPLATES.find((t) => t.id === initialOfferId) || SMART_OFFER_TEMPLATES[0];
+    const store = "GrandSquare Supermart";
+    const dueAmount = (targetCust as any)?.khataBalance || 450;
+    setWaMessage(tmpl.generateText(name, store, { dueAmount }));
+    setVoiceScript(tmpl.generateVoiceScript(name, store, { dueAmount }));
     setWaModalOpen(true);
   };
 
-  const handleDirectOpenWa = () => {
+  const handleDirectOpenWa = async () => {
     const cleanPhone = formatPhoneForWA(waPhone);
-    // Use location.href to avoid popup blockers — this navigates the current tab
-    // but we use a link click approach that is more reliable across browsers
+    if (!cleanPhone || cleanPhone.length < 10) {
+      toast.error("Please enter a valid 10-digit customer mobile number for WhatsApp.");
+      return;
+    }
+
+    // 1. Direct WhatsApp dispatch link
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success(`💬 WHATSAPP CHAT OPENED!`, {
-      description: `Opening WhatsApp for +${cleanPhone}. Tap "Send" in WhatsApp to deliver the message.`,
-      duration: 8000,
-    });
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      window.open(url, "_blank");
+    }
+
+    // 2. Concurrently record into backend MessageLog for Communication Hub Ledger
+    try {
+      const waConfigApi = await import("@/lib/api-whatsapp-config");
+      await waConfigApi.sendWhatsAppMessageServer({
+        recipientPhone: cleanPhone,
+        recipientName: waName || "Customer",
+        message: waMessage,
+        messageType: "CRM_OFFER",
+        status: "SENT",
+        isDirect: true,
+      });
+      toast.success(`💬 WhatsApp offer dispatched to +${cleanPhone}!`, {
+        description: `Logged in Communication Hub Ledger as CRM_OFFER (SENT).`,
+      });
+    } catch (err) {
+      console.warn("Could not log WhatsApp offer to backend ledger:", err);
+      toast.success(`💬 WhatsApp chat opened for +${cleanPhone}!`);
+    }
+
     setWaModalOpen(false);
   };
 
@@ -677,23 +788,35 @@ export function CustomersPage() {
   const handleNotifyWhatsApp = () => {
     setIsBroadcastMode(true);
     setWaName("All Registered Customers");
-    setWaPhone("+91 75880 21256 (Broadcast Queue)");
-    setWaMessage(
-      `Namaste {name}! 🛍️ GrandSquare Supermart se aap ke liye special 15% VIP discount offer tayyar hai. Coupon Code: BIZORA15. Exclusive 10-minute delivery available today!`,
-    );
+    setWaPhone("+91-BROADCAST-QUEUE");
+    const tmpl = SMART_OFFER_TEMPLATES.find((t) => t.id === selectedOfferId) || SMART_OFFER_TEMPLATES[0];
+    setWaMessage(tmpl.generateText("{name}", "GrandSquare Supermart"));
     setWaModalOpen(true);
   };
 
   const handleOpenVoiceModal = () => {
-    const cust = activeSelectedCust || selectedCust;
+    const cust = activeSelectedCust || selectedCust || customers[0];
     const name =
-      (cust?.name || `${cust?.firstName || ""} ${cust?.lastName || ""}`).trim() || "Rahul Sharma";
-    const phone = cust?.phone || "+91 75880 21256";
+      (cust?.name || `${cust?.firstName || ""} ${cust?.lastName || ""}`).trim() || "Customer";
+    const phone = cust?.phone || "";
     setVoiceName(name);
     setVoicePhone(phone);
-    setVoiceScript(
-      `Namaste ${name}! GrandSquare Supermart se aap ke liye special 15% discount offer tayyar hai.`,
-    );
+
+    let tmplId = "welcome-15";
+    if (
+      cust?.segment === "VIP Champions" ||
+      cust?.loyaltyTier === "Platinum" ||
+      (cust?.spend || 0) > 10000
+    ) {
+      tmplId = "vip-loyalty-20";
+    } else if ((cust as any)?.khataBalance > 0) {
+      tmplId = "khata-reminder";
+    }
+    const tmpl = SMART_OFFER_TEMPLATES.find((t) => t.id === tmplId) || SMART_OFFER_TEMPLATES[0];
+    const store = "GrandSquare Supermart";
+    const dueAmount = (cust as any)?.khataBalance || 450;
+    setVoiceScript(tmpl.generateVoiceScript(name, store, { dueAmount }));
+
     setVoiceCallMode("browser");
     setCellularCallStatus("idle");
     setVoiceErrorDetails(null);
@@ -1514,24 +1637,36 @@ export function CustomersPage() {
                 <Label htmlFor="voice-phone">Target Phone Number</Label>
                 <Input
                   id="voice-phone"
-                  className="bg-surface border-hairline font-mono font-bold text-sm w-full"
+                  className={cn(
+                    "bg-surface border-hairline font-mono font-bold text-sm w-full",
+                    !voicePhone ? "border-amber-500 bg-amber-500/10 text-amber-600" : "text-foreground"
+                  )}
                   value={voicePhone}
                   onChange={(e) => setVoicePhone(e.target.value)}
-                  placeholder="+91 75880 21256"
+                  placeholder="e.g. +91 98201 12345"
                   required
                 />
-                <p className="text-[10px] text-muted-foreground break-words">
-                  {voiceCallMode === "browser"
-                    ? "Interactive in-browser voice demo with natural Hindi voice."
-                    : "Outbound carrier call will be dispatched directly to this mobile phone."}
-                </p>
+                {!voicePhone ? (
+                  <p className="text-[10px] text-amber-500 font-semibold">
+                    ⚠️ Enter target 10-digit mobile number to initiate call
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground break-words">
+                    {voiceCallMode === "browser"
+                      ? "Interactive in-browser voice demo with natural Hindi voice."
+                      : "Outbound carrier call will be dispatched directly to this mobile phone."}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="voice-script">AI Voice Agent Script & Offer</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="voice-script">AI Voice Agent Script & Offer</Label>
+                  <span className="text-[10px] text-muted-foreground">Personalized for {voiceName || "Customer"}</span>
+                </div>
                 <Textarea
                   id="voice-script"
-                  className="bg-surface border-hairline text-xs w-full"
+                  className="bg-surface border-hairline text-xs w-full font-mono"
                   rows={3}
                   value={voiceScript}
                   onChange={(e) => setVoiceScript(e.target.value)}
@@ -1560,8 +1695,8 @@ export function CustomersPage() {
                     {cellularDialing
                       ? "Connecting Call..."
                       : voiceCallMode === "browser"
-                        ? `🎙️ START IN-BROWSER VOICE CALL WITH ${voiceName.toUpperCase()}`
-                        : `📞 DIAL ${voiceName.toUpperCase()} VIA CELLULAR`}
+                        ? `🎙️ START IN-BROWSER VOICE CALL WITH ${(voiceName || "CUSTOMER").toUpperCase()}`
+                        : `📞 DIAL ${(voiceName || "CUSTOMER").toUpperCase()} VIA CELLULAR`}
                   </span>
                 </Button>
               </DialogFooter>
@@ -1572,11 +1707,11 @@ export function CustomersPage() {
 
       {/* WhatsApp Outbound Message Modal */}
       <Dialog open={waModalOpen} onOpenChange={setWaModalOpen}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[480px] p-4 sm:p-6 overflow-x-hidden box-border">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-[calc(100vw-1.5rem)] sm:max-w-[540px] p-4 sm:p-6 overflow-x-hidden box-border">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground text-sm sm:text-base">
               <WhatsappIcon className="h-5 w-5 text-[#25D366] shrink-0" />
-              {isBroadcastMode ? "📢 WhatsApp Campaign Broadcast" : "WhatsApp Message Dispatcher"}
+              {isBroadcastMode ? "📢 WhatsApp Campaign Broadcast" : "WhatsApp Smart Offer & Message Dispatcher"}
             </DialogTitle>
           </DialogHeader>
 
@@ -1631,39 +1766,79 @@ export function CustomersPage() {
                 </p>
               </div>
             ) : (
-              <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="wa-name">Recipient Name</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg bg-surface border border-hairline">
+                <div className="space-y-1">
+                  <Label htmlFor="wa-name">Customer Name</Label>
                   <Input
                     id="wa-name"
-                    className="bg-surface border-hairline"
+                    className="bg-background border-hairline h-8 text-xs font-semibold"
                     value={waName}
-                    onChange={(e) => setWaName(e.target.value)}
-                    placeholder="e.g. Om Khade"
+                    onChange={(e) => {
+                      setWaName(e.target.value);
+                      handleSelectOfferTemplate(selectedOfferId, e.target.value);
+                    }}
+                    placeholder="Customer Name"
                     required
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="wa-phone">Target WhatsApp Phone Number</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="wa-phone">WhatsApp Mobile (+91)</Label>
                   <Input
                     id="wa-phone"
-                    className="bg-surface border-hairline font-mono font-bold text-sm text-[#25D366]"
+                    className={cn(
+                      "bg-background border-hairline font-mono font-bold text-xs h-8",
+                      !waPhone ? "border-amber-500 bg-amber-500/10 text-amber-600" : "text-[#25D366]"
+                    )}
                     value={waPhone}
                     onChange={(e) => setWaPhone(e.target.value)}
-                    placeholder="+91 75880 21256"
+                    placeholder="e.g. 98201 12345"
                     required
                   />
-                  <p className="text-[10px] text-muted-foreground">
-                    Ensure phone includes country code (e.g. +91 75880 21256).
-                  </p>
+                  {!waPhone && (
+                    <p className="text-[10px] text-amber-500 font-semibold">
+                      ⚠️ Enter customer's 10-digit mobile number
+                    </p>
+                  )}
                 </div>
-              </>
+              </div>
             )}
+
+            {/* Smart Offer Selector */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold text-foreground">
+                  Select Smart Offer / Campaign Template
+                </Label>
+                <span className="text-[10px] text-primary font-semibold">1-Click Auto Personalized</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {SMART_OFFER_TEMPLATES.map((tmpl) => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => handleSelectOfferTemplate(tmpl.id)}
+                    className={cn(
+                      "p-2 rounded-lg border text-left transition-all",
+                      selectedOfferId === tmpl.id
+                        ? "border-[#25D366] bg-[#25D366]/10 text-foreground font-bold shadow-sm"
+                        : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                    )}
+                  >
+                    <p className="text-[11px] font-semibold leading-tight">{tmpl.title}</p>
+                    <p className="text-[9px] text-muted-foreground mt-0.5">{tmpl.tag}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <Label htmlFor="wa-msg">WhatsApp Promotional Message</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="wa-msg">WhatsApp Offer Message Preview</Label>
+                <span className="text-[10px] text-muted-foreground">Editable message body</span>
+              </div>
               <Textarea
                 id="wa-msg"
-                className="bg-surface border-hairline text-xs"
+                className="bg-surface border-hairline text-xs font-mono"
                 rows={4}
                 value={waMessage}
                 onChange={(e) => setWaMessage(e.target.value)}
@@ -1680,10 +1855,10 @@ export function CustomersPage() {
                   className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold flex items-center justify-center gap-2 h-11 text-xs shadow-lg"
                 >
                   <WhatsappIcon className="h-5 w-5" />
-                  Open WhatsApp Chat & Send Message
+                  Open WhatsApp Chat & Send Offer
                 </Button>
                 <p className="text-[10px] text-muted-foreground mt-1.5">
-                  Opens WhatsApp with your message pre-filled. Tap "Send" in WhatsApp to deliver.
+                  Pre-fills message for +{waPhone || "customer"} and records in Communication Hub Ledger.
                 </p>
               </div>
 
