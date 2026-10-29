@@ -59,7 +59,8 @@ export const Route = createFileRoute("/_app/customer-portal")({
       { title: "Bizora Customer | Express Storefront" },
       {
         name: "description",
-        content: "Live 10-minute neighborhood grocery and daily essentials from your nearest verified store.",
+        content:
+          "Live 10-minute neighborhood grocery and daily essentials from your nearest verified store.",
       },
     ],
   }),
@@ -97,7 +98,13 @@ function getProductImage(name: string, category: string): string {
     return "https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=600&q=80";
   if (n.includes("apple") || n.includes("banana") || n.includes("orange"))
     return "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=600&q=80";
-  if (n.includes("atta") || n.includes("flour") || n.includes("wheat") || n.includes("ashirvaad") || n.includes("aashirvaad"))
+  if (
+    n.includes("atta") ||
+    n.includes("flour") ||
+    n.includes("wheat") ||
+    n.includes("ashirvaad") ||
+    n.includes("aashirvaad")
+  )
     return "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80";
   if (n.includes("rice") || n.includes("basmati") || n.includes("daawat"))
     return "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80";
@@ -105,15 +112,45 @@ function getProductImage(name: string, category: string): string {
     return "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80";
   if (n.includes("dal") || n.includes("toor") || n.includes("moong") || n.includes("pulse"))
     return "https://images.unsplash.com/photo-1585994192701-f1a505c817ea?auto=format&fit=crop&w=600&q=80";
-  if (n.includes("noodle") || n.includes("maggi") || n.includes("pasta") || n.includes("snack") || n.includes("biscuit"))
+  if (
+    n.includes("noodle") ||
+    n.includes("maggi") ||
+    n.includes("pasta") ||
+    n.includes("snack") ||
+    n.includes("biscuit")
+  )
     return "https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=600&q=80";
-  if (n.includes("headphone") || n.includes("sony") || n.includes("earphone") || n.includes("audio") || c.includes("tech"))
+  if (
+    n.includes("headphone") ||
+    n.includes("sony") ||
+    n.includes("earphone") ||
+    n.includes("audio") ||
+    c.includes("tech")
+  )
     return "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80";
-  if (n.includes("printer") || n.includes("hp") || n.includes("laptop") || n.includes("electronics") || c.includes("electronic"))
+  if (
+    n.includes("printer") ||
+    n.includes("hp") ||
+    n.includes("laptop") ||
+    n.includes("electronics") ||
+    c.includes("electronic")
+  )
     return "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?auto=format&fit=crop&w=600&q=80";
-  if (n.includes("foundation") || n.includes("lakme") || n.includes("cream") || n.includes("lipstick") || c.includes("beauty"))
+  if (
+    n.includes("foundation") ||
+    n.includes("lakme") ||
+    n.includes("cream") ||
+    n.includes("lipstick") ||
+    c.includes("beauty")
+  )
     return "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80";
-  if (n.includes("jeans") || n.includes("levi") || n.includes("shirt") || n.includes("saree") || c.includes("fashion"))
+  if (
+    n.includes("jeans") ||
+    n.includes("levi") ||
+    n.includes("shirt") ||
+    n.includes("saree") ||
+    c.includes("fashion")
+  )
     return "https://images.unsplash.com/photo-1542272604-780c36856d67?auto=format&fit=crop&w=600&q=80";
   if (c.includes("grocery"))
     return "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
@@ -133,7 +170,9 @@ export function CustomerPortal() {
   const [inStockOnly, setInStockOnly] = useState(true);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [address, setAddress] = useState("18th Road, Near Turner Road, Bandra West, Mumbai 400050");
-  const [paymentMethod, setPaymentMethod] = useState<"UPI_RAZORPAY" | "CARD" | "COD">("UPI_RAZORPAY");
+  const [paymentMethod, setPaymentMethod] = useState<"UPI_RAZORPAY" | "CARD" | "COD">(
+    "UPI_RAZORPAY",
+  );
   const [showUpiModal, setShowUpiModal] = useState(false);
   const [pendingOrderDetails, setPendingOrderDetails] = useState<any>(null);
 
@@ -152,16 +191,99 @@ export function CustomerPortal() {
 
   // Transform Database Products into Bizora Fresh Store Items
   const catalogProducts = useMemo(() => {
-    const baseItems = dbProducts && dbProducts.length > 0 ? dbProducts : [
-      { id: "SKU-10021", name: "Amul Taaza Milk 1L", category: "Dairy & Grocery", dept: "Grocery", price: 68, cost: 54, stock: 128, reorder: 200, status: "ok" },
-      { id: "SKU-10022", name: "Amul Butter 500g", category: "Dairy & Grocery", dept: "Grocery", price: 265, cost: 210, stock: 45, reorder: 50, status: "low" },
-      { id: "SKU-10023", name: "Sony WH-1000XM5 Wireless Headphones", category: "Electronics", dept: "Electronics", price: 29990, cost: 24000, stock: 8, reorder: 10, status: "ok" },
-      { id: "SKU-10024", name: "Lakmé Perfecting Liquid Foundation", category: "Beauty", dept: "Beauty", price: 185, cost: 140, stock: 4, reorder: 15, status: "critical" },
-      { id: "SKU-10025", name: "Nescafé Gold Blend Premium Coffee 200g", category: "Beverages", dept: "Grocery", price: 649, cost: 500, stock: 32, reorder: 40, status: "ok" },
-      { id: "SKU-10026", name: "Organic Ratnagiri Alphonso Mangoes 1kg", category: "Fresh Fruits", dept: "Grocery", price: 499, cost: 380, stock: 60, reorder: 30, status: "ok" },
-      { id: "SKU-10027", name: "Levi's 511 Slim Fit Denim Jeans", category: "Fashion", dept: "Fashion", price: 3499, cost: 2500, stock: 14, reorder: 20, status: "ok" },
-      { id: "SKU-10028", name: "HP LaserJet Pro Wireless Printer", category: "Electronics", dept: "Electronics", price: 16999, cost: 13500, stock: 5, reorder: 5, status: "ok" },
-    ];
+    const baseItems =
+      dbProducts && dbProducts.length > 0
+        ? dbProducts
+        : [
+            {
+              id: "SKU-10021",
+              name: "Amul Taaza Milk 1L",
+              category: "Dairy & Grocery",
+              dept: "Grocery",
+              price: 68,
+              cost: 54,
+              stock: 128,
+              reorder: 200,
+              status: "ok",
+            },
+            {
+              id: "SKU-10022",
+              name: "Amul Butter 500g",
+              category: "Dairy & Grocery",
+              dept: "Grocery",
+              price: 265,
+              cost: 210,
+              stock: 45,
+              reorder: 50,
+              status: "low",
+            },
+            {
+              id: "SKU-10023",
+              name: "Sony WH-1000XM5 Wireless Headphones",
+              category: "Electronics",
+              dept: "Electronics",
+              price: 29990,
+              cost: 24000,
+              stock: 8,
+              reorder: 10,
+              status: "ok",
+            },
+            {
+              id: "SKU-10024",
+              name: "Lakmé Perfecting Liquid Foundation",
+              category: "Beauty",
+              dept: "Beauty",
+              price: 185,
+              cost: 140,
+              stock: 4,
+              reorder: 15,
+              status: "critical",
+            },
+            {
+              id: "SKU-10025",
+              name: "Nescafé Gold Blend Premium Coffee 200g",
+              category: "Beverages",
+              dept: "Grocery",
+              price: 649,
+              cost: 500,
+              stock: 32,
+              reorder: 40,
+              status: "ok",
+            },
+            {
+              id: "SKU-10026",
+              name: "Organic Ratnagiri Alphonso Mangoes 1kg",
+              category: "Fresh Fruits",
+              dept: "Grocery",
+              price: 499,
+              cost: 380,
+              stock: 60,
+              reorder: 30,
+              status: "ok",
+            },
+            {
+              id: "SKU-10027",
+              name: "Levi's 511 Slim Fit Denim Jeans",
+              category: "Fashion",
+              dept: "Fashion",
+              price: 3499,
+              cost: 2500,
+              stock: 14,
+              reorder: 20,
+              status: "ok",
+            },
+            {
+              id: "SKU-10028",
+              name: "HP LaserJet Pro Wireless Printer",
+              category: "Electronics",
+              dept: "Electronics",
+              price: 16999,
+              cost: 13500,
+              stock: 5,
+              reorder: 5,
+              status: "ok",
+            },
+          ];
 
     return baseItems.map((p: any) => {
       const img = getProductImage(p.name, p.category || p.dept || "");
@@ -185,8 +307,13 @@ export function CustomerPortal() {
   // Filter Catalog Products
   const filteredProducts = useMemo(() => {
     return catalogProducts.filter((p) => {
-      const matchCat = selectedCategory === "All" || p.category.includes(selectedCategory) || p.dept.includes(selectedCategory);
-      const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCat =
+        selectedCategory === "All" ||
+        p.category.includes(selectedCategory) ||
+        p.dept.includes(selectedCategory);
+      const matchSearch =
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase());
       const matchStock = inStockOnly ? p.isAvailableInNearestShop : true;
       return matchCat && matchSearch && matchStock;
     });
@@ -197,7 +324,7 @@ export function CustomerPortal() {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
         );
       }
       return [
@@ -219,30 +346,51 @@ export function CustomerPortal() {
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((item) => {
-          if (item.id === id) {
-            const newQty = item.quantity + delta;
-            return newQty > 0 ? { ...item, quantity: newQty } : null;
-          }
-          return item;
-        })
-        .filter(Boolean) as CartItem[]
+    setCart(
+      (prev) =>
+        prev
+          .map((item) => {
+            if (item.id === id) {
+              const newQty = item.quantity + delta;
+              return newQty > 0 ? { ...item, quantity: newQty } : null;
+            }
+            return item;
+          })
+          .filter(Boolean) as CartItem[],
     );
   };
 
-  const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
-  const cartSavings = useMemo(() => cart.reduce((sum, item) => sum + (item.mrp - item.price) * item.quantity, 0), [cart]);
+  const cartTotal = useMemo(
+    () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cart],
+  );
+  const cartSavings = useMemo(
+    () => cart.reduce((sum, item) => sum + (item.mrp - item.price) * item.quantity, 0),
+    [cart],
+  );
 
   // Handle Hyperlocal Order Placement with Category Store Routing
   const handlePlaceOrder = () => {
     if (cart.length === 0) return toast.error("Your cart is empty!");
 
     // Determine store category based on cart items
-    const hasDairyGrocery = cart.some((i) => ["Grocery", "Dairy", "Milk", "Beverages", "Fresh Fruits"].includes(i.category) || i.name.toLowerCase().includes("milk"));
-    const hasElectronics = cart.some((i) => i.category === "Electronics" || i.name.toLowerCase().includes("headphone") || i.name.toLowerCase().includes("printer"));
-    const hasFashion = cart.some((i) => i.category === "Fashion" || i.name.toLowerCase().includes("jeans") || i.name.toLowerCase().includes("saree"));
+    const hasDairyGrocery = cart.some(
+      (i) =>
+        ["Grocery", "Dairy", "Milk", "Beverages", "Fresh Fruits"].includes(i.category) ||
+        i.name.toLowerCase().includes("milk"),
+    );
+    const hasElectronics = cart.some(
+      (i) =>
+        i.category === "Electronics" ||
+        i.name.toLowerCase().includes("headphone") ||
+        i.name.toLowerCase().includes("printer"),
+    );
+    const hasFashion = cart.some(
+      (i) =>
+        i.category === "Fashion" ||
+        i.name.toLowerCase().includes("jeans") ||
+        i.name.toLowerCase().includes("saree"),
+    );
 
     let matchedStoreName = "GrandSquare Kirana & Supermart (#STR-104)";
     let matchedStoreType = "Kirana / Daily Grocery Store";
@@ -292,7 +440,7 @@ export function CustomerPortal() {
     finalizeOrderPlacement(
       pendingOrderDetails.order,
       pendingOrderDetails.storeName,
-      pendingOrderDetails.storeType
+      pendingOrderDetails.storeType,
     );
     setShowUpiModal(false);
     setPendingOrderDetails(null);
@@ -303,8 +451,8 @@ export function CustomerPortal() {
       paymentMethod === "UPI_RAZORPAY"
         ? "UPI (Instant NPCI QR)"
         : paymentMethod === "CARD"
-        ? "Debit / Credit Card"
-        : "Cash on Delivery (COD)";
+          ? "Debit / Credit Card"
+          : "Cash on Delivery (COD)";
 
     const orderToSave: CustomerOrder = {
       id: order.id,
@@ -345,7 +493,7 @@ export function CustomerPortal() {
       setPlacedOrders(refreshed);
       toast.success(
         `🚨 Nearest Storekeeper "${storeName}" (${storeType}) grabbed & accepted your order! Express 10-min delivery dispatched!`,
-        { duration: 7000 }
+        { duration: 7000 },
       );
     }, 2800);
   };
@@ -366,7 +514,9 @@ export function CustomerPortal() {
                 <BizoraLogoIcon />
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-display font-black tracking-tight text-white">Bizora</span>
+                <span className="text-xl font-display font-black tracking-tight text-white">
+                  Bizora
+                </span>
                 <span className="text-xl font-display font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">
                   AI
                 </span>
@@ -393,10 +543,7 @@ export function CustomerPortal() {
               >
                 Orders ({placedOrders.length})
               </button>
-              <div
-                onClick={() => setIsCheckoutOpen(true)}
-                className="relative cursor-pointer p-1"
-              >
+              <div onClick={() => setIsCheckoutOpen(true)} className="relative cursor-pointer p-1">
                 <ShoppingCart className="h-6 w-6 text-emerald-400" />
                 {cart.length > 0 && (
                   <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-emerald-400 text-[10px] font-black text-slate-950">
@@ -415,7 +562,9 @@ export function CustomerPortal() {
             <MapPin className="h-4 w-4 text-emerald-400 shrink-0" />
             <div>
               <p className="text-[10px] text-slate-400">Deliver to Bandra</p>
-              <p className="font-semibold line-clamp-1 text-white max-w-[200px] truncate text-xs">{address}</p>
+              <p className="font-semibold line-clamp-1 text-white max-w-[200px] truncate text-xs">
+                {address}
+              </p>
             </div>
           </div>
 
@@ -491,7 +640,9 @@ export function CustomerPortal() {
             <button
               onClick={() => setSelectedCategory("All")}
               className={`px-3 py-0.5 rounded-full transition-colors ${
-                selectedCategory === "All" ? "bg-emerald-500 text-slate-950 font-bold" : "hover:text-emerald-400"
+                selectedCategory === "All"
+                  ? "bg-emerald-500 text-slate-950 font-bold"
+                  : "hover:text-emerald-400"
               }`}
             >
               All Essentials
@@ -499,7 +650,9 @@ export function CustomerPortal() {
             <button
               onClick={() => setSelectedCategory("Grocery")}
               className={`px-3 py-0.5 rounded-full transition-colors ${
-                selectedCategory === "Grocery" ? "bg-emerald-500 text-slate-950 font-bold" : "hover:text-emerald-400"
+                selectedCategory === "Grocery"
+                  ? "bg-emerald-500 text-slate-950 font-bold"
+                  : "hover:text-emerald-400"
               }`}
             >
               Dairy & Grocery
@@ -507,7 +660,9 @@ export function CustomerPortal() {
             <button
               onClick={() => setSelectedCategory("Electronics")}
               className={`px-3 py-0.5 rounded-full transition-colors ${
-                selectedCategory === "Electronics" ? "bg-emerald-500 text-slate-950 font-bold" : "hover:text-emerald-400"
+                selectedCategory === "Electronics"
+                  ? "bg-emerald-500 text-slate-950 font-bold"
+                  : "hover:text-emerald-400"
               }`}
             >
               Electronics & Tech
@@ -515,7 +670,9 @@ export function CustomerPortal() {
             <button
               onClick={() => setSelectedCategory("Beauty")}
               className={`px-3 py-0.5 rounded-full transition-colors ${
-                selectedCategory === "Beauty" ? "bg-emerald-500 text-slate-950 font-bold" : "hover:text-emerald-400"
+                selectedCategory === "Beauty"
+                  ? "bg-emerald-500 text-slate-950 font-bold"
+                  : "hover:text-emerald-400"
               }`}
             >
               Beauty & Care
@@ -523,7 +680,9 @@ export function CustomerPortal() {
             <button
               onClick={() => setSelectedCategory("Fashion")}
               className={`px-3 py-0.5 rounded-full transition-colors ${
-                selectedCategory === "Fashion" ? "bg-emerald-500 text-slate-950 font-bold" : "hover:text-emerald-400"
+                selectedCategory === "Fashion"
+                  ? "bg-emerald-500 text-slate-950 font-bold"
+                  : "hover:text-emerald-400"
               }`}
             >
               Apparel
@@ -553,13 +712,16 @@ export function CustomerPortal() {
               <span className="inline-flex items-center gap-1 rounded bg-black/40 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-300 border border-emerald-400/20">
                 ⚡ 10-MINUTE HYPERLOCAL DISPATCH
               </span>
-              <span className="text-[11px] text-emerald-200 hidden sm:inline">Connected to verified local store shelves</span>
+              <span className="text-[11px] text-emerald-200 hidden sm:inline">
+                Connected to verified local store shelves
+              </span>
             </div>
             <h2 className="text-base sm:text-xl font-black tracking-tight text-white">
               Live Stock From Local Kirana & Supermarts
             </h2>
             <p className="text-[11px] sm:text-xs text-slate-200 line-clamp-1">
-              Orders placed here are broadcast to nearby shopkeepers in Bandra. Fastest storekeeper accepts and dispatches in &lt;10 mins.
+              Orders placed here are broadcast to nearby shopkeepers in Bandra. Fastest storekeeper
+              accepts and dispatches in &lt;10 mins.
             </p>
           </div>
           <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-3 text-3xl opacity-75 select-none">
@@ -572,7 +734,9 @@ export function CustomerPortal() {
           <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100">
             <div className="flex items-center gap-1.5">
               <Store className="h-4 w-4 text-emerald-600" />
-              <h3 className="font-bold text-xs text-slate-900">Nearby Fulfilling Stores & Supermarkets</h3>
+              <h3 className="font-bold text-xs text-slate-900">
+                Nearby Fulfilling Stores & Supermarkets
+              </h3>
             </div>
             <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
               3 Stores Online · Instant Dispatch
@@ -582,7 +746,9 @@ export function CustomerPortal() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-200/60 flex items-center justify-between">
               <div>
-                <p className="font-bold text-slate-900 text-[11px]">GrandSquare Kirana & Supermart</p>
+                <p className="font-bold text-slate-900 text-[11px]">
+                  GrandSquare Kirana & Supermart
+                </p>
                 <p className="text-[10px] text-slate-500">Bandra West · 800m away · ★ 4.9</p>
               </div>
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -643,9 +809,7 @@ export function CustomerPortal() {
                         </div>
                         <div className="flex items-center gap-1 text-[10px]">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="font-medium text-emerald-700">
-                            {p.stock} in stock
-                          </span>
+                          <span className="font-medium text-emerald-700">{p.stock} in stock</span>
                         </div>
                       </div>
                     </div>
@@ -654,7 +818,9 @@ export function CustomerPortal() {
                   {/* Price & Add to Cart */}
                   <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5">
                     <div className="flex items-baseline gap-1.5 flex-wrap">
-                      <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1 rounded">-15%</span>
+                      <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1 rounded">
+                        -15%
+                      </span>
                       <span className="text-sm sm:text-base font-extrabold text-slate-900">
                         ₹{p.price.toLocaleString("en-IN")}
                       </span>
@@ -665,11 +831,17 @@ export function CustomerPortal() {
 
                     {inCart ? (
                       <div className="flex items-center justify-between rounded-lg bg-emerald-600 px-2 py-1 text-white font-bold shadow-xs">
-                        <button onClick={() => handleUpdateQuantity(p.id, -1)} className="p-0.5 hover:bg-emerald-700 rounded">
+                        <button
+                          onClick={() => handleUpdateQuantity(p.id, -1)}
+                          className="p-0.5 hover:bg-emerald-700 rounded"
+                        >
                           <Minus className="h-3 w-3" />
                         </button>
                         <span className="text-xs">{inCart.quantity} in cart</span>
-                        <button onClick={() => handleUpdateQuantity(p.id, 1)} className="p-0.5 hover:bg-emerald-700 rounded">
+                        <button
+                          onClick={() => handleUpdateQuantity(p.id, 1)}
+                          className="p-0.5 hover:bg-emerald-700 rounded"
+                        >
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
@@ -712,16 +884,21 @@ export function CustomerPortal() {
             </div>
 
             {placedOrders.map((ord) => (
-              <div key={ord.id} className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3">
+              <div
+                key={ord.id}
+                className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 gap-2">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900 font-mono text-base">{ord.id}</span>
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                        ord.status === "DELIVERED"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-emerald-500 text-slate-950 animate-pulse"
-                      }`}>
+                      <span
+                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          ord.status === "DELIVERED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-emerald-500 text-slate-950 animate-pulse"
+                        }`}
+                      >
                         {ord.status === "DELIVERED" ? "Delivered" : "⚡ 10-Min In-Transit"}
                       </span>
                     </div>
@@ -729,15 +906,20 @@ export function CustomerPortal() {
                   </div>
                   <div className="sm:text-right">
                     <span className="text-base font-extrabold text-slate-900">₹{ord.total}</span>
-                    <p className="text-xs text-emerald-700 font-bold">{ord.paymentMethod || "UPI Paid"}</p>
+                    <p className="text-xs text-emerald-700 font-bold">
+                      {ord.paymentMethod || "UPI Paid"}
+                    </p>
                   </div>
                 </div>
 
                 <div className="rounded-lg bg-emerald-50/70 border border-emerald-200/80 p-3 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
                   <div>
-                    <p className="font-bold text-emerald-900">⚡ Store: {ord.acceptedStore || "GrandSquare Kirana"}</p>
+                    <p className="font-bold text-emerald-900">
+                      ⚡ Store: {ord.acceptedStore || "GrandSquare Kirana"}
+                    </p>
                     <p className="text-slate-600 text-[11px]">
-                      Contact: {ord.storePhone || "+91 98765 43210"} | Driver: {ord.driverName || "Vijay Yadav"} ({ord.driverPhone || "+91 98765 43211"})
+                      Contact: {ord.storePhone || "+91 98765 43210"} | Driver:{" "}
+                      {ord.driverName || "Vijay Yadav"} ({ord.driverPhone || "+91 98765 43211"})
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -765,15 +947,22 @@ export function CustomerPortal() {
                           <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
                             Doorstep Security Code
                           </span>
-                          <span className="text-[11px] text-slate-500">Show to rider upon inspection</span>
+                          <span className="text-[11px] text-slate-500">
+                            Show to rider upon inspection
+                          </span>
                         </div>
                         <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm mt-0.5">
-                          Delivery Confirmation OTP: <span className="font-mono text-base font-black text-amber-800">{ord.otp || getDeliveryOtp(ord.id)}</span>
+                          Delivery Confirmation OTP:{" "}
+                          <span className="font-mono text-base font-black text-amber-800">
+                            {ord.otp || getDeliveryOtp(ord.id)}
+                          </span>
                         </h4>
                       </div>
                     </div>
                     <div className="flex flex-col items-center justify-center bg-white border border-dashed border-amber-400 rounded-lg px-4 py-1.5 shadow-xs self-start sm:self-auto">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Your OTP</span>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                        Your OTP
+                      </span>
                       <span className="font-mono text-xl font-black tracking-widest text-slate-900">
                         {ord.otp || getDeliveryOtp(ord.id)}
                       </span>
@@ -801,7 +990,12 @@ export function CustomerPortal() {
             <p className="text-[10px] sm:text-xs text-slate-300">
               Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items):
             </p>
-            <p className="text-base sm:text-lg font-black text-emerald-400">₹{cartTotal.toLocaleString("en-IN")}</p>
+            <p
+              className="text-base sm:text-lg font-black text-emerald-400 notranslate"
+              translate="no"
+            >
+              ₹{cartTotal.toLocaleString("en-IN")}
+            </p>
           </div>
 
           <button
@@ -841,10 +1035,19 @@ export function CustomerPortal() {
 
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {cart.map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-xs border-b pb-2">
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between text-xs border-b pb-2"
+                >
                   <div className="flex items-center gap-2">
-                    <img src={item.imageUrl} className="h-9 w-9 object-cover rounded" alt={item.name} />
-                    <span className="font-semibold text-slate-800">{item.name} (x{item.quantity})</span>
+                    <img
+                      src={item.imageUrl}
+                      className="h-9 w-9 object-cover rounded"
+                      alt={item.name}
+                    />
+                    <span className="font-semibold text-slate-800">
+                      {item.name} (x{item.quantity})
+                    </span>
                   </div>
                   <span className="font-bold text-slate-900">₹{item.price * item.quantity}</span>
                 </div>
@@ -852,9 +1055,18 @@ export function CustomerPortal() {
             </div>
 
             <div className="bg-slate-50 p-3 rounded-lg text-xs space-y-1">
-              <div className="flex justify-between text-slate-600"><span>Items Subtotal:</span><span>₹{cartTotal}</span></div>
-              <div className="flex justify-between text-emerald-600 font-bold"><span>Delivery:</span><span>FREE 10-Min Express</span></div>
-              <div className="flex justify-between font-extrabold text-sm border-t pt-1 text-slate-900"><span>Order Total:</span><span>₹{cartTotal}</span></div>
+              <div className="flex justify-between text-slate-600">
+                <span>Items Subtotal:</span>
+                <span>₹{cartTotal}</span>
+              </div>
+              <div className="flex justify-between text-emerald-600 font-bold">
+                <span>Delivery:</span>
+                <span>FREE 10-Min Express</span>
+              </div>
+              <div className="flex justify-between font-extrabold text-sm border-t pt-1 text-slate-900">
+                <span>Order Total:</span>
+                <span>₹{cartTotal}</span>
+              </div>
             </div>
 
             {/* Payment Method Selector */}
@@ -908,7 +1120,9 @@ export function CustomerPortal() {
                   <span className="text-lg">💵</span>
                   <div>
                     <p className="leading-none">Cash on 10-Min Delivery (COD)</p>
-                    <p className="text-[10px] text-slate-500 font-normal">Pay store rider at doorstep</p>
+                    <p className="text-[10px] text-slate-500 font-normal">
+                      Pay store rider at doorstep
+                    </p>
                   </div>
                 </button>
               </div>
@@ -918,7 +1132,10 @@ export function CustomerPortal() {
               onClick={handlePlaceOrder}
               className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 text-xs shadow-md flex items-center justify-center gap-2 transition-all active:scale-95"
             >
-              <span>{paymentMethod === "UPI_RAZORPAY" ? "GENERATE UPI QR & PAY" : "PAY"} ₹{cartTotal} & BROADCAST TO NEARBY SHOP</span>
+              <span>
+                {paymentMethod === "UPI_RAZORPAY" ? "GENERATE UPI QR & PAY" : "PAY"} ₹{cartTotal} &
+                BROADCAST TO NEARBY SHOP
+              </span>
             </button>
           </div>
         </div>
@@ -952,7 +1169,9 @@ export function CustomerPortal() {
                 </div>
                 <div className="text-right">
                   <span className="text-slate-500">Amount Due:</span>
-                  <p className="font-mono text-lg font-black text-emerald-600">₹{pendingOrderDetails.total}</p>
+                  <p className="font-mono text-lg font-black text-emerald-600">
+                    ₹{pendingOrderDetails.total}
+                  </p>
                 </div>
               </div>
 
@@ -963,14 +1182,24 @@ export function CustomerPortal() {
                   alt="Dynamic UPI QR Code"
                   className="h-44 w-44 rounded-lg"
                 />
-                <span className="text-[11px] text-slate-500 mt-2 font-mono">VPA: store.bizora@okaxis</span>
+                <span className="text-[11px] text-slate-500 mt-2 font-mono">
+                  VPA: store.bizora@okaxis
+                </span>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">Google Pay</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">PhonePe</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">Paytm</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">BHIM UPI</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">
+                  Google Pay
+                </span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">
+                  PhonePe
+                </span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">
+                  Paytm
+                </span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-600">
+                  BHIM UPI
+                </span>
               </div>
 
               {/* Deep link for mobile users */}

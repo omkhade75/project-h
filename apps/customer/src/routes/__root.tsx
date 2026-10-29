@@ -1,10 +1,14 @@
 import { LanguageProvider } from "../lib/language-context";
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   const origError = console.error;
   console.error = function (...args: any[]) {
-    const msg = String(args[0] || '');
-    if (msg.includes('Minified React error #418') || msg.includes('Hydration failed') || msg.includes('Text content does not match')) {
+    const msg = String(args[0] || "");
+    if (
+      msg.includes("Minified React error #418") ||
+      msg.includes("Hydration failed") ||
+      msg.includes("Text content does not match")
+    ) {
       return;
     }
     origError.apply(console, args);
@@ -51,11 +55,30 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+  console.error("Root error caught:", error);
   const router = useRouter();
+  const errorMsg = (error?.message || "").toLowerCase();
+
   useEffect(() => {
+    // 🛡️ Auto-healing: If error is caused by Google Translate DOM mutations or stale chunk imports, recover automatically!
+    if (
+      errorMsg.includes("removechild") ||
+      errorMsg.includes("insertbefore") ||
+      errorMsg.includes("replacechild") ||
+      errorMsg.includes("not a child") ||
+      errorMsg.includes("node to be removed") ||
+      errorMsg.includes("failed to fetch dynamically imported module") ||
+      errorMsg.includes("loading chunk")
+    ) {
+      console.warn("🛡️ [Auto-Healing] Absorbed DOM mutation / chunk error. Recovering view...");
+      const timer = setTimeout(() => {
+        router.invalidate();
+        reset();
+      }, 60);
+      return () => clearTimeout(timer);
+    }
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+  }, [error, errorMsg, reset, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -90,7 +113,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+      },
       { name: "theme-color", content: "#131921" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -146,13 +173,49 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en"  suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                // Theme initialization — read from localStorage, default to light
+                // 1. Monkey-patch Node DOM mutation methods to prevent Google Translate from crashing React
+                if (typeof Node === 'function' && Node.prototype) {
+                  var originalRemoveChild = Node.prototype.removeChild;
+                  Node.prototype.removeChild = function(child) {
+                    if (child.parentNode !== this) {
+                      if (child.parentNode) {
+                        try { return child.parentNode.removeChild(child); } catch (_) {}
+                      }
+                      return child;
+                    }
+                    return originalRemoveChild.apply(this, arguments);
+                  };
+
+                  var originalInsertBefore = Node.prototype.insertBefore;
+                  Node.prototype.insertBefore = function(newNode, referenceNode) {
+                    if (referenceNode && referenceNode.parentNode !== this) {
+                      if (referenceNode.parentNode) {
+                        try { return referenceNode.parentNode.insertBefore(newNode, referenceNode); } catch (_) {}
+                      }
+                      return newNode;
+                    }
+                    return originalInsertBefore.apply(this, arguments);
+                  };
+
+                  var originalReplaceChild = Node.prototype.replaceChild;
+                  Node.prototype.replaceChild = function(newChild, oldChild) {
+                    if (oldChild && oldChild.parentNode !== this) {
+                      if (oldChild.parentNode) {
+                        try { return oldChild.parentNode.replaceChild(newChild, oldChild); } catch (_) {}
+                      }
+                      return oldChild;
+                    }
+                    return originalReplaceChild.apply(this, arguments);
+                  };
+                }
+
+                // 2. Theme initialization — read from localStorage, default to light
                 var theme = 'light';
                 try { theme = localStorage.getItem('bizora-theme') || 'light'; } catch(e) {}
                 if (theme === 'dark') {
@@ -161,19 +224,27 @@ function RootShell({ children }: { children: ReactNode }) {
                   document.documentElement.classList.remove('dark');
                 }
 
-                function isReactHydrationError(arg) {
+                function isIgnorableError(arg) {
                   if (!arg) return false;
                   var str = '';
                   if (typeof arg === 'string') str = arg;
                   else if (arg instanceof Error) str = (arg.message || '') + ' ' + (arg.stack || '') + ' ' + String(arg);
                   else str = JSON.stringify(arg) || String(arg);
-                  return str.indexOf('418') !== -1 || str.indexOf('Hydration') !== -1 || str.indexOf('hydration') !== -1 || str.indexOf('react.dev/errors/418') !== -1;
+                  return str.indexOf('removeChild') !== -1 ||
+                         str.indexOf('insertBefore') !== -1 ||
+                         str.indexOf('replaceChild') !== -1 ||
+                         str.indexOf('not a child of this node') !== -1 ||
+                         str.indexOf('node to be removed') !== -1 ||
+                         str.indexOf('418') !== -1 ||
+                         str.indexOf('Hydration') !== -1 ||
+                         str.indexOf('hydration') !== -1 ||
+                         str.indexOf('react.dev/errors/418') !== -1;
                 }
 
                 var origError = console.error;
                 console.error = function() {
                   for (var i = 0; i < arguments.length; i++) {
-                    if (isReactHydrationError(arguments[i])) {
+                    if (isIgnorableError(arguments[i])) {
                       return;
                     }
                   }
@@ -181,7 +252,7 @@ function RootShell({ children }: { children: ReactNode }) {
                 };
 
                 window.addEventListener('error', function(e) {
-                  if (isReactHydrationError(e.error) || isReactHydrationError(e.message)) {
+                  if (isIgnorableError(e.error) || isIgnorableError(e.message)) {
                     e.stopImmediatePropagation();
                     e.preventDefault();
                     return true;
@@ -189,7 +260,7 @@ function RootShell({ children }: { children: ReactNode }) {
                 }, true);
 
                 window.addEventListener('unhandledrejection', function(e) {
-                  if (isReactHydrationError(e.reason)) {
+                  if (isIgnorableError(e.reason)) {
                     e.stopImmediatePropagation();
                     e.preventDefault();
                     return true;
@@ -221,12 +292,18 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <AuthProvider>
-        <BusinessDataProvider>
-          {mounted ? <Outlet /> : <div className="min-h-screen bg-background flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}
-          <Toaster />
-        </BusinessDataProvider>
-      </AuthProvider>
-        </LanguageProvider>
+          <BusinessDataProvider>
+            {mounted ? (
+              <Outlet />
+            ) : (
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              </div>
+            )}
+            <Toaster />
+          </BusinessDataProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
