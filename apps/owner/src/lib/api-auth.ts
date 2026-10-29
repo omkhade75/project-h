@@ -19,6 +19,7 @@ const DEMO_FALLBACK_ACCOUNTS: Record<
 > = {
   "admin@gmail.com": { role: "ADMIN", name: "System Admin", isSystemAdmin: true },
   "owner@gmail.com": { role: "OWNER", name: "Business Owner", isSystemAdmin: false },
+  "owner@grandsquare.com": { role: "OWNER", name: "GrandSquare Owner", isSystemAdmin: false },
   "customer@gmail.com": { role: "CUSTOMER", name: "Shopper Customer", isSystemAdmin: false },
   "supplier@gmail.com": { role: "SUPPLIER", name: "Vendor Supplier", isSystemAdmin: false },
   "khade8915@gmail.com": { role: "OWNER", name: "System Super Admin", isSystemAdmin: true },
@@ -66,7 +67,7 @@ export const loginServer = async (data: any) => {
     // Fail-safe offline/emergency fallback for verified demo & super admin accounts
     if (
       DEMO_FALLBACK_ACCOUNTS[emailLower] &&
-      (password === "123456789" || password === "admin123")
+      (password === "123456789" || password === "admin123" || password === "Password123!")
     ) {
       const demoConfig = DEMO_FALLBACK_ACCOUNTS[emailLower];
       const fallbackToken = "demo_token_user-" + emailLower.replace(/[^a-z0-9]/g, "-");

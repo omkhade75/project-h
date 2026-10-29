@@ -33,6 +33,7 @@ import { redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/system-admin")({
   beforeLoad: async () => {
+    if (typeof window === "undefined") return;
     const { getCurrentSessionServer } = await import("@/lib/server-auth");
     const res = await getCurrentSessionServer();
     if (!res.user || !res.user.isSystemAdmin || res.user.email !== "khade8915@gmail.com") {

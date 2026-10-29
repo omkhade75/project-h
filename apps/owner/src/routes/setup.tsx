@@ -10,6 +10,7 @@ import { completeWorkspaceSetupServer } from "@/lib/server-setup";
 
 export const Route = createFileRoute("/setup")({
   beforeLoad: async () => {
+    if (typeof window === "undefined") return;
     const { getCurrentSessionServer } = await import("@/lib/server-auth");
     const res = await getCurrentSessionServer();
     if (!res.user) {

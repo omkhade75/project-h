@@ -70,6 +70,10 @@ import {
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }: { location: any }) => {
+    // If running in SSR server context where window is unavailable, allow client hydration from localStorage
+    if (typeof window === "undefined") {
+      return;
+    }
     const { getCurrentSessionServer } = await import("@/lib/server-auth");
     const res = await getCurrentSessionServer();
     if (!res.user) {

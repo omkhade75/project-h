@@ -6,6 +6,12 @@ export const getApiBaseUrl = () => {
     if (process.env.VITE_API_URL) return process.env.VITE_API_URL;
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   }
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ) {
+    return "http://localhost:3000";
+  }
   return "https://bizora-backend-gtoe.onrender.com";
 };
 
@@ -56,9 +62,9 @@ export async function fetchApi<T = any>(
 
       const baseUrl = getApiBaseUrl();
 
-      // ⚡ Fast failover: 4-second timeout to prevent UI freezes on cold/sleeping servers
+      // ⚡ Resilient failover: 8-second timeout to accommodate cold starts
       const controller = new AbortController();
-      timeoutId = setTimeout(() => controller.abort(), 4000);
+      timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const response = await fetch(baseUrl + endpoint, {
         ...options,
