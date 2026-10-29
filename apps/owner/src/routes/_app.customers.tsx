@@ -63,9 +63,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
-
-// Vapi Web SDK public key — used for browser-based WebRTC voice calls
-const VAPI_PUBLIC_KEY = "e3322c27-c9ac-45cb-9c58-e49c8f423a1f";
+import { useBizVoiceCall } from "@/lib/bizvoice/useBizVoiceCall";
 
 export const Route = createFileRoute("/_app/customers")({
   head: () => ({
@@ -139,9 +137,10 @@ export function CustomersPage() {
   const [isBroadcastMode, setIsBroadcastMode] = useState(false);
   const [broadcastAudience, setBroadcastAudience] = useState<"all" | "vip" | "loyal">("all");
 
-  // Vapi Voice Call Modal State
+  // BizVoice Voice Call Engine (100% Self-Hosted, Zero-API-Key)
+  const bizVoice = useBizVoiceCall();
   const [vapiModalOpen, setVapiModalOpen] = useState(false);
-  const [vapiCallMode, setVapiCallMode] = useState<"browser" | "cellular">("cellular");
+  const [vapiCallMode, setVapiCallMode] = useState<"browser" | "cellular">("browser");
   const [vapiErrorDetails, setVapiErrorDetails] = useState<string | null>(null);
   const [vapiName, setVapiName] = useState("Om Khade");
   const [vapiPhone, setVapiPhone] = useState("+91 75880 21256");
@@ -154,37 +153,23 @@ export function CustomersPage() {
   >("idle");
   const [vapiCallDuration, setVapiCallDuration] = useState(0);
   const [userSpeechHeard, setUserSpeechHeard] = useState("");
-  const vapiRef = useRef<any>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Cleanup Vapi on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
+      bizVoice.endCall();
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
-      if (vapiRef.current) {
-        try {
-          vapiRef.current.stop();
-        } catch (e) {
-          /* ignore error stopping voice ref */
-        }
-      }
       if (callTimerRef.current) clearInterval(callTimerRef.current);
     };
-  }, []);
+  }, [bizVoice]);
 
   const stopVapiCall = useCallback(() => {
+    bizVoice.endCall();
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-    }
-    if (vapiRef.current) {
-      try {
-        vapiRef.current.stop();
-      } catch (e) {
-        /* ignore error stopping voice ref */
-      }
-      vapiRef.current = null;
     }
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current);
@@ -196,8 +181,8 @@ export function CustomersPage() {
     setTimeout(() => {
       setVapiCallStatus("idle");
       setUserSpeechHeard("");
-    }, 2500);
-  }, []);
+    }, 1500);
+  }, [bizVoice]);
 
   const startBrowserVoiceCall = (textToSpeak: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -593,7 +578,19 @@ export function CustomersPage() {
     }
 
     if (vapiCallMode === "browser") {
-      startBrowserVoiceCall(vapiScript);
+      setVapiDialing(true);
+      try {
+        await bizVoice.startCall({
+          customSystemPrompt: `You are Bizora AI, an intelligent store assistant speaking with customer ${vapiName}. Script & Offer: ${vapiScript}`,
+        });
+        setVapiCallStatus("active");
+        toast.success(`🎙️ BizVoice bidirectional audio stream active!`);
+      } catch (err: any) {
+        console.warn("[BizVoice] Local server not active, using browser voice fallback:", err);
+        startBrowserVoiceCall(vapiScript);
+      } finally {
+        setVapiDialing(false);
+      }
       return;
     }
 
@@ -1304,10 +1301,16 @@ export function CustomersPage() {
                     : `Speaking with ${vapiName}`}
                 </h3>
                 <p className="font-mono text-xs text-muted-foreground mt-0.5 break-all">
-                  {vapiPhone} · {vapiCallMode === "cellular" ? "Twilio PSTN · " : ""}Duration:{" "}
-                  {Math.floor(vapiCallDuration / 60)}:
-                  {(vapiCallDuration % 60).toString().padStart(2, "0")}
+                  {vapiPhone} · {vapiCallMode === "cellular" ? "Twilio PSTN · " : "BizVoice WebSocket · "}Duration:{" "}
+                  {Math.floor((bizVoice.isInCall ? bizVoice.duration : vapiCallDuration) / 60)}:
+                  {((bizVoice.isInCall ? bizVoice.duration : vapiCallDuration) % 60).toString().padStart(2, "0")}
                 </p>
+                {bizVoice.isInCall && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mt-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                    <span>State: {bizVoice.callState}</span>
+                  </div>
+                )}
                 {vapiCallMode === "cellular" && (
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 animate-pulse">
                     🔔 Ringing your mobile device now — please pick up the call!
@@ -1315,14 +1318,66 @@ export function CustomersPage() {
                 )}
               </div>
 
-              <div className="p-3 bg-surface rounded-xl border border-hairline w-full max-w-sm text-left space-y-1 overflow-hidden">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                  Agent Speaking (Hindi / Natural Voice):
-                </p>
-                <p className="text-xs text-foreground italic leading-relaxed break-words">
-                  &ldquo;{vapiScript}&rdquo;
-                </p>
-              </div>
+              {/* Audio Wave / Level Meters */}
+              {bizVoice.isInCall && (
+                <div className="p-3 bg-surface rounded-xl border border-hairline w-full space-y-2 text-left">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-[10px] font-semibold text-muted-foreground w-16">Your Mic:</span>
+                    <div className="flex-1 bg-surface-2 rounded-full h-2 overflow-hidden border border-hairline">
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-75"
+                        style={{ width: `${Math.round(bizVoice.userLevel * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">
+                      {Math.round(bizVoice.userLevel * 100)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-[10px] font-semibold text-muted-foreground w-16">AI Voice:</span>
+                    <div className="flex-1 bg-surface-2 rounded-full h-2 overflow-hidden border border-hairline">
+                      <div
+                        className="bg-primary h-full transition-all duration-75"
+                        style={{ width: `${Math.round(bizVoice.assistantLevel * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">
+                      {Math.round(bizVoice.assistantLevel * 100)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Live Transcripts Log */}
+              {bizVoice.transcript.length > 0 ? (
+                <div className="w-full max-h-40 overflow-y-auto space-y-1.5 p-2.5 bg-surface rounded-xl border border-hairline text-left text-xs">
+                  {bizVoice.transcript.map((item) => (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "p-2 rounded-lg text-xs leading-relaxed",
+                        item.role === "assistant"
+                          ? "bg-primary/10 text-primary border border-primary/20"
+                          : "bg-muted text-foreground"
+                      )}
+                    >
+                      <span className="text-[10px] font-bold block uppercase tracking-wider mb-0.5 opacity-80">
+                        {item.role === "assistant" ? "BizVoice AI" : vapiName}:
+                      </span>
+                      <span>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 bg-surface rounded-xl border border-hairline w-full max-w-sm text-left space-y-1 overflow-hidden">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                    AI Context & Script:
+                  </p>
+                  <p className="text-xs text-foreground italic leading-relaxed break-words">
+                    &ldquo;{vapiScript}&rdquo;
+                  </p>
+                </div>
+              )}
 
               {vapiCallMode === "browser" && userSpeechHeard && (
                 <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-800 dark:text-emerald-300 w-full break-words">
@@ -1330,13 +1385,29 @@ export function CustomersPage() {
                 </div>
               )}
 
-              <Button
-                variant="destructive"
-                onClick={stopVapiCall}
-                className="w-full gap-2 font-bold h-10 mt-2"
-              >
-                <PhoneOff className="h-4 w-4" /> End Call
-              </Button>
+              <div className="flex gap-2 w-full mt-2">
+                {bizVoice.isInCall && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={bizVoice.toggleMute}
+                    className={cn(
+                      "flex-1 text-xs gap-1.5",
+                      bizVoice.isMuted && "bg-destructive/10 text-destructive border-destructive/30"
+                    )}
+                  >
+                    {bizVoice.isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    {bizVoice.isMuted ? "Unmute Mic" : "Mute Mic"}
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  onClick={stopVapiCall}
+                  className="flex-1 gap-2 font-bold h-10"
+                >
+                  <PhoneOff className="h-4 w-4" /> End Call
+                </Button>
+              </div>
             </div>
           ) : vapiCallStatus === "failed" ? (
             /* FAILED CALL WITH ACTIONABLE OPTIONS */
@@ -1455,10 +1526,10 @@ export function CustomersPage() {
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm shrink-0">🎙️</span>
-                      <span className="text-xs">Browser Voice Call</span>
+                      <span className="text-xs font-bold">BizVoice Local AI (Zero API Keys)</span>
                     </div>
                     <p className="text-[10px] opacity-80 mt-0.5 break-words">
-                      Zero setup · Speakers & mic
+                      100% Self-Hosted · Kokoro & Ollama
                     </p>
                   </button>
                 </div>

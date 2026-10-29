@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "India's leading AI Business OS for Retail Stores, Supermarkets & Franchises. POS billing, barcode scanning, 12 regional languages, Vapi AI voice calls, and automated WhatsApp receipts.",
+          "India's leading AI Business OS for Retail Stores, Supermarkets & Franchises. POS billing, barcode scanning, 12 regional languages, BizVoice AI voice calls, and automated WhatsApp receipts.",
       },
     ],
   }),
@@ -279,7 +279,7 @@ function RichLandingPage() {
             <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Hardware-Free Camera Scanner</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> 12 Indian Regional Languages</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Automated WhatsApp Receipts</span>
-            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Vapi AI Hindi Voice Assistant</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> BizVoice AI Voice Assistant</span>
           </div>
         </section>
 
@@ -344,7 +344,7 @@ function RichLandingPage() {
               },
               {
                 icon: Phone,
-                title: "Vapi AI Hindi Voice Assistant",
+                title: "BizVoice AI Voice Assistant",
                 desc: "Outbound AI voice calls to suppliers in natural Indian Hindi (hi-IN-SwaraNeural) to reorder low-stock inventory automatically.",
                 badge: "Voice AI",
                 color: "text-purple-500 bg-purple-500/10 border-purple-500/20",

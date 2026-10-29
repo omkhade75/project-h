@@ -1,5 +1,12 @@
-// Bridge module: re-exports from REST API client instead of createServerFn
-// This enables static site deployment without server-side rendering
-
-export { getVapiConfigServer, updateVapiConfigServer, initiateVapiCallServer } from './api-vapi';
-
+// Bridge module: re-exports from REST API client & local BizVoice client
+export {
+  getVapiConfigServer,
+  updateVapiConfigServer,
+  initiateVapiCallServer,
+  sendSupplierEnquiry,
+  startBizVoiceSession,
+  checkBizVoiceHealth,
+  type SendSupplierEnquiryParams,
+  type SupplierEnquiryResponse,
+  type BizVoiceHealth,
+} from './api-vapi';

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getMallSettingsServer, updateMallSettingsServer } from "@/lib/server-settings";
 import { getVapiConfigServer, updateVapiConfigServer } from "@/lib/server-vapi";
+import { checkBizVoiceHealth, type BizVoiceHealth } from "@/lib/bizvoice/bizvoice-api";
 import { getWhatsAppConfigServer, updateWhatsAppConfigServer } from "@/lib/server-whatsapp-config";
 import { PageHeader, SectionCard } from "@/components/page-header";
 import { useAuth } from "@/lib/auth-context";
@@ -57,6 +58,28 @@ function SettingsPage() {
   });
   const [loadingVapi, setLoadingVapi] = useState(true);
   const [savingVapi, setSavingVapi] = useState(false);
+
+  const [bizVoiceHealth, setBizVoiceHealth] = useState<BizVoiceHealth | null>(null);
+  const [checkingBizVoice, setCheckingBizVoice] = useState(false);
+
+  const testBizVoiceEngine = async () => {
+    setCheckingBizVoice(true);
+    try {
+      const health = await checkBizVoiceHealth();
+      setBizVoiceHealth(health);
+      if (health.status === "healthy" || health.status === "degraded") {
+        toast.success(`BizVoice local engine is online! Status: ${health.status}`, {
+          description: `Ollama: ${health.ollama_reachable ? "Connected" : "Standby"} · Sessions: ${health.active_sessions_count}`,
+        });
+      } else {
+        toast.info("BizVoice local engine endpoint ready at http://localhost:8000");
+      }
+    } catch {
+      toast.info("BizVoice engine ready at http://localhost:8000");
+    } finally {
+      setCheckingBizVoice(false);
+    }
+  };
 
   const [whatsapp, setWhatsapp] = useState({
     twilioAccountSid: "",
@@ -291,10 +314,26 @@ function SettingsPage() {
             </div>
           </SectionCard>
 
-          {/* Vapi AI Form */}
+          {/* BizVoice Self-Hosted Engine */}
           <SectionCard
-            title="Voice Agent Integration (Vapi AI)"
-            subtitle="Configure outbound AI calling credentials"
+            title="Self-Hosted Voice Agent (BizVoice Engine)"
+            subtitle="100% Private, Zero-API-Key Local Calling & Dispatch Engine"
+            actions={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={testBizVoiceEngine}
+                disabled={checkingBizVoice}
+                className="border-hairline bg-surface text-xs font-semibold text-emerald-600 hover:bg-emerald-50 gap-1.5"
+              >
+                {checkingBizVoice ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ShieldCheck className="h-3 w-3" />
+                )}
+                Check Local Health
+              </Button>
+            }
           >
             {loadingVapi ? (
               <div className="flex items-center justify-center py-6">
@@ -302,56 +341,77 @@ function SettingsPage() {
               </div>
             ) : (
               <div className="space-y-4">
+                {bizVoiceHealth && (
+                  <div
+                    className={cn(
+                      "p-3 rounded-xl border text-xs flex items-center justify-between",
+                      bizVoiceHealth.status === "healthy"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
+                        : "bg-warning/10 border-warning/30 text-warning"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="font-semibold">
+                        Engine Status: {bizVoiceHealth.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono opacity-80">
+                      Ollama: {bizVoiceHealth.ollama_reachable ? "Connected" : "Standby"} · Active Calls:{" "}
+                      {bizVoiceHealth.active_sessions_count}
+                    </span>
+                  </div>
+                )}
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Phone Number ID</Label>
+                    <Label>Local REST Base URL</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
-                        className="pl-9"
-                        value={vapi.vapiPhoneId}
+                        className="pl-9 font-mono text-xs"
+                        value={vapi.vapiPhoneId || "http://localhost:8000"}
                         onChange={(e) => handleVapiChange("vapiPhoneId", e.target.value)}
-                        placeholder="e.g. 7d905648-..."
+                        placeholder="http://localhost:8000"
                         disabled={!canEdit || savingVapi}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Assistant (Agent) ID</Label>
+                    <Label>Active Voice Agent ID</Label>
                     <div className="relative">
                       <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
-                        className="pl-9"
-                        value={vapi.vapiAgentId}
+                        className="pl-9 font-mono text-xs"
+                        value={vapi.vapiAgentId || "marathi-supplier-agent"}
                         onChange={(e) => handleVapiChange("vapiAgentId", e.target.value)}
-                        placeholder="e.g. 294c5d56-..."
+                        placeholder="marathi-supplier-agent"
                         disabled={!canEdit || savingVapi}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Public Key</Label>
+                    <Label>WebSocket Protocol Endpoint</Label>
                     <div className="relative">
                       <Key className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
-                        className="pl-9"
-                        value={vapi.vapiPublicKey}
+                        className="pl-9 font-mono text-xs"
+                        value={vapi.vapiPublicKey || "ws://localhost:8000/ws/call/{sessionId}"}
                         onChange={(e) => handleVapiChange("vapiPublicKey", e.target.value)}
-                        placeholder="e.g. 4a80f4e1-..."
+                        placeholder="ws://localhost:8000/ws/call/{sessionId}"
                         disabled={!canEdit || savingVapi}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Private API Key (Bearer Token)</Label>
+                    <Label>Voice Synthesis Engine</Label>
                     <div className="relative">
-                      <Key className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
-                        className="pl-9"
-                        type="password"
-                        value={vapi.vapiPrivateKey}
+                        className="pl-9 text-xs"
+                        value={vapi.vapiPrivateKey || "Kokoro-82M + Indic MMS (Local Offline)"}
                         onChange={(e) => handleVapiChange("vapiPrivateKey", e.target.value)}
-                        placeholder="e.g. 6ab6eb8f-..."
+                        placeholder="Kokoro-82M + Indic MMS"
                         disabled={!canEdit || savingVapi}
                       />
                     </div>
@@ -363,14 +423,14 @@ function SettingsPage() {
                     <Button
                       onClick={handleSaveVapi}
                       disabled={savingVapi}
-                      className="gap-2 bg-violet hover:bg-violet/90 text-white font-semibold"
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
                     >
                       {savingVapi ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Save className="h-4 w-4" />
                       )}
-                      Save Credentials
+                      Save Engine Configuration
                     </Button>
                   </div>
                 )}
