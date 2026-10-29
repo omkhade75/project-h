@@ -135,6 +135,35 @@ Also output your response as valid JSON matching the following contract:
       }
     }
 
+    // 2.5. Try Local Self-Hosted Ollama AI Engine (http://localhost:11434) - 100% Zero-Key Local AI
+    try {
+      const ollamaController = new AbortController();
+      const timeout = setTimeout(() => ollamaController.abort(), 3500);
+      const ollamaRes = await fetch("http://localhost:11434/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ollamaController.signal,
+        body: JSON.stringify({
+          model: "qwen2.5:3b",
+          prompt: `You are Bizora AI for retail stores. Answer in JSON with { "answer": string, "summary": string, "evidence": [{"label": string, "value": string}], "reasoning": [string], "recommendedActions": [{"title": string, "description": string, "priority": "high"|"medium"|"low", "estimatedImpact": string}], "risks": [{"title": string, "severity": "high"|"medium"|"low"}], "confidence": 0.95 }. Query: "${q}". Context: ${liveTelemetryText}`,
+          stream: false,
+          format: "json",
+        }),
+      });
+      clearTimeout(timeout);
+      if (ollamaRes.ok) {
+        const ollamaData: any = await ollamaRes.json();
+        if (ollamaData?.response) {
+          const parsed = JSON.parse(ollamaData.response);
+          if (parsed.answer && parsed.summary) {
+            return { success: true, data: parsed };
+          }
+        }
+      }
+    } catch (ollamaErr) {
+      // Ollama not active, smoothly proceed to embedded rule engine
+    }
+
     // 3. High-Powered Rule-Based Business Intelligence Engine Fallback
     const isStockQuery = qLower.includes("stock") || qLower.includes("reorder") || qLower.includes("out of") || qLower.includes("buy") || qLower.includes("shortage");
     const isProfitQuery = qLower.includes("profit") || qLower.includes("decline") || qLower.includes("margin") || qLower.includes("revenue") || qLower.includes("sales") || qLower.includes("loss");

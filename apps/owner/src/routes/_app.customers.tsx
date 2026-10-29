@@ -1418,8 +1418,8 @@ export function CustomersPage() {
                   <span>Cellular Outbound Call Notice</span>
                 </div>
                 <p className="text-muted-foreground text-[11px] leading-relaxed break-words">
-                  Direct PSTN cellular phone dialing to <strong>{vapiPhone}</strong> requires active
-                  Vapi.ai Telephony credentials & Twilio SIP trunk credits.
+                  Direct PSTN carrier dialing to <strong>{vapiPhone}</strong> requires telephony credits.
+                  You can test the 100% free local <strong>BizVoice Voice Call</strong> directly below.
                 </p>
                 {vapiErrorDetails && (
                   <p className="font-mono text-[10px] bg-background/80 p-2 rounded border border-hairline text-destructive break-all break-words max-w-full overflow-hidden">
@@ -1436,12 +1436,13 @@ export function CustomersPage() {
                 <Button
                   onClick={() => {
                     setVapiCallStatus("idle");
+                    setVapiCallMode("browser");
                     startBrowserVoiceCall(vapiScript);
                   }}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-2 h-auto py-2.5 px-3 text-xs whitespace-normal text-center leading-snug break-words max-w-full"
                 >
                   <Sparkles className="h-4 w-4 shrink-0" />
-                  <span>Test In-Browser Voice Call (100% Free Demo)</span>
+                  <span>Start BizVoice In-Browser Voice Call (100% Free · Zero Keys)</span>
                 </Button>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1479,7 +1480,7 @@ export function CustomersPage() {
                   }}
                   className="w-full text-xs text-muted-foreground hover:text-foreground h-8 truncate"
                 >
-                  Configure Vapi.ai API Keys in Settings →
+                  Configure BizVoice Engine in Settings →
                 </Button>
               </div>
             </div>

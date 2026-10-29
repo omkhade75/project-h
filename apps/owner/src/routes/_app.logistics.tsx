@@ -308,22 +308,22 @@ export function LogisticsPage() {
         subtitle="Accept live customer orders from nearby shoppers (Blinkit model) and track delivery dispatches."
       />
 
-      {/* 🚨 Hyperlocal Quick Commerce Live Grab Engine Banner */}
-      <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/10 p-6 shadow-lg space-y-4">
+      {/* Hyperlocal Orders Hub */}
+      <div className="rounded-xl border border-hairline bg-surface p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500 text-white font-extrabold shadow-md animate-pulse">
-              <Zap className="h-6 w-6" />
+            <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary font-semibold">
+              <Zap className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
-                <span>Nearby Customer Orders (Ready to Grab First)</span>
-                <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs text-white uppercase tracking-wider font-mono">
-                  Blinkit Model
+              <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                <span>Nearby Customer Orders (Live Queue)</span>
+                <span className="rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                  Live Dispatch
                 </span>
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Orders placed by nearby shoppers on <code>bizora-customer</code>. Click <strong>GRAB ORDER FIRST</strong> to claim and fulfill!
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Orders placed by nearby shoppers in your neighborhood. Claim orders below to prepare and dispatch.
               </p>
             </div>
           </div>
