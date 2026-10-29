@@ -43,4 +43,10 @@ src/lib/whatsapp-config.json
 scratch/
 scratch_*
 
+# Demo and media artifacts
+brag-cinematic/
+brag-output/
+*.wav
+
+
 

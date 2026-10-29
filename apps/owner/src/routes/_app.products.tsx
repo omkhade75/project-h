@@ -13,8 +13,10 @@ import {
   ScanLine,
   Camera,
   X,
+  FileSpreadsheet,
 } from "lucide-react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/page-header";
+import { BulkProductImportDialog } from "@/components/bulk-product-import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +83,7 @@ function Products() {
 
   // Dialog open state
   const [addOpen, setAddOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -124,7 +127,11 @@ function Products() {
   // Auto-generate SKU from product name
   const autoGenerateSku = useCallback((name: string) => {
     if (!name.trim()) return "";
-    const prefix = name.trim().replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase();
+    const prefix = name
+      .trim()
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 4)
+      .toUpperCase();
     const suffix = String(Date.now()).slice(-5);
     return `${prefix}-${suffix}`;
   }, []);
@@ -170,7 +177,10 @@ function Products() {
         }, 300);
       } else {
         // Fallback: manual barcode entry prompt
-        toast.info("BarcodeDetector not supported in this browser. Please type the barcode manually or use Chrome on Android.", { duration: 5000 });
+        toast.info(
+          "BarcodeDetector not supported in this browser. Please type the barcode manually or use Chrome on Android.",
+          { duration: 5000 },
+        );
       }
     } catch (err: any) {
       toast.error("Camera access denied. Please allow camera permission to scan barcodes.");
@@ -245,7 +255,11 @@ function Products() {
           email: user?.email || "",
         },
       }).catch(() => []);
-      const apiProds: ProductListItem[] = Array.isArray(list) ? list : Array.isArray((list as any)?.data) ? (list as any).data : [];
+      const apiProds: ProductListItem[] = Array.isArray(list)
+        ? list
+        : Array.isArray((list as any)?.data)
+          ? (list as any).data
+          : [];
       const apiProdIds = new Set(apiProds.map((p) => p.id || p.sku));
 
       const rawLocalProds = [...(db.getProducts() || []), ...(ctxProducts || [])];
@@ -283,7 +297,7 @@ function Products() {
       const merged = [...apiProds, ...localProds];
       setProducts(merged);
       if (merged.length > 0) {
-        setSelected((prev) => prev && merged.find((m) => m.id === prev.id) ? prev : merged[0]);
+        setSelected((prev) => (prev && merged.find((m) => m.id === prev.id) ? prev : merged[0]));
       } else {
         setSelected(null);
       }
@@ -366,7 +380,9 @@ function Products() {
         (p.dept || "").toLowerCase().includes(q.toLowerCase())),
   );
 
-  const lowStockCount = safeProducts.filter((p) => p && Number(p.stock || 0) <= Number(p.reorder || 0)).length;
+  const lowStockCount = safeProducts.filter(
+    (p) => p && Number(p.stock || 0) <= Number(p.reorder || 0),
+  ).length;
 
   const resetForm = () => {
     setFormName("");
@@ -429,23 +445,25 @@ function Products() {
         const catName = categories.find((c) => c.id === formCategory)?.name || "General";
         const deptName = departments.find((d) => d.id === formDepartment)?.name || "General";
         const suppName = suppliers.find((s) => s.id === formSupplier)?.name || "General";
-        db.importProducts([{
-          id: finalSku,
-          name: formName,
-          dept: deptName,
-          category: catName,
-          brand: formBrand || "Generic",
-          price: Number(formSellingPrice),
-          cost: Number(formCostPrice) || Math.round(Number(formSellingPrice) * 0.7),
-          stock: Number(formInitialStock) || 0,
-          reorder: Number(formReorderLevel) || 5,
-          expiry: formExpDate || null,
-          supplier: suppName,
-          sold: 0,
-          revenue: 0,
-          margin: 25,
-          status: "ok",
-        }]);
+        db.importProducts([
+          {
+            id: finalSku,
+            name: formName,
+            dept: deptName,
+            category: catName,
+            brand: formBrand || "Generic",
+            price: Number(formSellingPrice),
+            cost: Number(formCostPrice) || Math.round(Number(formSellingPrice) * 0.7),
+            stock: Number(formInitialStock) || 0,
+            reorder: Number(formReorderLevel) || 5,
+            expiry: formExpDate || null,
+            supplier: suppName,
+            sold: 0,
+            revenue: 0,
+            margin: 25,
+            status: "ok",
+          },
+        ]);
         forceRefresh();
       } catch (_) {}
 
@@ -545,6 +563,13 @@ function Products() {
               className="border-hairline bg-surface hover:text-primary transition-colors gap-2 font-semibold"
             >
               <ScanLine className="h-4 w-4" /> Connect Scanner
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setBulkOpen(true)}
+              className="border-hairline bg-surface hover:text-emerald-500 hover:border-emerald-500/30 transition-colors gap-2 font-semibold"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-emerald-500" /> Bulk Import
             </Button>
             <Button
               onClick={() => {
@@ -702,7 +727,13 @@ function Products() {
       </div>
 
       {/* Barcode Scanner Dialog */}
-      <Dialog open={scannerOpen} onOpenChange={(open) => { if (!open) stopScanner(); setScannerOpen(open); }}>
+      <Dialog
+        open={scannerOpen}
+        onOpenChange={(open) => {
+          if (!open) stopScanner();
+          setScannerOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[480px] bg-sidebar border border-hairline text-foreground">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -737,7 +768,8 @@ function Products() {
               <canvas ref={canvasRef} className="hidden" />
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Point your camera at a product barcode. It will auto-detect and fill the barcode field.
+              Point your camera at a product barcode. It will auto-detect and fill the barcode
+              field.
             </p>
             <div className="flex items-center gap-2">
               <Input
@@ -774,8 +806,31 @@ function Products() {
         <DialogContent className="sm:max-w-[460px] bg-sidebar border border-hairline text-foreground overflow-y-auto max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>Quick Add Product</DialogTitle>
-            <p className="text-[11px] text-muted-foreground">Only Name & Price are required. Everything else is auto-filled or optional.</p>
+            <p className="text-[11px] text-muted-foreground">
+              Only Name & Price are required. Everything else is auto-filled or optional.
+            </p>
           </DialogHeader>
+
+          {/* Quick Bulk Import Callout */}
+          <div className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
+              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-500" /> Have multiple products in
+              Excel/CSV?
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setAddOpen(false);
+                setBulkOpen(true);
+              }}
+              className="h-6 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 px-2.5"
+            >
+              Upload Excel
+            </Button>
+          </div>
+
           <form onSubmit={handleAddProduct} className="space-y-3 text-xs">
             {/* Essential Fields */}
             <div className="space-y-1.5">
@@ -800,7 +855,9 @@ function Products() {
             {!isCategorizing && autoCategoryResult && (
               <div className="rounded border border-primary/20 bg-primary/5 p-2 text-[10px] text-muted-foreground flex items-center gap-1">
                 <Sparkles className="h-3 w-3 text-primary" />
-                <span className="font-semibold text-primary">Auto: {autoCategoryResult.categoryName}</span>
+                <span className="font-semibold text-primary">
+                  Auto: {autoCategoryResult.categoryName}
+                </span>
                 <span className="ml-auto">{(autoCategoryResult.confidence * 100).toFixed(0)}%</span>
               </div>
             )}
@@ -1124,6 +1181,13 @@ function Products() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Product Import via Excel / CSV */}
+      <BulkProductImportDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        onSuccess={loadProducts}
+      />
     </div>
   );
 }

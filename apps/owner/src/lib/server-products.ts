@@ -1,7 +1,16 @@
 // Bridge module: re-exports from REST API client instead of createServerFn
 // This enables static site deployment without server-side rendering
 
-export { getProductsServer, addProductServer, editProductServer, archiveProductServer, getProduct360Server, getProductOptionsServer, autoCategorizeProductServer } from './api-products';
+export {
+  getProductsServer,
+  addProductServer,
+  bulkAddProductsServer,
+  editProductServer,
+  archiveProductServer,
+  getProduct360Server,
+  getProductOptionsServer,
+  autoCategorizeProductServer,
+} from "./api-products";
 
 // Type definitions preserved from original server module
 export interface ProductListItem {
@@ -78,4 +87,3 @@ export interface Product360Details {
   expiryRisk: string; // "Low" | "Medium" | "High" | "Expired"
   reorderRecommendation: string;
 }
-

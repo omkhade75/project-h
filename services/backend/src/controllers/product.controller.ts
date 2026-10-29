@@ -1,55 +1,84 @@
-import { Controller, Get, Post, Put, Delete, Query, Param, Body, UseGuards, Req } from '@nestjs/common';
-import { ProductService } from '../services/product.service';
-import { CreateProductSchema, UpdateProductSchema } from '../validators/product.validator';
-import { Roles, RolesGuard } from '../middlewares/rbac.middleware';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { ResponseUtil } from '../utils/response.util';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Query,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
+import { ProductService } from "../services/product.service";
+import { CreateProductSchema, UpdateProductSchema } from "../validators/product.validator";
+import { Roles, RolesGuard } from "../middlewares/rbac.middleware";
+import { JwtAuthGuard } from "../guards/jwt-auth.guard";
+import { ResponseUtil } from "../utils/response.util";
 
-@Controller('api/products')
+@Controller("api/products")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Get()
-  @Roles('ADMIN', 'OWNER', 'MANAGER', 'CASHIER', 'EMPLOYEE', 'CUSTOMER', 'SUPPLIER')
+  @Roles("ADMIN", "OWNER", "MANAGER", "CASHIER", "EMPLOYEE", "CUSTOMER", "SUPPLIER")
   async listProducts(@Query() query: any, @Req() req: any) {
     try {
       const companyId = req.user?.companyId || req.user?.workspaceId;
       const result = await this.productService.listProducts(query, companyId);
-      return ResponseUtil.success(result.data || [], 'Products retrieved successfully', result.meta);
+      return ResponseUtil.success(
+        result.data || [],
+        "Products retrieved successfully",
+        result.meta,
+      );
     } catch (e) {
-      return ResponseUtil.success([], 'Products retrieved successfully', { total: 0, page: 1, limit: 10, totalPages: 1 });
+      return ResponseUtil.success([], "Products retrieved successfully", {
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
     }
   }
 
-  @Get(':id')
-  @Roles('ADMIN', 'OWNER', 'MANAGER', 'CASHIER', 'EMPLOYEE')
-  async getProduct(@Param('id') id: string) {
+  @Get(":id")
+  @Roles("ADMIN", "OWNER", "MANAGER", "CASHIER", "EMPLOYEE")
+  async getProduct(@Param("id") id: string) {
     const product = await this.productService.getProductById(id);
-    return ResponseUtil.success(product, 'Product details retrieved');
+    return ResponseUtil.success(product, "Product details retrieved");
+  }
+
+  @Post("bulk")
+  @Roles("ADMIN", "OWNER", "MANAGER")
+  async bulkCreateProducts(@Body() body: any, @Req() req: any) {
+    const products = Array.isArray(body) ? body : body?.products || body?.data || [];
+    const companyId = req.user?.companyId || req.user?.workspaceId;
+    const created = await this.productService.bulkCreateProducts(products, companyId);
+    return ResponseUtil.success(created, `${created.length} products imported successfully`);
   }
 
   @Post()
-  @Roles('ADMIN', 'OWNER', 'MANAGER')
+  @Roles("ADMIN", "OWNER", "MANAGER")
   async createProduct(@Body() body: any, @Req() req: any) {
     const validated = CreateProductSchema.parse(body);
     const companyId = req.user?.companyId || req.user?.workspaceId;
     const product = await this.productService.createProduct(validated, companyId);
-    return ResponseUtil.success(product, 'Product created successfully');
+    return ResponseUtil.success(product, "Product created successfully");
   }
 
-  @Put(':id')
-  @Roles('ADMIN', 'OWNER', 'MANAGER')
-  async updateProduct(@Param('id') id: string, @Body() body: any) {
+  @Put(":id")
+  @Roles("ADMIN", "OWNER", "MANAGER")
+  async updateProduct(@Param("id") id: string, @Body() body: any) {
     const validated = UpdateProductSchema.parse(body);
     const updated = await this.productService.updateProduct(id, validated);
-    return ResponseUtil.success(updated, 'Product updated successfully');
+    return ResponseUtil.success(updated, "Product updated successfully");
   }
 
-  @Delete(':id')
-  @Roles('ADMIN', 'OWNER')
-  async deleteProduct(@Param('id') id: string) {
+  @Delete(":id")
+  @Roles("ADMIN", "OWNER")
+  async deleteProduct(@Param("id") id: string) {
     const res = await this.productService.softDeleteProduct(id);
-    return ResponseUtil.success(res, 'Product soft deleted successfully');
+    return ResponseUtil.success(res, "Product soft deleted successfully");
   }
 }

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductModel } from '../models';
-import { PaginationUtil, PaginationQuery } from '../utils/pagination.util';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { ProductModel } from "../models";
+import { PaginationUtil, PaginationQuery } from "../utils/pagination.util";
 
 @Injectable()
 export class ProductService {
@@ -13,8 +13,8 @@ export class ProductService {
     }
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { sku: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: "i" } },
+        { sku: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -38,6 +38,21 @@ export class ProductService {
     return ProductModel.create({ ...data, companyId });
   }
 
+  async bulkCreateProducts(products: any[], companyId?: string) {
+    if (!products || products.length === 0) return [];
+    const docs = products.map((p) => ({
+      ...p,
+      sku: p.sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      barcode: p.barcode || `BAR-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: p.name || "Unnamed Product",
+      unitPrice: Number(p.unitPrice || p.sellingPrice || p.price || 0),
+      costPrice: Number(p.costPrice || p.cost || 0),
+      taxRatePercent: Number(p.taxRatePercent || p.taxRate || 18),
+      companyId,
+    }));
+    return ProductModel.insertMany(docs, { ordered: false });
+  }
+
   async updateProduct(id: string, data: any) {
     const updated = await ProductModel.findByIdAndUpdate(id, { $set: data }, { new: true });
     if (!updated) {
@@ -50,11 +65,11 @@ export class ProductService {
     const deleted = await ProductModel.findByIdAndUpdate(
       id,
       { $set: { isDeleted: true, deletedAt: new Date() } },
-      { new: true }
+      { new: true },
     );
     if (!deleted) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    return { success: true, message: 'Product soft-deleted successfully' };
+    return { success: true, message: "Product soft-deleted successfully" };
   }
 }
