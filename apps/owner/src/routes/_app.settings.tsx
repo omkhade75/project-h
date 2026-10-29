@@ -51,10 +51,10 @@ function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [vapi, setVapi] = useState({
-    vapiPhoneId: "027dfd39-b626-43cf-859f-6583a33f580b",
-    vapiAgentId: "88b76de6-b66b-46f0-a536-8182804fab8a",
-    vapiPublicKey: "e3322c27-c9ac-45cb-9c58-e49c8f423a1f",
-    vapiPrivateKey: "581c84cb-6185-4714-98d1-bdd823189ea0",
+    vapiPhoneId: "http://localhost:8000",
+    vapiAgentId: "default",
+    vapiPublicKey: "ws://localhost:8000/ws/call/{sessionId}",
+    vapiPrivateKey: "Kokoro-82M + Indic MMS (Local Offline)",
   });
   const [loadingVapi, setLoadingVapi] = useState(true);
   const [savingVapi, setSavingVapi] = useState(false);
@@ -168,12 +168,12 @@ function SettingsPage() {
       await updateVapiConfigServer({
         data: vapi,
       });
-      toast.success("Vapi AI credentials updated successfully", {
-        description: "Your voice agent settings have been saved.",
+      toast.success("BizVoice configuration updated successfully", {
+        description: "Your local voice engine configuration has been saved.",
       });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to update Vapi credentials");
+      toast.error("Failed to update BizVoice settings");
     } finally {
       setSavingVapi(false);
     }

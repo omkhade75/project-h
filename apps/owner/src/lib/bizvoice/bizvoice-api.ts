@@ -63,26 +63,36 @@ export interface BizVoiceHealth {
 export async function startBizVoiceSession(
   params: StartCallSessionParams = {}
 ): Promise<StartCallSessionResponse> {
-  const response = await fetch(`${BIZVOICE_REST_URL}/api/calls/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      agent_id: params.agent_id || "default",
-      custom_system_prompt:
-        params.custom_system_prompt ||
-        "You are Bizora AI, an intelligent, polite, and helpful voice assistant for our store.",
-      voice: params.voice || "af_heart",
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 1500);
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(
-      `BizVoice server returned HTTP ${response.status}: ${errorText || "Could not start session"}`
-    );
+  try {
+    const response = await fetch(`${BIZVOICE_REST_URL}/api/calls/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        agent_id: params.agent_id || "default",
+        custom_system_prompt:
+          params.custom_system_prompt ||
+          "You are Bizora AI, an intelligent, polite, and helpful voice assistant for our store.",
+        voice: params.voice || "af_heart",
+      }),
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `BizVoice server returned HTTP ${response.status}: ${errorText || "Could not start session"}`
+      );
+    }
+
+    return await response.json();
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  return await response.json();
 }
 
 /**

@@ -107,6 +107,7 @@ export function useBizVoiceCall() {
         const msg = err instanceof Error ? err.message : "Failed to start BizVoice call";
         setError(msg);
         console.error("[BizVoice Call] Start error:", err);
+        throw err;
       }
     },
     [ws, audio]

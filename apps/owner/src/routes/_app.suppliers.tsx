@@ -78,7 +78,7 @@ function Suppliers() {
 
   const [callingId, setCallingId] = useState<string | null>(null);
 
-  const handleVapiCall = async (recipientName: string, phoneNumber: string) => {
+  const handleVoiceCall = async (recipientName: string, phoneNumber: string) => {
     if (!phoneNumber) {
       toast.error("This supplier does not have a phone number registered.");
       return;
@@ -575,7 +575,7 @@ function Suppliers() {
                   size="sm"
                   variant="outline"
                   className="border-hairline bg-surface text-xs font-semibold text-violet hover:bg-violet/10 gap-1"
-                  onClick={() => handleVapiCall(sel.name, sel.phone)}
+                  onClick={() => handleVoiceCall(sel.name, sel.phone)}
                   disabled={callingId === sel.phone}
                 >
                   {callingId === sel.phone ? (
