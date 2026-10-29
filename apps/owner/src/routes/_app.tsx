@@ -85,72 +85,117 @@ export const Route = createFileRoute("/_app")({
   component: AppShell,
 });
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  badge?: string;
+  badgeTone?: "primary" | "amber" | "emerald" | "default";
+};
 type NavSection = { section: string; items: NavItem[] };
 
+// 🛒 Simplified, intuitive retail navigation designed for kirana & store owners
 const NAV: NavSection[] = [
   {
-    section: "Overview",
+    section: "Daily Counter & Billing",
     items: [
-      { to: "/command-center", label: "Command Center", icon: LayoutDashboard },
+      {
+        to: "/billing",
+        label: "Billing (POS)",
+        icon: Calculator,
+        badge: "Daily",
+        badgeTone: "emerald",
+      },
+      {
+        to: "/products",
+        label: "Products & Stock",
+        icon: Package,
+      },
+      {
+        to: "/sales",
+        label: "Sales History",
+        icon: ShoppingCart,
+      },
+      {
+        to: "/customers",
+        label: "Customers & Khata",
+        icon: Users,
+      },
     ],
   },
   {
-    section: "Commerce",
+    section: "Store & Inventory",
     items: [
-      { to: "/billing", label: "Billing (POS)", icon: Calculator },
-      { to: "/sales", label: "Sales", icon: ShoppingCart },
-      { to: "/customers", label: "Customers", icon: Users },
+      {
+        to: "/command-center",
+        label: "Store Overview",
+        icon: LayoutDashboard,
+      },
+      {
+        to: "/expiry",
+        label: "Expiry Radar",
+        icon: Timer,
+        badge: "Alerts",
+        badgeTone: "amber",
+      },
+      {
+        to: "/suppliers",
+        label: "Suppliers & Wholesalers",
+        icon: Truck,
+      },
+      {
+        to: "/expenses",
+        label: "Daily Expenses",
+        icon: TrendingDown,
+      },
     ],
   },
   {
-    section: "Operations",
+    section: "Reports & Settings",
     items: [
-      { to: "/products", label: "Products", icon: Package },
-      { to: "/inventory", label: "Inventory", icon: Warehouse },
-      { to: "/suppliers", label: "Suppliers", icon: Truck },
-    ],
-  },
-  {
-    section: "Finance",
-    items: [
-      { to: "/income", label: "Income", icon: Wallet },
-      { to: "/expenses", label: "Expenses", icon: TrendingDown },
-      { to: "/accounts", label: "Accounts", icon: CreditCard },
-    ],
-  },
-  {
-    section: "System",
-    items: [
-      { to: "/reports", label: "Reports", icon: FileText },
-      { to: "/subscriptions", label: "Plans & Pricing", icon: CreditCard },
-      { to: "/settings", label: "Settings", icon: Settings },
+      {
+        to: "/reports",
+        label: "Reports & Profit",
+        icon: FileText,
+      },
+      {
+        to: "/subscriptions",
+        label: "Plans & Pricing",
+        icon: CreditCard,
+      },
+      {
+        to: "/settings",
+        label: "Store Settings",
+        icon: Settings,
+      },
     ],
   },
 ];
 
-// Advanced tabs — shown in collapsible "Advanced" section
+// 🧠 Advanced AI & Analytics — neatly organized in collapsible drawer for power users
 const ADVANCED_NAV: NavSection[] = [
   {
-    section: "Advanced",
+    section: "Advanced AI & Analytics",
     items: [
-      { to: "/live-ops", label: "Live Operations", icon: Activity },
-      { to: "/time-machine", label: "Business Time Machine", icon: CalendarDays },
-      { to: "/analytics", label: "Analytics", icon: BarChart3 },
       { to: "/ai-decisions", label: "AI Decision Center", icon: Brain },
+      { to: "/forecasting", label: "Demand Forecasting", icon: LineChart },
+      { to: "/anomalies", label: "Anomaly & Risk Radar", icon: ShieldAlert },
       { to: "/market-intelligence", label: "Market Intelligence", icon: Globe },
-      { to: "/forecasting", label: "Forecasting", icon: LineChart },
-      { to: "/anomalies", label: "Anomaly & Risk", icon: ShieldAlert },
-      { to: "/transactions", label: "Transactions", icon: Receipt },
-      { to: "/expiry", label: "Expiry Intelligence", icon: Timer },
+      { to: "/inventory", label: "Warehouse Inventory", icon: Warehouse },
+      { to: "/transactions", label: "Transactions Ledger", icon: Receipt },
+      { to: "/income", label: "Income Register", icon: Wallet },
+      { to: "/accounts", label: "Bank Accounts", icon: CreditCard },
       { to: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
-      { to: "/logistics", label: "Logistics & Dispatch", icon: Truck },
-      { to: "/utilities", label: "Utilities", icon: Zap },
+      { to: "/logistics", label: "Delivery & Dispatch", icon: Truck },
+      { to: "/utilities", label: "Power & Utilities", icon: Zap },
       { to: "/tax", label: "Tax & Compliance", icon: FileBarChart },
       { to: "/departments", label: "Departments", icon: Building2 },
       { to: "/staff", label: "Staff & Managers", icon: UserCog },
-      { to: "/customer-portal", label: "Customer Portal", icon: ShoppingBagIcon },
-      { to: "/supplier-portal", label: "Supplier Portal", icon: Truck },
+      { to: "/live-ops", label: "Live Operations", icon: Activity },
+      { to: "/time-machine", label: "Business Time Machine", icon: CalendarDays },
+      { to: "/analytics", label: "Deep Analytics", icon: BarChart3 },
+      { to: "/customer-portal", label: "Customer Storefront", icon: ShoppingBagIcon },
+      { to: "/supplier-portal", label: "Supplier Hub", icon: Truck },
       { to: "/data-import", label: "Data Import", icon: Upload },
     ],
   },
@@ -192,13 +237,21 @@ function AppShell() {
     });
   };
   const notifRef = useRef<HTMLDivElement>(null);
-  const pathname: string = (useRouterState({ select: (s: any) => s.location.pathname }) as unknown as string) || "";
+  const pathname: string =
+    (useRouterState({ select: (s: any) => s.location.pathname }) as unknown as string) || "";
   const [activePlanName, setActivePlanName] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("bizora_active_plan_name") || "14-Day Free Trial";
     }
     return "14-Day Free Trial";
   });
+
+  // Auto-expand advanced section if the user navigates directly to an advanced route
+  useEffect(() => {
+    if (ADVANCED_NAV.some((s) => s.items.some((i) => i.to === pathname))) {
+      setAdvancedOpen(true);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -256,8 +309,8 @@ function AppShell() {
 
   // Initialize theme state from localStorage
   useEffect(() => {
-    const theme = localStorage.getItem('bizora-theme') || 'light';
-    setIsDark(theme === 'dark');
+    const theme = localStorage.getItem("bizora-theme") || "light";
+    setIsDark(theme === "dark");
   }, []);
 
   // Keyboard shortcut listener (Cmd/Ctrl + K to focus search, Esc to close)
@@ -420,17 +473,15 @@ function AppShell() {
     filteredNAV = [
       {
         section: "System",
-        items: [
-          { to: "/system-admin", label: "System Admin Portal", icon: ShieldAlert },
-        ],
+        items: [{ to: "/system-admin", label: "System Admin Portal", icon: ShieldAlert }],
       },
     ];
   }
 
   const currentLabel =
-    filteredNAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label
-    ?? ADVANCED_NAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label
-    ?? "Overview";
+    filteredNAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label ??
+    ADVANCED_NAV.flatMap((s) => s.items).find((i) => i.to === pathname)?.label ??
+    "Overview";
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -438,11 +489,13 @@ function AppShell() {
         <div className="flex items-center justify-between bg-warning text-warning-foreground px-4 py-2 text-sm font-semibold select-none z-50">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4.5 w-4.5 text-warning-foreground animate-pulse" />
-            <span>Impersonation Active: Viewing workspace as Owner ({user.name} - {user.email})</span>
+            <span>
+              Impersonation Active: Viewing workspace as Owner ({user.name} - {user.email})
+            </span>
           </div>
-          <Button 
-            size="sm" 
-            variant="destructive" 
+          <Button
+            size="sm"
+            variant="destructive"
             onClick={async () => {
               await stopImpersonatingServer();
               toast.success("Returned to System Admin session.");
@@ -455,799 +508,841 @@ function AppShell() {
       )}
       <div className="flex flex-1 min-h-0 bg-background text-foreground">
         {/* Mobile sidebar overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed top-0 left-0 z-50 flex h-screen shrink-0 flex-col bg-sidebar transition-all duration-300",
-          "border-r-2 border-r-primary/30",
-          // Desktop
-          "lg:sticky lg:translate-x-0",
-          collapsed ? "lg:w-[68px]" : "lg:w-[260px]",
-          // Mobile
-          mobileOpen
-            ? "w-[280px] translate-x-0 shadow-2xl shadow-primary/10"
-            : "-translate-x-full lg:translate-x-0",
-        )}
-      >
-
-
-        <div className="relative hairline-b flex items-center gap-3 px-4 py-5">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-transparent overflow-hidden">
-            <BizoraLogoIcon className="h-full w-full object-contain" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold tracking-tight text-foreground">
-                {typeof window !== "undefined" && user?.workspaceId && localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
-                  ? localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
-                  : ((user as any)?.companyName || (user?.workspaceId === "grandsquare-mall" || user?.email === "owner@gmail.com" ? "GrandSquare Mall" : `${user?.name || "Business"}'s Store`))}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  {activePlanName.toUpperCase()}
-                </span>
-                <span className="truncate text-[10px] text-muted-foreground">
-                  {user?.role === "owner" ? "Store Owner" : user?.role}
-                </span>
-              </div>
-            </div>
-          )}
-          {/* Close mobile menu */}
-          <button
+        {mobileOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
             onClick={() => setMobileOpen(false)}
-            className="ml-auto rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground lg:hidden"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          {/* Collapse toggle (desktop only) */}
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className={cn(
-              "ml-auto rounded-md p-1 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground hidden lg:block",
-              collapsed && "mx-auto ml-0",
-            )}
-            aria-label="Toggle sidebar"
-          >
-            <ChevronsLeft
-              className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")}
-            />
-          </button>
-        </div>
+          />
+        )}
 
-        <nav className="relative flex-1 overflow-y-auto px-2 py-4">
-          {filteredNAV.map((section) => (
-            <div key={section.section} className="mb-4">
-              {!collapsed && (
-                <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-primary/70">
-                  {section.section}
-                </p>
-              )}
-              <ul className="space-y-0.5">
-                {section.items.map((item) => {
-                  const active = pathname === item.to;
-                  return (
-                    <li key={item.to}>
-                      <Link
-                        to={item.to as never}
-                        onClick={() => setMobileOpen(false)}
-                        className={cn(
-                          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                          active
-                            ? "bg-primary/15 text-foreground shadow-sm"
-                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
-                        )}
-                      >
-                        {active && (
-                          <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r gradient-primary" />
-                        )}
-                        <item.icon
-                          className={cn(
-                            "h-[18px] w-[18px] shrink-0",
-                            active
-                              ? "text-primary"
-                              : "text-muted-foreground group-hover:text-foreground",
-                          )}
-                        />
-                        {!collapsed && <span className="truncate">{item.label}</span>}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-
-          {/* Advanced Section Toggle */}
-          {!user?.isSystemAdmin && (
-            <div className="mb-4">
-              <button
-                onClick={() => setAdvancedOpen((o) => !o)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-all",
-                  collapsed && "justify-center",
-                )}
-              >
-                {!collapsed && (
-                  <>
-                    <ChevronRight className={cn("h-3 w-3 transition-transform", advancedOpen && "rotate-90")} />
-                    <span>Advanced Tools</span>
-                  </>
-                )}
-                {collapsed && <ChevronRight className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-90")} />}
-              </button>
-              {advancedOpen && ADVANCED_NAV.map((section) => (
-                <div key={section.section} className="mt-1">
-                  <ul className="space-y-0.5">
-                    {section.items.map((item) => {
-                      const active = pathname === item.to;
-                      return (
-                        <li key={item.to}>
-                          <Link
-                            to={item.to as never}
-                            onClick={() => setMobileOpen(false)}
-                            className={cn(
-                              "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                              active
-                                ? "bg-primary/15 text-foreground shadow-sm"
-                                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
-                            )}
-                          >
-                            {active && (
-                              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r gradient-primary" />
-                            )}
-                            <item.icon
-                              className={cn(
-                                "h-[18px] w-[18px] shrink-0",
-                                active
-                                  ? "text-primary"
-                                  : "text-muted-foreground group-hover:text-foreground",
-                              )}
-                            />
-                            {!collapsed && <span className="truncate">{item.label}</span>}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed top-0 left-0 z-50 flex h-screen shrink-0 flex-col bg-sidebar transition-all duration-300",
+            "border-r-2 border-r-primary/30",
+            // Desktop
+            "lg:sticky lg:translate-x-0",
+            collapsed ? "lg:w-[68px]" : "lg:w-[260px]",
+            // Mobile
+            mobileOpen
+              ? "w-[280px] translate-x-0 shadow-2xl shadow-primary/10"
+              : "-translate-x-full lg:translate-x-0",
           )}
-        </nav>
-
-        <div className="relative hairline-t p-4">
-          <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-violet text-sm font-bold text-primary-foreground shadow-md shadow-primary/20">
-              {(user?.name || "Store Owner")
-                .split(" ")
-                .map((p) => p[0])
-                .filter(Boolean)
-                .slice(0, 2)
-                .join("") || "SO"}
+        >
+          <div className="relative hairline-b flex items-center gap-3 px-4 py-5">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-transparent overflow-hidden">
+              <BizoraLogoIcon className="h-full w-full object-contain" />
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{user?.name}</p>
-                <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-primary">
-                  {user?.role}
+                <p className="truncate text-sm font-bold tracking-tight text-foreground">
+                  {typeof window !== "undefined" &&
+                  user?.workspaceId &&
+                  localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
+                    ? localStorage.getItem(`bizora_company_name_${user.workspaceId}`)
+                    : (user as any)?.companyName ||
+                      (user?.workspaceId === "grandsquare-mall" || user?.email === "owner@gmail.com"
+                        ? "GrandSquare Mall"
+                        : `${user?.name || "Business"}'s Store`)}
                 </p>
-              </div>
-            )}
-            {!collapsed && (
-              <button
-                onClick={async () => {
-                  await logout();
-                  navigate({ to: "/login" });
-                }}
-                className="rounded-md p-2 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors"
-                aria-label="Sign out"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar */}
-        <header className="sticky top-0 z-20 hairline-b glass w-full max-w-full">
-          <div className="flex h-14 items-center gap-1.5 sm:gap-3 px-2.5 sm:px-6 w-full max-w-full">
-            {/* Mobile hamburger */}
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="rounded-md p-1.5 text-muted-foreground hover:text-foreground lg:hidden shrink-0"
-              aria-label="Open navigation menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-
-            {/* Back button */}
-            <button
-              onClick={() => window.history.back()}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-surface/30 hover:text-foreground transition-colors shrink-0"
-              title="Go Back"
-              aria-label="Go Back"
-            >
-              <ArrowLeft className="h-4.5 w-4.5" />
-            </button>
-
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground overflow-hidden">
-              <BizoraLogoIcon className="h-5 w-5 shrink-0" />
-              <span className="hidden md:inline font-bold text-foreground">Bizora AI</span>
-              <ChevronRight className="hidden md:inline h-3 w-3 text-muted-foreground/60" />
-              <span className="truncate font-semibold text-foreground text-xs sm:text-sm">{currentLabel}</span>
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0" title="Real-time Live Sync Active">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                </span>
-                <span>Live</span>
-              </span>
-            </div>
-
-            <div className="relative ml-3 hidden max-w-xs xl:max-w-sm flex-1 md:block">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setSearchOpen(true);
-                }}
-                onFocus={() => setSearchOpen(true)}
-                placeholder="Search products, customers, suppliers…  ⌘K"
-                className="w-full rounded-md border border-hairline bg-surface py-1.5 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
-              />
-
-              {/* Floating search dropdown */}
-              {searchOpen && searchQuery && (
-                <div className="absolute top-full left-0 right-0 mt-1 max-h-[380px] overflow-y-auto rounded-lg border border-hairline bg-popover p-2 text-xs shadow-2xl z-50 text-foreground">
-                  {/* Backdrop click blocker */}
-                  <div className="fixed inset-0 z-[-1]" onClick={() => setSearchOpen(false)} />
-
-                  {searchResults.products.length === 0 &&
-                  searchResults.customers.length === 0 &&
-                  searchResults.suppliers.length === 0 &&
-                  searchResults.transactions.length === 0 &&
-                  searchResults.purchaseOrders.length === 0 &&
-                  searchResults.expenses.length === 0 &&
-                  searchResults.investments.length === 0 &&
-                  searchResults.logistics.length === 0 ? (
-                    <div className="py-4 text-center text-muted-foreground">
-                      No matches found for "{searchQuery}"
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* Products Group */}
-                      {searchResults.products.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Products
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.products.map((p) => (
-                              <button
-                                key={p.id}
-                                onClick={() => {
-                                  openProduct360(p.id);
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">{p.name}</span>
-                                <span className="text-[10px] text-muted-foreground font-mono">
-                                  {p.id}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Customers Group */}
-                      {searchResults.customers.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Customers
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.customers.map((c) => (
-                              <button
-                                key={c.id}
-                                onClick={() => {
-                                  openCustomer360(c.id);
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">{c.name}</span>
-                                <span className="text-[10px] text-muted-foreground">{c.id}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Suppliers Group */}
-                      {searchResults.suppliers.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Suppliers
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.suppliers.map((s) => (
-                              <button
-                                key={s.id}
-                                onClick={() => {
-                                  openSupplier360(s.id);
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">{s.name}</span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {s.category}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Transactions Group */}
-                      {searchResults.transactions.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Transactions
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.transactions.map((t) => (
-                              <button
-                                key={t.id}
-                                onClick={() => {
-                                  navigate({ to: "/transactions" });
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">
-                                  Receipt {t.id} ({t.customerName || "Walk-in"})
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  ₹{t.total}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Purchase Orders Group */}
-                      {searchResults.purchaseOrders.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Purchase Orders
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.purchaseOrders.map((po) => (
-                              <button
-                                key={po.id}
-                                onClick={() => {
-                                  navigate({ to: "/purchase-orders" });
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">
-                                  PO {po.id} ({po.productName})
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {po.status}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Expenses Group */}
-                      {searchResults.expenses.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Expenses
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.expenses.map((e) => (
-                              <button
-                                key={e.id}
-                                onClick={() => {
-                                  navigate({ to: "/expenses" });
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">
-                                  {e.desc}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground font-semibold">
-                                  ₹{e.amount}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Investments Group */}
-                      {searchResults.investments.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Investments
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.investments.map((inv) => (
-                              <button
-                                key={inv.id}
-                                onClick={() => {
-                                  navigate({ to: "/market-intelligence" });
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">
-                                  {inv.assetName} ({inv.symbol})
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  ₹{inv.currentValue.toLocaleString("en-IN")}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Logistics Group */}
-                      {searchResults.logistics.length > 0 && (
-                        <div>
-                          <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
-                            Logistics & Dispatches
-                          </p>
-                          <div className="space-y-0.5 mt-1">
-                            {searchResults.logistics.map((l) => (
-                              <button
-                                key={l.id}
-                                onClick={() => {
-                                  navigate({ to: "/logistics" });
-                                  setSearchQuery("");
-                                  setSearchOpen(false);
-                                }}
-                                className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
-                              >
-                                <span className="font-medium text-foreground">
-                                  Order {l.orderNumber} ({l.customerName})
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {l.status}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    {activePlanName.toUpperCase()}
+                  </span>
+                  <span className="truncate text-[10px] text-muted-foreground">
+                    {user?.role === "owner" ? "Store Owner" : user?.role}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
-              <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-[11px] font-medium 2xl:flex shrink-0">
-                <Circle className="h-2 w-2 fill-success text-success" />
-                Store Active · 09:00–22:00
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hidden sm:inline-flex shrink-0"
-                onClick={() => navigate({ to: "/time-machine" as never })}
-                title="Time Machine Calendar"
-              >
-                <CalendarDays className="h-4 w-4" />
-              </Button>
-              <LanguageSelector className="shrink-0" />
-              {/* Theme toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground shrink-0"
-                onClick={() => {
-                  const html = document.documentElement;
-                  const nowDark = html.classList.contains('dark');
-                  if (nowDark) {
-                    html.classList.remove('dark');
-                    localStorage.setItem('bizora-theme', 'light');
-                    setIsDark(false);
-                  } else {
-                    html.classList.add('dark');
-                    localStorage.setItem('bizora-theme', 'dark');
-                    setIsDark(true);
-                  }
-                }}
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-              {/* Notification bell with dropdown */}
-              <div className="relative shrink-0" ref={notifRef}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-8 w-8 text-muted-foreground shrink-0"
-                  onClick={() => setNotifOpen((o) => !o)}
-                  title="Notifications"
-                >
-                  <Bell className="h-4 w-4" />
-                  {totalUnreadNotifs > 0 && (
-                    <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                      {Math.min(totalUnreadNotifs, 99)}
-                    </span>
-                  )}
-                </Button>
+            )}
+            {/* Close mobile menu */}
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="ml-auto rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground lg:hidden"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {/* Collapse toggle (desktop only) */}
+            <button
+              onClick={() => setCollapsed((c) => !c)}
+              className={cn(
+                "ml-auto rounded-md p-1 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground hidden lg:block",
+                collapsed && "mx-auto ml-0",
+              )}
+              aria-label="Toggle sidebar"
+            >
+              <ChevronsLeft
+                className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")}
+              />
+            </button>
+          </div>
 
-                {notifOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-[360px] max-w-[calc(100vw-2rem)] max-h-[min(480px,80vh)] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 hairline-b">
-                      <div>
-                        <p className="text-sm font-bold">Notifications</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {totalUnreadNotifs} unread
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const allIds = [
-                            ...(anomalies || []).map((a) => a.id),
-                          ];
-                          if (isEndOfMonth) allIds.push(endOfMonthNotifId);
-                          markNotifRead(allIds);
-                        }}
-                        className="text-[11px] font-medium text-primary hover:underline"
-                      >
-                        Mark all read
-                      </button>
-                    </div>
-
-                    {/* Scrollable list */}
-                    <div className="flex-1 overflow-y-auto divide-y divide-hairline">
-                      {/* End of Month Bill Alert */}
-                      {isEndOfMonth && (
-                        <button
-                          key={endOfMonthNotifId}
-                          onClick={() => {
-                            markNotifRead(endOfMonthNotifId);
-                            setNotifOpen(false);
-                            navigate({ to: "/expenses" });
-                          }}
+          <nav className="relative flex-1 overflow-y-auto px-2 py-4">
+            {filteredNAV.map((section) => (
+              <div key={section.section} className="mb-4">
+                {!collapsed && (
+                  <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-primary/70">
+                    {section.section}
+                  </p>
+                )}
+                <ul className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const active = pathname === item.to;
+                    return (
+                      <li key={item.to}>
+                        <Link
+                          to={item.to as never}
+                          onClick={() => setMobileOpen(false)}
                           className={cn(
-                            "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
-                            !readNotifs.has(endOfMonthNotifId) && "bg-primary/5",
+                            "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                            active
+                              ? "bg-primary/15 text-foreground shadow-sm"
+                              : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
                           )}
                         >
-                          <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-500/10">
-                            <Receipt className="h-4 w-4 text-indigo-500" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold truncate">
-                                Utility Bills Due
-                              </span>
-                              <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-warning/15 text-warning">
-                                Action Required
-                              </span>
-                            </div>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">
-                              End of month approaching. Please review and pay all outstanding
-                              utility bills (Electricity, Water, Internet, etc).
-                            </p>
-                            <p className="mt-0.5 text-[10px] text-muted-foreground">
-                              System Reminder
-                            </p>
-                          </div>
-                          {!readNotifs.has(endOfMonthNotifId) && (
-                            <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                          {active && (
+                            <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r gradient-primary" />
                           )}
-                        </button>
-                      )}
+                          <item.icon
+                            className={cn(
+                              "h-[18px] w-[18px] shrink-0",
+                              active
+                                ? "text-primary"
+                                : "text-muted-foreground group-hover:text-foreground",
+                            )}
+                          />
+                          {!collapsed && (
+                            <div className="flex items-center justify-between flex-1 min-w-0">
+                              <span className="truncate">{item.label}</span>
+                              {item.badge && (
+                                <span
+                                  className={cn(
+                                    "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0",
+                                    item.badgeTone === "emerald" &&
+                                      "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25",
+                                    item.badgeTone === "amber" &&
+                                      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25",
+                                    (!item.badgeTone || item.badgeTone === "primary") &&
+                                      "bg-primary/10 text-primary border border-primary/20",
+                                  )}
+                                >
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
 
-                      {/* Anomaly alerts from database */}
-                      {(anomalies || []).length === 0 && !isEndOfMonth ? (
-                        <div className="py-10 text-center text-xs text-muted-foreground">
-                          No unread notifications
-                        </div>
-                      ) : (
-                        (anomalies || []).map((a) => {
-                          const isRead = readNotifs.has(a.id);
-                          const severityColor =
-                            a.severity === "Critical"
-                              ? "bg-destructive/15 text-destructive"
-                              : a.severity === "High"
-                                ? "bg-warning/15 text-warning"
-                                : a.severity === "Medium"
-                                  ? "bg-info/15 text-info"
-                                  : "bg-muted text-muted-foreground";
+            {/* Advanced Section Toggle — Cleanly Separated */}
+            {!user?.isSystemAdmin && (
+              <div className="mt-3 pt-3 border-t border-hairline/60">
+                <button
+                  onClick={() => setAdvancedOpen((o) => !o)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-bold tracking-wider text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-all",
+                    collapsed && "justify-center",
+                  )}
+                  title="Toggle Advanced AI & Analytics Tools"
+                >
+                  {!collapsed ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <ChevronRight
+                          className={cn(
+                            "h-3.5 w-3.5 transition-transform text-muted-foreground",
+                            advancedOpen && "rotate-90",
+                          )}
+                        />
+                        <span className="uppercase tracking-[0.14em]">Advanced AI Tools</span>
+                      </div>
+                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground">
+                        {ADVANCED_NAV[0].items.length} tools
+                      </span>
+                    </>
+                  ) : (
+                    <ChevronRight
+                      className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-90")}
+                    />
+                  )}
+                </button>
+                {advancedOpen &&
+                  ADVANCED_NAV.map((section) => (
+                    <div key={section.section} className="mt-1">
+                      <ul className="space-y-0.5">
+                        {section.items.map((item) => {
+                          const active = pathname === item.to;
                           return (
-                            <button
-                              key={a.id}
-                              onClick={() => {
-                                markNotifRead(a.id);
-                                setNotifOpen(false);
-                                navigate({ to: "/anomalies" });
-                              }}
-                              className={cn(
-                                "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
-                                !isRead && "bg-primary/5",
-                              )}
-                            >
-                              <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-destructive/10">
-                                <AlertTriangle className="h-4 w-4 text-destructive" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-semibold truncate">{a.metric}</span>
-                                  <span
-                                    className={cn(
-                                      "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
-                                      severityColor,
-                                    )}
-                                  >
-                                    {a.severity}
-                                  </span>
-                                </div>
-                                <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                                  {a.actual} vs expected {a.expected} ({a.deviation})
-                                </p>
-                                <p className="mt-0.5 text-[10px] text-muted-foreground">{a.when}</p>
-                              </div>
-                              {!isRead && (
-                                <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                              )}
-                            </button>
+                            <li key={item.to}>
+                              <Link
+                                to={item.to as never}
+                                onClick={() => setMobileOpen(false)}
+                                className={cn(
+                                  "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                                  active
+                                    ? "bg-primary/15 text-foreground shadow-sm"
+                                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-foreground",
+                                )}
+                              >
+                                {active && (
+                                  <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r gradient-primary" />
+                                )}
+                                <item.icon
+                                  className={cn(
+                                    "h-[18px] w-[18px] shrink-0",
+                                    active
+                                      ? "text-primary"
+                                      : "text-muted-foreground group-hover:text-foreground",
+                                  )}
+                                />
+                                {!collapsed && <span className="truncate">{item.label}</span>}
+                              </Link>
+                            </li>
                           );
-                        })
-                      )}
+                        })}
+                      </ul>
                     </div>
+                  ))}
+              </div>
+            )}
+          </nav>
 
-                    {/* Footer */}
-                    <div className="hairline-t px-4 py-2.5 text-center">
-                      <button
-                        onClick={() => {
-                          setNotifOpen(false);
-                          navigate({ to: "/anomalies" });
-                        }}
-                        className="text-[11px] font-semibold text-primary hover:underline"
-                      >
-                        View all anomalies & alerts →
-                      </button>
-                    </div>
+          <div className="relative hairline-t p-4">
+            <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-violet text-sm font-bold text-primary-foreground shadow-md shadow-primary/20">
+                {(user?.name || "Store Owner")
+                  .split(" ")
+                  .map((p) => p[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("") || "SO"}
+              </div>
+              {!collapsed && (
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{user?.name}</p>
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-primary">
+                    {user?.role}
+                  </p>
+                </div>
+              )}
+              {!collapsed && (
+                <button
+                  onClick={async () => {
+                    await logout();
+                    navigate({ to: "/login" });
+                  }}
+                  className="rounded-md p-2 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Top bar */}
+          <header className="sticky top-0 z-20 hairline-b glass w-full max-w-full">
+            <div className="flex h-14 items-center gap-1.5 sm:gap-3 px-2.5 sm:px-6 w-full max-w-full">
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground lg:hidden shrink-0"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              {/* Back button */}
+              <button
+                onClick={() => window.history.back()}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-surface/30 hover:text-foreground transition-colors shrink-0"
+                title="Go Back"
+                aria-label="Go Back"
+              >
+                <ArrowLeft className="h-4.5 w-4.5" />
+              </button>
+
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground overflow-hidden">
+                <BizoraLogoIcon className="h-5 w-5 shrink-0" />
+                <span className="hidden md:inline font-bold text-foreground">Bizora AI</span>
+                <ChevronRight className="hidden md:inline h-3 w-3 text-muted-foreground/60" />
+                <span className="truncate font-semibold text-foreground text-xs sm:text-sm">
+                  {currentLabel}
+                </span>
+                <span
+                  className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0"
+                  title="Real-time Live Sync Active"
+                >
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                  </span>
+                  <span>Live</span>
+                </span>
+              </div>
+
+              <div className="relative ml-3 hidden max-w-xs xl:max-w-sm flex-1 md:block">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  ref={searchInputRef}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSearchOpen(true);
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder="Search products, customers, suppliers…  ⌘K"
+                  className="w-full rounded-md border border-hairline bg-surface py-1.5 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
+                />
+
+                {/* Floating search dropdown */}
+                {searchOpen && searchQuery && (
+                  <div className="absolute top-full left-0 right-0 mt-1 max-h-[380px] overflow-y-auto rounded-lg border border-hairline bg-popover p-2 text-xs shadow-2xl z-50 text-foreground">
+                    {/* Backdrop click blocker */}
+                    <div className="fixed inset-0 z-[-1]" onClick={() => setSearchOpen(false)} />
+
+                    {searchResults.products.length === 0 &&
+                    searchResults.customers.length === 0 &&
+                    searchResults.suppliers.length === 0 &&
+                    searchResults.transactions.length === 0 &&
+                    searchResults.purchaseOrders.length === 0 &&
+                    searchResults.expenses.length === 0 &&
+                    searchResults.investments.length === 0 &&
+                    searchResults.logistics.length === 0 ? (
+                      <div className="py-4 text-center text-muted-foreground">
+                        No matches found for "{searchQuery}"
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Products Group */}
+                        {searchResults.products.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Products
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.products.map((p) => (
+                                <button
+                                  key={p.id}
+                                  onClick={() => {
+                                    openProduct360(p.id);
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">{p.name}</span>
+                                  <span className="text-[10px] text-muted-foreground font-mono">
+                                    {p.id}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Customers Group */}
+                        {searchResults.customers.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Customers
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.customers.map((c) => (
+                                <button
+                                  key={c.id}
+                                  onClick={() => {
+                                    openCustomer360(c.id);
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">{c.name}</span>
+                                  <span className="text-[10px] text-muted-foreground">{c.id}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Suppliers Group */}
+                        {searchResults.suppliers.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Suppliers
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.suppliers.map((s) => (
+                                <button
+                                  key={s.id}
+                                  onClick={() => {
+                                    openSupplier360(s.id);
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">{s.name}</span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {s.category}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Transactions Group */}
+                        {searchResults.transactions.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Transactions
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.transactions.map((t) => (
+                                <button
+                                  key={t.id}
+                                  onClick={() => {
+                                    navigate({ to: "/transactions" });
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">
+                                    Receipt {t.id} ({t.customerName || "Walk-in"})
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    ₹{t.total}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Purchase Orders Group */}
+                        {searchResults.purchaseOrders.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Purchase Orders
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.purchaseOrders.map((po) => (
+                                <button
+                                  key={po.id}
+                                  onClick={() => {
+                                    navigate({ to: "/purchase-orders" });
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">
+                                    PO {po.id} ({po.productName})
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {po.status}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Expenses Group */}
+                        {searchResults.expenses.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Expenses
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.expenses.map((e) => (
+                                <button
+                                  key={e.id}
+                                  onClick={() => {
+                                    navigate({ to: "/expenses" });
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">{e.desc}</span>
+                                  <span className="text-[10px] text-muted-foreground font-semibold">
+                                    ₹{e.amount}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Investments Group */}
+                        {searchResults.investments.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Investments
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.investments.map((inv) => (
+                                <button
+                                  key={inv.id}
+                                  onClick={() => {
+                                    navigate({ to: "/market-intelligence" });
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">
+                                    {inv.assetName} ({inv.symbol})
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    ₹{inv.currentValue.toLocaleString("en-IN")}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Logistics Group */}
+                        {searchResults.logistics.length > 0 && (
+                          <div>
+                            <p className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                              Logistics & Dispatches
+                            </p>
+                            <div className="space-y-0.5 mt-1">
+                              {searchResults.logistics.map((l) => (
+                                <button
+                                  key={l.id}
+                                  onClick={() => {
+                                    navigate({ to: "/logistics" });
+                                    setSearchQuery("");
+                                    setSearchOpen(false);
+                                  }}
+                                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface flex justify-between items-center"
+                                >
+                                  <span className="font-medium text-foreground">
+                                    Order {l.orderNumber} ({l.customerName})
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {l.status}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-              <Button
-                size="sm"
-                className="h-8 gap-1 gradient-primary text-primary-foreground text-xs font-semibold px-2 sm:px-3 shrink-0"
-                onClick={() => navigate({ to: "/ai-decisions" })}
-                title="Ask Bizora AI"
-              >
-                <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden md:inline">Ask AI</span>
-              </Button>
+
+              <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+                <div className="hidden items-center gap-1.5 rounded-md border border-hairline bg-surface px-2.5 py-1 text-[11px] font-medium 2xl:flex shrink-0">
+                  <Circle className="h-2 w-2 fill-success text-success" />
+                  Store Active · 09:00–22:00
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hidden sm:inline-flex shrink-0"
+                  onClick={() => navigate({ to: "/time-machine" as never })}
+                  title="Time Machine Calendar"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                </Button>
+                <LanguageSelector className="shrink-0" />
+                {/* Theme toggle */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground shrink-0"
+                  onClick={() => {
+                    const html = document.documentElement;
+                    const nowDark = html.classList.contains("dark");
+                    if (nowDark) {
+                      html.classList.remove("dark");
+                      localStorage.setItem("bizora-theme", "light");
+                      setIsDark(false);
+                    } else {
+                      html.classList.add("dark");
+                      localStorage.setItem("bizora-theme", "dark");
+                      setIsDark(true);
+                    }
+                  }}
+                  title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+                {/* Notification bell with dropdown */}
+                <div className="relative shrink-0" ref={notifRef}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-8 w-8 text-muted-foreground shrink-0"
+                    onClick={() => setNotifOpen((o) => !o)}
+                    title="Notifications"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {totalUnreadNotifs > 0 && (
+                      <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                        {Math.min(totalUnreadNotifs, 99)}
+                      </span>
+                    )}
+                  </Button>
+
+                  {notifOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-[360px] max-w-[calc(100vw-2rem)] max-h-[min(480px,80vh)] overflow-hidden rounded-xl border border-hairline bg-popover shadow-2xl z-50 flex flex-col">
+                      {/* Header */}
+                      <div className="flex items-center justify-between px-4 py-3 hairline-b">
+                        <div>
+                          <p className="text-sm font-bold">Notifications</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {totalUnreadNotifs} unread
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const allIds = [...(anomalies || []).map((a) => a.id)];
+                            if (isEndOfMonth) allIds.push(endOfMonthNotifId);
+                            markNotifRead(allIds);
+                          }}
+                          className="text-[11px] font-medium text-primary hover:underline"
+                        >
+                          Mark all read
+                        </button>
+                      </div>
+
+                      {/* Scrollable list */}
+                      <div className="flex-1 overflow-y-auto divide-y divide-hairline">
+                        {/* End of Month Bill Alert */}
+                        {isEndOfMonth && (
+                          <button
+                            key={endOfMonthNotifId}
+                            onClick={() => {
+                              markNotifRead(endOfMonthNotifId);
+                              setNotifOpen(false);
+                              navigate({ to: "/expenses" });
+                            }}
+                            className={cn(
+                              "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
+                              !readNotifs.has(endOfMonthNotifId) && "bg-primary/5",
+                            )}
+                          >
+                            <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-500/10">
+                              <Receipt className="h-4 w-4 text-indigo-500" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold truncate">
+                                  Utility Bills Due
+                                </span>
+                                <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold bg-warning/15 text-warning">
+                                  Action Required
+                                </span>
+                              </div>
+                              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                End of month approaching. Please review and pay all outstanding
+                                utility bills (Electricity, Water, Internet, etc).
+                              </p>
+                              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                System Reminder
+                              </p>
+                            </div>
+                            {!readNotifs.has(endOfMonthNotifId) && (
+                              <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Anomaly alerts from database */}
+                        {(anomalies || []).length === 0 && !isEndOfMonth ? (
+                          <div className="py-10 text-center text-xs text-muted-foreground">
+                            No unread notifications
+                          </div>
+                        ) : (
+                          (anomalies || []).map((a) => {
+                            const isRead = readNotifs.has(a.id);
+                            const severityColor =
+                              a.severity === "Critical"
+                                ? "bg-destructive/15 text-destructive"
+                                : a.severity === "High"
+                                  ? "bg-warning/15 text-warning"
+                                  : a.severity === "Medium"
+                                    ? "bg-info/15 text-info"
+                                    : "bg-muted text-muted-foreground";
+                            return (
+                              <button
+                                key={a.id}
+                                onClick={() => {
+                                  markNotifRead(a.id);
+                                  setNotifOpen(false);
+                                  navigate({ to: "/anomalies" });
+                                }}
+                                className={cn(
+                                  "w-full text-left px-4 py-3 hover:bg-surface transition-colors flex gap-3",
+                                  !isRead && "bg-primary/5",
+                                )}
+                              >
+                                <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-destructive/10">
+                                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold truncate">
+                                      {a.metric}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
+                                        severityColor,
+                                      )}
+                                    >
+                                      {a.severity}
+                                    </span>
+                                  </div>
+                                  <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                                    {a.actual} vs expected {a.expected} ({a.deviation})
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                    {a.when}
+                                  </p>
+                                </div>
+                                {!isRead && (
+                                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="hairline-t px-4 py-2.5 text-center">
+                        <button
+                          onClick={() => {
+                            setNotifOpen(false);
+                            navigate({ to: "/anomalies" });
+                          }}
+                          className="text-[11px] font-semibold text-primary hover:underline"
+                        >
+                          View all anomalies & alerts →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1 gradient-primary text-primary-foreground text-xs font-semibold px-2 sm:px-3 shrink-0"
+                  onClick={() => navigate({ to: "/ai-decisions" })}
+                  title="Ask Bizora AI"
+                >
+                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden md:inline">Ask AI</span>
+                </Button>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <main className="min-w-0 flex-1 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
-          <div className="w-full p-2.5 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
-            <Outlet />
-          </div>
-        </main>
-
-        {/* Mobile Floating Bottom Navigation Dock */}
-        <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-sidebar/95 backdrop-blur-xl border-t border-hairline px-2 py-1.5 flex items-center justify-around shadow-2xl mobile-bottom-dock">
-          <Link
-            to="/command-center"
-            className={cn(
-              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              pathname === "/command-center" && "text-primary font-bold bg-primary/10"
-            )}
-          >
-            <LayoutDashboard className="h-4.5 w-4.5" />
-            <span className="text-[10px] font-medium">Home</span>
-          </Link>
-
-          <Link
-            to="/products"
-            className={cn(
-              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              pathname === "/products" && "text-primary font-bold bg-primary/10"
-            )}
-          >
-            <Package className="h-4.5 w-4.5" />
-            <span className="text-[10px] font-medium">Products</span>
-          </Link>
-
-          <Link
-            to="/billing"
-            className={cn(
-              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              pathname === "/billing" && "text-primary font-bold bg-primary/10"
-            )}
-          >
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30">
-              <ShoppingCart className="h-4 w-4" />
+          <main className="min-w-0 flex-1 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
+            <div className="w-full p-2.5 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
+              <Outlet />
             </div>
-            <span className="text-[10px] font-medium text-primary">POS</span>
-          </Link>
+          </main>
 
-          <Link
-            to="/customers"
-            className={cn(
-              "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
-              pathname === "/customers" && "text-primary font-bold bg-primary/10"
-            )}
-          >
-            <Users className="h-4.5 w-4.5" />
-            <span className="text-[10px] font-medium">Customers</span>
-          </Link>
+          {/* Mobile Floating Bottom Navigation Dock */}
+          <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-sidebar/95 backdrop-blur-xl border-t border-hairline px-2 py-1.5 flex items-center justify-around shadow-2xl mobile-bottom-dock">
+            <Link
+              to="/command-center"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/command-center" && "text-primary font-bold bg-primary/10",
+              )}
+            >
+              <LayoutDashboard className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Home</span>
+            </Link>
 
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95"
-          >
-            <Menu className="h-4.5 w-4.5" />
-            <span className="text-[10px] font-medium">Menu</span>
-          </button>
-        </nav>
+            <Link
+              to="/products"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/products" && "text-primary font-bold bg-primary/10",
+              )}
+            >
+              <Package className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Products</span>
+            </Link>
 
-        {/* Global Details Drawers */}
-        <Product360Drawer
-          productId={activeProductId}
-          open={!!activeProductId}
-          onOpenChange={(open) => !open && openProduct360(null)}
-        />
-        <Customer360Drawer
-          customerId={activeCustomerId}
-          open={!!activeCustomerId}
-          onOpenChange={(open) => !open && openCustomer360(null)}
-        />
-        <Supplier360Drawer
-          supplierId={activeSupplierId}
-          open={!!activeSupplierId}
-          onOpenChange={(open) => !open && openSupplier360(null)}
-        />
-        <RecommendationInvestigateDrawer
-          recId={activeRecId}
-          open={!!activeRecId}
-          onOpenChange={(open) => !open && openRecommendation(null)}
-        />
+            <Link
+              to="/billing"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/billing" && "text-primary font-bold bg-primary/10",
+              )}
+            >
+              <div className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30">
+                <ShoppingCart className="h-4 w-4" />
+              </div>
+              <span className="text-[10px] font-medium text-primary">POS</span>
+            </Link>
+
+            <Link
+              to="/customers"
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95",
+                pathname === "/customers" && "text-primary font-bold bg-primary/10",
+              )}
+            >
+              <Users className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Customers</span>
+            </Link>
+
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-muted-foreground transition-all active:scale-95"
+            >
+              <Menu className="h-4.5 w-4.5" />
+              <span className="text-[10px] font-medium">Menu</span>
+            </button>
+          </nav>
+
+          {/* Global Details Drawers */}
+          <Product360Drawer
+            productId={activeProductId}
+            open={!!activeProductId}
+            onOpenChange={(open) => !open && openProduct360(null)}
+          />
+          <Customer360Drawer
+            customerId={activeCustomerId}
+            open={!!activeCustomerId}
+            onOpenChange={(open) => !open && openCustomer360(null)}
+          />
+          <Supplier360Drawer
+            supplierId={activeSupplierId}
+            open={!!activeSupplierId}
+            onOpenChange={(open) => !open && openSupplier360(null)}
+          />
+          <RecommendationInvestigateDrawer
+            recId={activeRecId}
+            open={!!activeRecId}
+            onOpenChange={(open) => !open && openRecommendation(null)}
+          />
+        </div>
       </div>
     </div>
-  </div>
   );
 }

@@ -1,4 +1,4 @@
-import { fetchApi } from './api-client';
+import { fetchApi } from "./api-client";
 
 export type AuthUser = {
   id: string;
@@ -13,37 +13,41 @@ export type AuthUser = {
   isImpersonating?: boolean;
 };
 
-const DEMO_FALLBACK_ACCOUNTS: Record<string, { role: string; name: string; isSystemAdmin?: boolean }> = {
-  'admin@gmail.com': { role: 'ADMIN', name: 'System Admin', isSystemAdmin: true },
-  'owner@gmail.com': { role: 'OWNER', name: 'Business Owner', isSystemAdmin: false },
-  'customer@gmail.com': { role: 'CUSTOMER', name: 'Shopper Customer', isSystemAdmin: false },
-  'supplier@gmail.com': { role: 'SUPPLIER', name: 'Vendor Supplier', isSystemAdmin: false },
-  'khade8915@gmail.com': { role: 'OWNER', name: 'System Super Admin', isSystemAdmin: true },
+const DEMO_FALLBACK_ACCOUNTS: Record<
+  string,
+  { role: string; name: string; isSystemAdmin?: boolean }
+> = {
+  "admin@gmail.com": { role: "ADMIN", name: "System Admin", isSystemAdmin: true },
+  "owner@gmail.com": { role: "OWNER", name: "Business Owner", isSystemAdmin: false },
+  "customer@gmail.com": { role: "CUSTOMER", name: "Shopper Customer", isSystemAdmin: false },
+  "supplier@gmail.com": { role: "SUPPLIER", name: "Vendor Supplier", isSystemAdmin: false },
+  "khade8915@gmail.com": { role: "OWNER", name: "System Super Admin", isSystemAdmin: true },
 };
 
 export const loginServer = async (data: any) => {
   const payload = data?.data ? data.data : data;
-  const emailLower = (payload?.email || '').toLowerCase().trim();
-  const password = payload?.password || '';
+  const emailLower = (payload?.email || "").toLowerCase().trim();
+  const password = payload?.password || "";
 
   if (!emailLower || !password) {
-    throw new Error('Email and password are required.');
+    throw new Error("Email and password are required.");
   }
 
   // 1. Attempt REST backend login
   try {
-    const result: any = await fetchApi('/api/auth/login', {
-      method: 'POST',
+    const result: any = await fetchApi("/api/auth/login", {
+      method: "POST",
       body: JSON.stringify(payload),
     });
 
-    const token = result?.token || result?.accessToken || result?.data?.token || result?.data?.accessToken;
+    const token =
+      result?.token || result?.accessToken || result?.data?.token || result?.data?.accessToken;
     const user = result?.user || result?.data?.user;
 
     if (token && user) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bizora_access_token', token);
-        localStorage.setItem('bizora_user_session', JSON.stringify(user));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("bizora_access_token", token);
+        localStorage.setItem("bizora_user_session", JSON.stringify(user));
         if (user.companyName && user.workspaceId) {
           localStorage.setItem(`bizora_company_name_${user.workspaceId}`, user.companyName);
         }
@@ -54,56 +58,65 @@ export const loginServer = async (data: any) => {
       return { success: true, user };
     }
 
-    const errMsg = result?.message || result?.error || 'Invalid credentials';
-    throw new Error(typeof errMsg === 'string' ? errMsg : 'Invalid credentials');
+    const errMsg = result?.message || result?.error || "Invalid credentials";
+    throw new Error(typeof errMsg === "string" ? errMsg : "Invalid credentials");
   } catch (err: any) {
-    console.error('[Auth API] REST login failed:', err);
+    console.error("[Auth API] REST login failed:", err);
 
     // Fail-safe offline/emergency fallback for verified demo & super admin accounts
-    if (DEMO_FALLBACK_ACCOUNTS[emailLower] && (password === '123456789' || password === 'admin123')) {
+    if (
+      DEMO_FALLBACK_ACCOUNTS[emailLower] &&
+      (password === "123456789" || password === "admin123")
+    ) {
       const demoConfig = DEMO_FALLBACK_ACCOUNTS[emailLower];
-      const fallbackToken = 'demo_token_user-' + emailLower.replace(/[^a-z0-9]/g, '-');
+      const fallbackToken = "demo_token_user-" + emailLower.replace(/[^a-z0-9]/g, "-");
       const fallbackUser: AuthUser = {
-        id: 'user-' + emailLower.replace(/[^a-z0-9]/g, '-'),
+        id: "user-" + emailLower.replace(/[^a-z0-9]/g, "-"),
         email: emailLower,
         name: demoConfig.name,
         role: demoConfig.role,
         departmentId: null,
-        workspaceId: 'grandsquare-mall',
+        workspaceId: "grandsquare-mall",
         isSystemAdmin: !!demoConfig.isSystemAdmin,
         setupCompleted: true,
       };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bizora_access_token', fallbackToken);
-        localStorage.setItem('bizora_user_session', JSON.stringify(fallbackUser));
-        localStorage.setItem(`bizora_company_name_grandsquare-mall`, 'Grand Square Mall');
+      if (typeof window !== "undefined") {
+        localStorage.setItem("bizora_access_token", fallbackToken);
+        localStorage.setItem("bizora_user_session", JSON.stringify(fallbackUser));
+        localStorage.setItem(`bizora_company_name_grandsquare-mall`, "Grand Square Mall");
       }
       return { success: true, user: fallbackUser };
     }
 
-    throw new Error(err.message || 'Invalid credentials');
+    throw new Error(err.message || "Invalid credentials");
   }
 };
 
-export const loginWithGoogleServer = async (data: { email: string; name?: string; googleToken?: string; picture?: string }) => {
-  const emailLower = (data.email || '').toLowerCase().trim();
+export const loginWithGoogleServer = async (data: {
+  email: string;
+  name?: string;
+  googleToken?: string;
+  picture?: string;
+}) => {
+  const emailLower = (data.email || "").toLowerCase().trim();
   if (!emailLower) {
-    throw new Error('Google email address is required.');
+    throw new Error("Google email address is required.");
   }
 
   try {
-    const result: any = await fetchApi('/api/auth/google', {
-      method: 'POST',
+    const result: any = await fetchApi("/api/auth/google", {
+      method: "POST",
       body: JSON.stringify(data),
     });
 
-    const token = result?.token || result?.accessToken || result?.data?.token || result?.data?.accessToken;
+    const token =
+      result?.token || result?.accessToken || result?.data?.token || result?.data?.accessToken;
     const user = result?.user || result?.data?.user;
 
     if (token && user) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bizora_access_token', token);
-        localStorage.setItem('bizora_user_session', JSON.stringify(user));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("bizora_access_token", token);
+        localStorage.setItem("bizora_user_session", JSON.stringify(user));
         if (user.companyName) {
           localStorage.setItem(`bizora_company_name_${user.workspaceId}`, user.companyName);
         }
@@ -114,50 +127,61 @@ export const loginWithGoogleServer = async (data: { email: string; name?: string
       return { success: true, user };
     }
 
-    const errMsg = result?.message || result?.error || 'Google Sign-In failed';
-    throw new Error(typeof errMsg === 'string' ? errMsg : 'Google Sign-In failed');
+    const errMsg = result?.message || result?.error || "Google Sign-In failed";
+    throw new Error(typeof errMsg === "string" ? errMsg : "Google Sign-In failed");
   } catch (err: any) {
-    console.error('[Auth API] Google sign-in failed:', err);
-    throw new Error(err.message || 'Google Sign-In failed');
+    console.error("[Auth API] Google sign-in failed:", err);
+    throw new Error(err.message || "Google Sign-In failed");
   }
 };
 
 export const getCurrentSessionServer = async () => {
   try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('bizora_access_token') : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("bizora_access_token") : null;
     if (!token) {
       return { user: null };
     }
 
-    const cachedUserRaw = typeof window !== 'undefined' ? localStorage.getItem('bizora_user_session') : null;
+    const cachedUserRaw =
+      typeof window !== "undefined" ? localStorage.getItem("bizora_user_session") : null;
     let cachedUser: AuthUser | null = null;
     if (cachedUserRaw) {
-      try { cachedUser = JSON.parse(cachedUserRaw); } catch {}
+      try {
+        cachedUser = JSON.parse(cachedUserRaw);
+      } catch {}
     }
 
-    if (token.startsWith('demo_token_')) {
-      const userId = token.replace('demo_token_', '');
-      const userObj: AuthUser = cachedUser || {
+    // ⚡ Instant UI Mount: If session is already cached in localStorage, return immediately!
+    // Never block initial route resolution on cold cloud container wakeups.
+    if (cachedUser) {
+      return { user: cachedUser };
+    }
+
+    if (token.startsWith("demo_token_")) {
+      const userId = token.replace("demo_token_", "");
+      const userObj: AuthUser = {
         id: userId,
-        email: userId.replace('user-', '').replace(/-/g, '@'),
-        name: 'Store Owner',
-        role: 'OWNER',
+        email: userId.replace("user-", "").replace(/-/g, "@"),
+        name: "Store Owner",
+        role: "OWNER",
         departmentId: null,
-        workspaceId: 'grandsquare-mall',
-        isSystemAdmin: userId.includes('khade') || userId.includes('admin'),
+        workspaceId: "grandsquare-mall",
+        isSystemAdmin: userId.includes("khade") || userId.includes("admin"),
         setupCompleted: true,
       };
       return { user: userObj };
     }
 
     try {
-      const result: any = await fetchApi('/api/auth/me', {
-        method: 'GET',
+      const result: any = await fetchApi("/api/auth/me", {
+        method: "GET",
       });
-      
+
       const user = result?.user || result?.data?.user || (result?.id ? result : null);
       if (user) {
-        if (typeof window !== 'undefined') localStorage.setItem('bizora_user_session', JSON.stringify(user));
+        if (typeof window !== "undefined")
+          localStorage.setItem("bizora_user_session", JSON.stringify(user));
         return { user };
       }
     } catch (e) {}
@@ -168,18 +192,21 @@ export const getCurrentSessionServer = async () => {
 
     return { user: null };
   } catch (err) {
-    const cachedUserRaw = typeof window !== 'undefined' ? localStorage.getItem('bizora_user_session') : null;
+    const cachedUserRaw =
+      typeof window !== "undefined" ? localStorage.getItem("bizora_user_session") : null;
     if (cachedUserRaw) {
-      try { return { user: JSON.parse(cachedUserRaw) }; } catch {}
+      try {
+        return { user: JSON.parse(cachedUserRaw) };
+      } catch {}
     }
     return { user: null };
   }
 };
 
 export const logoutServer = async () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('bizora_access_token');
-    localStorage.removeItem('bizora_user_session');
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("bizora_access_token");
+    localStorage.removeItem("bizora_user_session");
   }
   return { success: true };
 };
@@ -187,8 +214,8 @@ export const logoutServer = async () => {
 export const impersonateTenantServer = async (data: { data: { workspaceId: string } }) => {
   try {
     const payload = data.data ? data.data : data;
-    const result = await fetchApi('/api/auth/impersonate', {
-      method: 'POST',
+    const result = await fetchApi("/api/auth/impersonate", {
+      method: "POST",
       body: JSON.stringify(payload),
     });
     return { success: !!result.success };
@@ -199,12 +226,11 @@ export const impersonateTenantServer = async (data: { data: { workspaceId: strin
 
 export const stopImpersonatingServer = async () => {
   try {
-    const result = await fetchApi('/api/auth/stop-impersonate', {
-      method: 'POST',
+    const result = await fetchApi("/api/auth/stop-impersonate", {
+      method: "POST",
     });
     return { success: !!result.success };
   } catch (err) {
     return { success: false };
   }
 };
-
