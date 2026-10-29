@@ -277,5 +277,12 @@ npm run test:perf
 
 ---
 
+## 📚 Architecture & Investor Documentation
+
+- [**Full-Stack Architecture & Data Flow**](./docs/FULL_STACK_ARCHITECTURE.md) — Deep-dive technical specification covering event streams, POS synchronization, and security controls.
+- [**Executive Investment Memorandum**](./docs/INVESTOR_MEMORANDUM.md) — Business model, unit economics, market opportunity (TAM/SAM/SOM), and commercial growth strategy.
+
+---
+
 ## 📄 Commercial Licensing & Rights
 This software is developed by Om Khade and the Bizora Engineering Team. Distributed under the commercial launch terms of the **MIT License** — see [LICENSE](./LICENSE) for details.
