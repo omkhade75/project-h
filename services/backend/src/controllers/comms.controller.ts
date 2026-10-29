@@ -35,13 +35,29 @@ export class CommsController {
     return await this.commsService.getVapiConfig();
   }
 
+  @Get('bizvoice/config')
+  async getBizVoiceConfig() {
+    return await this.commsService.getVapiConfig();
+  }
+
   @Post('vapi/config')
   async updateVapiConfig(@Body() body: any) {
     return await this.commsService.updateVapiConfig(body);
   }
 
+  @Post('bizvoice/config')
+  async updateBizVoiceConfig(@Body() body: any) {
+    return await this.commsService.updateVapiConfig(body);
+  }
+
   @Post('vapi/call')
   async initiateVapiCall(@Req() req, @Body() body: any) {
+    const user = req.user;
+    return await this.commsService.initiateVapiCall(user?.workspaceId || 'grandsquare-mall', body);
+  }
+
+  @Post('bizvoice/call')
+  async initiateBizVoiceCall(@Req() req, @Body() body: any) {
     const user = req.user;
     return await this.commsService.initiateVapiCall(user?.workspaceId || 'grandsquare-mall', body);
   }

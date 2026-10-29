@@ -49,10 +49,10 @@ export default {
     try {
       console.log(`📡 [Server] Incoming request: ${request.method} ${request.url}`);
       const url = new URL(request.url);
-      if (url.pathname === "/api/vapi-webhook") {
+      if (url.pathname === "/api/vapi-webhook" || url.pathname === "/api/bizvoice-webhook") {
         if (request.method === "GET") {
           return new Response(
-            JSON.stringify({ status: "active", channel: "Vapi Webhook Adapter" }),
+            JSON.stringify({ status: "active", channel: "BizVoice Webhook Adapter" }),
             {
               headers: { "Content-Type": "application/json" },
             },

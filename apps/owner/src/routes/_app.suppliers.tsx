@@ -32,7 +32,7 @@ import {
   editSupplierServer,
   archiveSupplierServer,
 } from "@/lib/server-suppliers";
-import { initiateVapiCallServer } from "@/lib/server-vapi";
+import { initiateBizVoiceCallServer as initiateVapiCallServer } from "@/lib/server-bizvoice";
 import {
   sendSupplierEnquiry,
   type SupplierEnquiryResponse,

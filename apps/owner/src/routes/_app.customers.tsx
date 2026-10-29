@@ -504,8 +504,8 @@ export function CustomersPage() {
     setVoiceErrorDetails(null);
 
     try {
-      const backendApi = await import("@/lib/api-vapi");
-      const response = await backendApi.initiateVapiCallServer({
+      const backendApi = await import("@/lib/api-bizvoice");
+      const response = await backendApi.initiateBizVoiceCallServer({
         data: {
           phoneNumber: cleanPhone,
           recipientName: voiceName.trim() || "Customer",
@@ -513,11 +513,11 @@ export function CustomersPage() {
         },
       });
 
-      console.log("Voice Call Backend Response:", response);
+      console.log("BizVoice Call Backend Response:", response);
 
       if (response && response.success) {
-        toast.success(`📞 OUTBOUND CELLULAR CALL DISPATCHED!`, {
-          description: `Twilio gateway is ringing ${cleanPhone} (${voiceName}) right now!`,
+        toast.success(`📞 BIZVOICE OUTBOUND CALL DISPATCHED!`, {
+          description: `BizVoice engine is connecting ${cleanPhone} (${voiceName}) right now!`,
           duration: 8000,
         });
         setCellularCallStatus("active");

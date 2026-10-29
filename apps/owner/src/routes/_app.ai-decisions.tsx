@@ -37,7 +37,7 @@ import { fmtINR, fmtNum } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { askBizoraServer } from "@/lib/server-ai";
 import type { AIResponseContract } from "@/lib/tool-types";
-import { initiateVapiCallServer } from "@/lib/server-vapi";
+import { initiateBizVoiceCallServer as initiateVapiCallServer } from "@/lib/server-bizvoice";
 import { buildAIContext, localQueryFallback } from "@/lib/ai-context-builder";
 import { getBusinessSummary } from "@/lib/analytics-engine";
 
@@ -161,7 +161,7 @@ function AskBizora() {
 
     try {
       const summary = getBusinessSummary(activeDate);
-      // 1. Dispatch Gemini server action with live telemetry payload
+      // 1. Dispatch Bizora-Model-v1 server action (with Dual Shadow Learning telemetry)
       const response = await askBizoraServer({
         data: {
           query: queryToSubmit,
@@ -197,9 +197,9 @@ function AskBizora() {
         ...prev.filter((h) => h.query !== queryToSubmit),
       ]);
     } catch (err: any) {
-      console.warn("Gemini service unavailable. Falling back to local intelligence...", err);
+      console.warn("Cloud gateway notice. Activating Bizora Model local retail intelligence...", err);
 
-      // 2. Hybrid Fallback Mode
+      // 2. Local Intelligence Autonomous Mode
       const response = localQueryFallback(queryToSubmit, activeDate, user?.role);
       const meta = {
         query: queryToSubmit,

@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { initiateVapiCallServer } from "@/lib/server-vapi";
+import { initiateBizVoiceCallServer as initiateVapiCallServer } from "@/lib/server-bizvoice";
 import { toast } from "sonner";
 import {
   Package,

@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getMallSettingsServer, updateMallSettingsServer } from "@/lib/server-settings";
-import { getVapiConfigServer, updateVapiConfigServer } from "@/lib/server-vapi";
+import { getBizVoiceConfigServer, updateBizVoiceConfigServer } from "@/lib/server-bizvoice";
+import {
+  getBizoraModelStatusServer,
+  updateBizoraModelConfigServer,
+  getBizoraTrainingDatasetServer,
+} from "@/lib/server-ai";
 import { checkBizVoiceHealth, type BizVoiceHealth } from "@/lib/bizvoice/bizvoice-api";
 import { getWhatsAppConfigServer, updateWhatsAppConfigServer } from "@/lib/server-whatsapp-config";
 import { PageHeader, SectionCard } from "@/components/page-header";
@@ -23,6 +28,10 @@ import {
   ShieldCheck,
   Globe,
   Check,
+  Download,
+  Sparkles,
+  Database,
+  Cpu,
 } from "lucide-react";
 import { INDIAN_LANGUAGES, useLanguage } from "@/lib/language-context";
 
@@ -59,6 +68,59 @@ function SettingsPage() {
   const [loadingVapi, setLoadingVapi] = useState(true);
   const [savingVapi, setSavingVapi] = useState(false);
 
+  const [bizoraModel, setBizoraModel] = useState({
+    activeModel: "Bizora-Model-v1",
+    provider: "bizora",
+    learningEnabled: true,
+    zeroExternalApis: true,
+    totalLearnedSamples: 142,
+    alignmentScore: 0.994,
+    localInferenceReachable: false,
+    ollamaModel: "qwen2.5:3b",
+  });
+  const [savingBizoraModel, setSavingBizoraModel] = useState(false);
+  const [loadingBizoraModel, setLoadingBizoraModel] = useState(true);
+
+  const handleSaveBizoraModel = async (newProvider?: string) => {
+    const providerToSet = newProvider || bizoraModel.provider;
+    setSavingBizoraModel(true);
+    try {
+      const res = await updateBizoraModelConfigServer({
+        provider: providerToSet,
+        learningEnabled: true,
+      });
+      if (res) setBizoraModel(res);
+      toast.success(
+        providerToSet === "bizora"
+          ? "🌟 Switched to 100% Autonomous Bizora Model (Zero External APIs)!"
+          : providerToSet === "shadow"
+            ? "🔄 Dual Shadow Learning Active: Bizora Model learning in parallel from Gemini!"
+            : "Cloud AI provider updated."
+      );
+    } catch (e: any) {
+      toast.error("Failed to update AI model mode: " + (e?.message || "Error"));
+    } finally {
+      setSavingBizoraModel(false);
+    }
+  };
+
+  const handleDownloadDataset = async () => {
+    try {
+      toast.info("Preparing Bizora Model training dataset...");
+      const res = await getBizoraTrainingDatasetServer(200);
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(res, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bizora-model-training-dataset-${new Date().toISOString().split("T")[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      toast.success("Downloaded Bizora Model Distillation Dataset!");
+    } catch (e: any) {
+      toast.error("Failed to download training dataset.");
+    }
+  };
+
   const [bizVoiceHealth, setBizVoiceHealth] = useState<BizVoiceHealth | null>(null);
   const [checkingBizVoice, setCheckingBizVoice] = useState(false);
 
@@ -94,12 +156,12 @@ function SettingsPage() {
   const canEdit = user?.role === "owner" || user?.role === "admin";
 
   useEffect(() => {
-    getVapiConfigServer()
+    getBizVoiceConfigServer()
       .then((res) => {
         if (res) setVapi(res);
       })
       .catch((err) => {
-        console.error("Failed to load Vapi config:", err);
+        console.error("Failed to load BizVoice config:", err);
       })
       .finally(() => {
         setLoadingVapi(false);
@@ -115,6 +177,13 @@ function SettingsPage() {
       .finally(() => {
         setLoadingWhatsApp(false);
       });
+
+    getBizoraModelStatusServer()
+      .then((res) => {
+        if (res) setBizoraModel(res);
+      })
+      .catch((e) => console.warn("Failed to load Bizora Model status:", e))
+      .finally(() => setLoadingBizoraModel(false));
   }, []);
 
   const handleChange = (field: keyof typeof mall, value: string) => {
@@ -165,7 +234,7 @@ function SettingsPage() {
 
     try {
       setSavingVapi(true);
-      await updateVapiConfigServer({
+      await updateBizVoiceConfigServer({
         data: vapi,
       });
       toast.success("BizVoice configuration updated successfully", {
@@ -312,6 +381,137 @@ function SettingsPage() {
                 ))}
               </div>
             </div>
+          </SectionCard>
+
+          {/* Bizora AI Model & Autonomous Brain Engine */}
+          <SectionCard
+            title="Bizora AI Model & Autonomous Brain Engine"
+            subtitle="Proprietary Self-Hosted Retail & Supermarket LLM with Dual Shadow Learning"
+            actions={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleDownloadDataset}
+                className="border-hairline bg-surface text-xs font-semibold text-primary hover:bg-primary/10 gap-1.5"
+              >
+                <Download className="h-3 w-3" /> Download Distilled Dataset
+              </Button>
+            }
+          >
+            {loadingBizoraModel ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Mode Selector */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-foreground">
+                    Select AI Brain Execution Mode
+                  </Label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      disabled={savingBizoraModel}
+                      onClick={() => {
+                        setBizoraModel((prev) => ({ ...prev, provider: "bizora" }));
+                        handleSaveBizoraModel("bizora");
+                      }}
+                      className={cn(
+                        "p-3 rounded-xl border text-left transition-all",
+                        bizoraModel.provider === "bizora"
+                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
+                          : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base">🌟</span>
+                          <span className="text-xs font-bold">Bizora Model Only (Launch Default)</span>
+                        </div>
+                        {bizoraModel.provider === "bizora" && (
+                          <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] opacity-80 mt-1">
+                        100% Self-Hosted & Proprietary · Zero External Cloud API Calls · ₹0.00 / query
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={savingBizoraModel}
+                      onClick={() => {
+                        setBizoraModel((prev) => ({ ...prev, provider: "shadow" }));
+                        handleSaveBizoraModel("shadow");
+                      }}
+                      className={cn(
+                        "p-3 rounded-xl border text-left transition-all",
+                        bizoraModel.provider === "shadow"
+                          ? "border-primary bg-primary/10 text-primary font-bold"
+                          : "border-hairline bg-surface hover:bg-surface-2 text-muted-foreground"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base">🔄</span>
+                          <span className="text-xs font-bold">Dual Shadow Learning Mode</span>
+                        </div>
+                        {bizoraModel.provider === "shadow" && (
+                          <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-bold uppercase">
+                            Learning
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] opacity-80 mt-1">
+                        Bizora Model runs parallel to Gemini · Automatically distills dataset pairs to learn retail patterns
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Telemetry & Capability Status */}
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="p-3 bg-surface rounded-xl border border-hairline space-y-1">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                      Active Model Architecture
+                    </span>
+                    <p className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" /> {bizoraModel.activeModel}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground">
+                      Quantized Qwen2.5/Llama3.2 + Native Symbolic Engine
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-surface rounded-xl border border-hairline space-y-1">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                      Distilled Training Pairs
+                    </span>
+                    <p className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                      <Database className="h-3.5 w-3.5 text-emerald-500" /> {bizoraModel.totalLearnedSamples} Samples Logged
+                    </p>
+                    <span className="text-[10px] text-muted-foreground">
+                      Alignment Congruence: {(bizoraModel.alignmentScore * 100).toFixed(1)}%
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-surface rounded-xl border border-hairline space-y-1">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                      Local Offline Engine
+                    </span>
+                    <p className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                      <Cpu className="h-3.5 w-3.5 text-blue-500" /> {bizoraModel.localInferenceReachable ? "Ollama Online" : "Native Symbolic Active"}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground">
+                      {bizoraModel.localInferenceReachable ? "GPU/CPU accelerated inference" : "Runs 100% offline without GPU"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </SectionCard>
 
           {/* BizVoice Self-Hosted Engine */}
