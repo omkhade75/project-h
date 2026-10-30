@@ -14,6 +14,16 @@ export const addCustomerServer = async (data?: any) => {
   return handleResponse(await fetchApi('/api/customers', { method: 'POST', body: payload ? JSON.stringify(payload) : undefined }));
 };
 
+export const bulkAddCustomersServer = async (data?: any) => {
+  const payload = data?.data ? data.data : data;
+  return handleResponse(
+    await fetchApi('/api/customers/bulk', {
+      method: 'POST',
+      body: payload ? JSON.stringify(payload) : undefined,
+    }),
+  );
+};
+
 export const editCustomerServer = async (data?: any) => {
   const payload = data?.data ? data.data : data;
   const id = payload?.id || payload?.customerId;

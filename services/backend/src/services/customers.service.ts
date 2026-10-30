@@ -39,6 +39,38 @@ export class CustomersService {
     }
   }
 
+  async bulkCreate(customers: any[], workspaceId: string) {
+    if (!Array.isArray(customers) || customers.length === 0) return [];
+    const results: any[] = [];
+    for (const item of customers) {
+      try {
+        const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Valued Customer';
+        const parts = name.split(' ');
+        const firstName = item.firstName || parts[0] || 'Valued';
+        const lastName = item.lastName || parts.slice(1).join(' ') || 'Customer';
+        const phone = item.phone || item.mobile || item.contact || '+91 9000000000';
+        const email = item.email || `client_${Date.now()}_${Math.floor(Math.random() * 1000)}@store.com`;
+
+        const customerPayload = {
+          customerCode: item.customerCode || item.code || `CUST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          firstName,
+          lastName,
+          phone,
+          email,
+          loyaltyTier: item.loyaltyTier || item.tier || 'REGULAR',
+          loyaltyPoints: Number(item.loyaltyPoints || item.points || 0),
+          notes: item.notes || `Imported customer (${new Date().toLocaleDateString()})`,
+        };
+
+        const created = await this.create(customerPayload, workspaceId);
+        results.push(created);
+      } catch (err) {
+        console.warn('[CustomersService] bulkCreate single item error:', err);
+      }
+    }
+    return results;
+  }
+
   async update(id: string, data: any, workspaceId: string) {
     try {
       const allowedFields = [

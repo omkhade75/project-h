@@ -1007,20 +1007,27 @@ function Suppliers() {
                   </span>
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                    <Volume2 className="h-3 w-3 text-emerald-600" />
-                    Listen to Generated Audio (.wav)
-                  </p>
-                  <audio
-                    controls
-                    autoPlay
-                    src={voiceNoteResult.audio_url}
-                    className="w-full h-9 rounded-md outline-none"
-                  >
-                    Your browser does not support audio playback.
-                  </audio>
-                </div>
+                {voiceNoteResult.audio_url ? (
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      <Volume2 className="h-3 w-3 text-emerald-600" />
+                      Listen to Generated Audio (.wav)
+                    </p>
+                    <audio
+                      controls
+                      autoPlay
+                      src={voiceNoteResult.audio_url}
+                      className="w-full h-9 rounded-md outline-none"
+                    >
+                      Your browser does not support audio playback.
+                    </audio>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 text-primary text-[11px]">
+                    <Volume2 className="h-3.5 w-3.5 shrink-0" />
+                    <span>Regional speech synthesized. Start local BizVoice (port 8000) for real-time WAV binary playback.</span>
+                  </div>
+                )}
 
                 <div className="space-y-1 text-[11px] bg-background/70 p-2.5 rounded-lg border border-hairline">
                   <p className="font-bold text-foreground">Regional Audio Script:</p>

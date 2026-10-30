@@ -171,6 +171,13 @@ export function DataImportPage() {
           if (targetCategory === "product") {
             const parsedProducts = mapRowsToProducts(rows);
             dbInstance.importProducts(parsedProducts);
+            // 🔄 Unify Central DB: sync spreadsheet products to central server for cross-device consistency
+            try {
+              const { bulkAddProductsServer } = await import("@/lib/server-products");
+              await bulkAddProductsServer(parsedProducts);
+            } catch (syncErr) {
+              console.warn("Backend cloud sync error for products:", syncErr);
+            }
             recordCount = parsedProducts.length;
             previewNames =
               parsedProducts
@@ -181,6 +188,13 @@ export function DataImportPage() {
           } else if (targetCategory === "customer") {
             const parsedCusts = mapRowsToCustomers(rows);
             dbInstance.importCustomers(parsedCusts);
+            // 🔄 Unify Central DB: sync spreadsheet customers to central server for cross-device consistency
+            try {
+              const { bulkAddCustomersServer } = await import("@/lib/server-customers");
+              await bulkAddCustomersServer(parsedCusts);
+            } catch (syncErr) {
+              console.warn("Backend cloud sync error for customers:", syncErr);
+            }
             recordCount = parsedCusts.length;
             previewNames =
               parsedCusts
@@ -294,6 +308,12 @@ export function DataImportPage() {
             },
           ];
           dbInstance.importProducts(sampleProducts);
+          try {
+            const { bulkAddProductsServer } = await import("@/lib/server-products");
+            await bulkAddProductsServer(sampleProducts);
+          } catch (syncErr) {
+            console.warn("Backend cloud sync error for products:", syncErr);
+          }
           recordCount = sampleProducts.length;
           previewNames = sampleProducts
             .map((p) => p.name)
@@ -412,6 +432,12 @@ export function DataImportPage() {
             },
           ];
           dbInstance.importCustomers(sampleCusts);
+          try {
+            const { bulkAddCustomersServer } = await import("@/lib/server-customers");
+            await bulkAddCustomersServer(sampleCusts);
+          } catch (syncErr) {
+            console.warn("Backend cloud sync error for customers:", syncErr);
+          }
           recordCount = sampleCusts.length;
           previewNames = sampleCusts.map((c) => c.name).join(", ");
         }

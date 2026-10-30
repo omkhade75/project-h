@@ -19,6 +19,14 @@ export class CustomersController {
     return { success: true, data };
   }
 
+  @Post('bulk')
+  async bulkCreate(@Body() body: any, @Req() req: any) {
+    const customers = Array.isArray(body) ? body : body?.customers || body?.data || [];
+    const workspaceId = req.user?.companyId || req.user?.workspaceId;
+    const data = await this.service.bulkCreate(customers, workspaceId);
+    return { success: true, data, message: `${data.length} customers imported successfully` };
+  }
+
   @Post()
   async create(@Body() body: any, @Req() req: any) {
     const data = await this.service.create(body, req.user.companyId || req.user.workspaceId);

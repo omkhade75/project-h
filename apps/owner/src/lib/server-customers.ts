@@ -1,7 +1,7 @@
 // Bridge module: re-exports from REST API client instead of createServerFn
 // This enables static site deployment without server-side rendering
 
-export { getCustomersServer, addCustomerServer, editCustomerServer, archiveCustomerServer, getCustomer360Server } from './api-customers';
+export { getCustomersServer, addCustomerServer, bulkAddCustomersServer, editCustomerServer, archiveCustomerServer, getCustomer360Server } from './api-customers';
 
 // Type definitions preserved from original server module
 export interface CustomerListItem {

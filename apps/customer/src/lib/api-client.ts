@@ -6,6 +6,19 @@ export const getApiBaseUrl = () => {
     if (process.env.VITE_API_URL) return process.env.VITE_API_URL;
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   }
+  if (typeof window !== "undefined") {
+    const h = window.location.hostname;
+    if (
+      h === "localhost" ||
+      h === "127.0.0.1" ||
+      h.startsWith("192.168.") ||
+      h.startsWith("10.") ||
+      h.startsWith("172.") ||
+      h.endsWith(".local")
+    ) {
+      return `http://${h}:3000`;
+    }
+  }
   return "https://bizora-backend-gtoe.onrender.com";
 };
 
