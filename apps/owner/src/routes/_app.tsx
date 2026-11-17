@@ -136,6 +136,16 @@ const NAV: NavSection[] = [
         icon: LayoutDashboard,
       },
       {
+        to: "/inventory",
+        label: "Warehouse Inventory",
+        icon: Warehouse,
+      },
+      {
+        to: "/ai-decisions",
+        label: "AI Decision Center",
+        icon: Brain,
+      },
+      {
         to: "/expiry",
         label: "Expiry Radar",
         icon: Timer,
@@ -181,11 +191,9 @@ const ADVANCED_NAV: NavSection[] = [
   {
     section: "Advanced AI & Analytics",
     items: [
-      { to: "/ai-decisions", label: "AI Decision Center", icon: Brain },
       { to: "/forecasting", label: "Demand Forecasting", icon: LineChart },
       { to: "/anomalies", label: "Anomaly & Risk Radar", icon: ShieldAlert },
       { to: "/market-intelligence", label: "Market Intelligence", icon: Globe },
-      { to: "/inventory", label: "Warehouse Inventory", icon: Warehouse },
       { to: "/transactions", label: "Transactions Ledger", icon: Receipt },
       { to: "/income", label: "Income Register", icon: Wallet },
       { to: "/accounts", label: "Bank Accounts", icon: CreditCard },
